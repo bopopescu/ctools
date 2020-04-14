@@ -1,0 +1,44 @@
+os: centos7
+sku: ocata
+version: latest
+contrailregistry: opencontrailnightly
+orchestrator: openstack
+admin_password: c0ntrail123
+mysql_password: c0ntrail123
+contrail_rabbitmq_port: 5673
+
+kolla_registry: docker.io
+kolla_namespace: kolla
+rabbitmq_user: openstack
+metadata_secret: c0ntrail123
+keystone_version: v3
+nova_virt_driver: qemu
+
+admin_domain_id: default
+admin_project_id: admin
+admin_user: admin
+admin_password: c0ntrail123
+rest_api_data_temp_token:
+  auth:
+    identity:
+      methods:
+        - password
+      password:
+        user:
+          name: "{{ admin_user }}"
+          domain:
+            id: "{{ admin_domain_id }}"
+          password: "{{ admin_password }}"
+
+temp_token:
+final_token:
+rest_api_data_final_token:
+  auth:
+    identity:
+      methods:
+        - token
+      token:
+        id: "{{ temp_token }}"
+    scope:
+      project:
+        id: "{{ admin_project_id }}"

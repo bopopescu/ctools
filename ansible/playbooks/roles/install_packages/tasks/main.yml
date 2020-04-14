@@ -1,0 +1,22 @@
+---
+
+- name: set default deployment
+  vars:
+    types:
+      kolla:
+      contrail:
+  set_fact:
+    deployment: "{{ deployment|default({})|combine({'type': types }) }}"
+  when: deployment is undefined or deployment.type is undefined
+
+- name: install packages for contrail helm deployer
+  include: contrail-helm/main.yml
+  when: deployment.type.helm is defined
+
+- name: Install packages for openshift ansible
+  include: openshift-ansible/main.yml
+  when: deployment.type.openshift is defined
+
+- name: Install packages for vcenter-only 
+  include: vcenter-only/main.yml
+  when: deployment.type.vcenter is defined

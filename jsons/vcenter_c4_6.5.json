@@ -1,0 +1,263 @@
+{
+"cluster": [
+    {   
+        "id": "cluster_vcenter_c4_c6_k4_k6",
+        "parameters": {
+            "provision": {
+                "contrail": {
+                },
+                "contrail_4": {
+                    "cloud_orchestrator": "vcenter",
+		    "controller_config": {
+                        "bgp_asn": "64512",
+                        "encap_priority": "MPLSoUDP,MPLSoGRE,VXLAN",
+                        "external_routers_list": {
+                            "hooper": "10.204.217.240"
+                        }
+                    },
+                    "vcenter_servers": [
+                        {   
+                            "server1": {
+                                "datacenters": {
+                                    "c4_datacenter11": {
+                                        "datacenter_mtu": "1500",
+                                        "dv_switch_control_data": {
+                                            "dv_port_group_control_data": {
+                                                "dv_portgroup_name": "",
+                                                "number_of_ports": "",
+                                                "uplink": ""
+                                            },
+                                            "dv_switch_name": ""
+                                        },
+                                        "dv_switch_mgmt": {
+                                            "dv_port_group_mgmt": {
+                                                "dv_portgroup_name": "",
+                                                "number_of_ports": "",
+                                                "uplink": ""
+                                            },
+                                            "dv_switch_name": ""
+                                        },
+                                        "dv_switches": [
+                                            {   
+                                                "clusternames": [
+                                                    "c4_cluster11",
+                                                    "c4_cluster12"
+                                                ],
+                                                "dv_port_group": {
+                                                    "dv_portgroup_name": "c4k4u14_dvpg",
+                                                    "number_of_ports": "3"
+                                                },
+                                                "dv_switch_name": "c4k4_dvs"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "hostname": "10.204.217.246",
+                                "password": "Contrail123!",
+                                "username": "administrator@vsphere.local",
+                                "validate_certs": false
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+],
+"server": [
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodec4",
+        "id": "nodec4",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.61",
+                    "mac_address": "00:25:90:c3:0b:14",
+                    "name": "enp1s0f0",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "enp1s0f0"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodec5",
+        "id": "nodec5",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.62",
+                    "mac_address": "00:25:90:c3:0d:38",
+                    "name": "enp1s0f0",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "enp1s0f0"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodec6",
+        "id": "nodec6",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.63",
+                    "mac_address": "00:25:90:c3:0a:1a",
+                    "name": "enp1s0f0",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "enp1s0f0"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodek4-compute-vm",
+        "id": "nodek4-compute-vm",
+        "ip_address": "10.204.216.181",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.181",
+                    "mac_address": "00:50:56:aa:aa:03",
+                    "name": "ens160",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "ens160"
+        },
+        "parameters": {
+            "esxi_parameters": {
+                "cluster": "c4_cluster11",
+                "contrail_vm": {
+                    "vmdk": "/root/vmdk/vmdk.tar",
+                    "control_data_switch": "vSwitch0", 
+                    "mgmt_pg": "contrail-fab-pg"
+                },
+                "datacenter": "c4_datacenter11",
+                "datastore": "k4-ds",
+                "name": "10.204.216.224",
+                "password": "c0ntrail123",
+                "username": "root",
+                "validate_certs": false,
+                "vcenter_server": "server1"
+            }
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-compute"
+        ]
+    },
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodek5-compute-vm",
+        "id": "nodek5-compute-vm",
+        "ip_address": "10.204.216.182",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.182",
+                    "mac_address": "00:50:56:aa:aa:04",
+                    "name": "ens160",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "ens160"
+        },
+        "parameters": {
+            "esxi_parameters": {
+                "cluster": "c4_cluster11",
+                "contrail_vm": {
+                    "vmdk": "/root/vmdk/vmdk.tar",
+                    "control_data_switch": "vSwitch0",
+                    "mgmt_pg": "contrail-fab-pg"
+                },
+                "datacenter": "c4_datacenter11",
+                "datastore": "k5-ds",
+                "name": "10.204.216.225",
+                "password": "c0ntrail123",
+                "username": "root",
+                "validate_certs": false,
+                "vcenter_server": "server1"
+            }
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-compute"
+        ]
+    },
+    {   
+        "cluster_id": "cluster_vcenter_c4_c6_k4_k6",
+        "domain": "englab.juniper.net",
+        "host_name": "nodek6-compute-vm",
+        "id": "nodek6-compute-vm",
+        "ip_address": "10.204.216.183",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.216.183",
+                    "mac_address": "00:50:56:aa:aa:05",
+                    "name": "ens160",
+                    "default_gateway": "10.204.216.254"
+                }
+            ],
+            "management_interface": "ens160"
+        },
+        "parameters": {
+            "esxi_parameters": {
+                "cluster": "c4_cluster11",
+                "contrail_vm": {
+                    "vmdk": "/root/vmdk/vmdk.tar",
+                    "control_data_switch": "vSwitch0",
+                    "mgmt_pg": "contrail-fab-pg"
+                },
+                "datacenter": "c4_datacenter11",
+                "datastore": "k6-ds",
+                "name": "10.204.216.226",
+                "password": "c0ntrail123",
+                "username": "root",
+                "validate_certs": false,
+                "vcenter_server": "server1"
+            }
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-compute"
+        ]
+    }
+ ],

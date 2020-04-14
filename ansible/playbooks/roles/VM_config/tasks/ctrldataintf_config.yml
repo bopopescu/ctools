@@ -1,0 +1,26 @@
+- name: gathering interface macaddress
+  set_fact:
+    intf_macaddress: "{{ hostvars[inventory_hostname]['ansible_'+device].macaddress }}"
+
+- name: populating interface data
+  set_fact:
+    ctrldatintf_file_content: "DEVICE={{device}}\n\
+                               TYPE=Ethernet\n\
+                               ONBOOT=yes\n\
+                               HWADDR={{ intf_macaddress }}\n\
+                               BOOTPROTO=static\n\
+                               IPADDR={{ ctrl_data_ip }}\n\
+                               PREFIX={{ prefix }}\n\
+                               NAME='System {{device}}'\n\
+                               USERCTL=no\n\
+                               NM_CONTROLLED=no\n\
+                               ETHTOOL_OPTS='-K {{device}} tx off'\n"
+  when: intf_macaddress is defined
+
+- name: creating interface config file
+  copy:
+    content: "{{ ctrldatintf_file_content }}"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ device }}"
+    backup: yes
+    mode: u=rwx,g=rw,o=rw
+  when: intf_macaddress is defined

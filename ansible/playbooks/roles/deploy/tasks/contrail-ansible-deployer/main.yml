@@ -1,0 +1,87 @@
+---
+- name: set contrail ansible repo version if undefined
+  set_fact:
+    contrail_branch: master
+  when: deployment.type.contrail.branch is undefined
+
+- name: set contrail ansible repo version if defined
+  set_fact:
+    contrail_branch: "{{ deployment.type.contrail.branch }}"
+  when: deployment.type.contrail.branch is defined
+
+- name: create temp directory for contrail
+  tempfile:
+     state: directory
+     suffix: _contrail
+  register: tmpdir
+
+- name: set contrail provision dir
+  set_fact:
+      contrail_provision_dir: "{{ tmpdir.path }}/contrail-ansible-deployer"
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail.registry is defined
+
+#- name: set secure_registry_details
+#  set_fact:
+#    insecure_registry: "{{ global_configuration.REGISTRY_PRIVATE_INSECURE }}"
+#    registry_username: "{{ global_configuration.CONTAINER_REGISTRY_USERNAME }}"
+#    registry_password: "{{ global_configuration.CONTAINER_REGISTRY_PASSWORD }}"
+#  when: global_configuration.CONTAINER_REGISTRY_USERNAME is defined
+
+    
+- name: set nova_virt_driver if defined
+  set_fact:
+    nova_virt_driver: "{{ orchestrator_configuration.nova_virt_driver }}"
+  when: deployment.type.vcenter is undefined and deployment.type.marathon is undefined and orchestrator_configuration is defined and orchestrator_configuration.nova_virt_driver is defined
+
+- name: get openstack nodes
+  set_fact:
+    openstack_nodes: "{{ contrail_configuration.OPENSTACK_NODES }}"
+  when: contrail_configuration.OPENSTACK_NODES is defined
+
+- name: set controller nodes if defined
+  set_fact: 
+    controller_nodes: "{{ contrail_configuration.CONTROLLER_NODES }}"
+  when: contrail_configuration.CONTROLLER_NODES is defined
+
+- name: set k8s master node ip if KUBERNETES_API_NODES is defined
+  set_fact:
+    k8s_master_ip: contrail_configuration.KUBERNETES_API_NODES
+  when:
+  - contrail_configuration.KUBERNETES_API_NODES is defined
+
+- name: get k8s master node ip
+  set_fact:
+    k8s_master_ip: "{{ item.value.ip }}"
+  with_dict: "{{ instances }}"
+  when:
+  - deployment.orchestrator == 'kubernetes'
+  - k8s_master_ip is undefined
+  - "{{ 'k8s_master' in item.value.roles }}"
+
+- debug:
+    msg: "Cloning contrail-ansible-deployer at {{ contrail_provision_dir }}"
+
+- name: clone contrail ansible repo for openstack
+  git:
+    repo: 'https://github.com/Juniper/contrail-ansible-deployer.git'
+    accept_hostkey: yes
+    update: yes
+    dest: "{{ contrail_provision_dir }}"
+    version: "{{ contrail_branch }}"
+
+- name: update contrail inventory file
+  template:
+    src: contrail-ansible-deployer/instances.yaml.j2
+    dest: "{{ contrail_provision_dir }}/config/instances.yaml"
+  when: deployment.type.vcenter is undefined  
+
+- name: Copy vcenter files and configure vcenter server
+  include: vcenter-only/main.yml
+  when: deployment.type.vcenter is defined  
+
+- name: Configure nodes and Provision
+  include: provision.yml

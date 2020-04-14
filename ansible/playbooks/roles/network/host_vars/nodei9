@@ -1,0 +1,5 @@
+network_ether_interfaces:
+  device: enp4s0f0
+  address: 192.168.0.182
+  mask: 255.255.225.0
+  gateway: 192.168.0.2

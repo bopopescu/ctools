@@ -1,0 +1,511 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: ci-repo.englab.juniper.net:5000
+        contrail:
+            branch: master
+            registry: ci-repo.englab.juniper.net:5000
+    sku: ocata
+    os: centos7
+    version: ocata-master-70
+    orchestrator: openstack
+
+server_manager:
+  ip: 10.87.66.253
+  username: root
+  password: c0ntrail123
+  image: centos-7.5
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+  kvm:
+    domainsuffix: local
+    ntpserver: 10.84.5.100
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+
+instances:
+  5b8s30-vm1:
+    provider: bms
+    ip: 10.87.66.157
+    roles:
+      openstack:
+      webui:
+  5b8s30-vm2:
+    provider: bms
+    ip: 10.87.66.158
+    roles:
+      config:
+      control:
+  5b8s30-vm3:
+    provider: bms
+    ip: 10.87.66.159
+    roles:
+      analytics:
+  5b8s30-vm4:
+    provider: bms
+    ip: 10.87.66.160
+    roles:
+      config_database:
+      analytics_database:
+  5b8s31-vm1:
+    provider: bms
+    ip: 10.87.66.161
+    roles:
+      openstack:
+      webui:
+  5b8s31-vm2:
+    provider: bms
+    ip: 10.87.66.162
+    roles:
+      config:
+      control:
+  5b8s31-vm3:
+    provider: bms
+    ip: 10.87.66.163
+    roles:
+      analytics:
+  5b8s31-vm4:
+    provider: bms
+    ip: 10.87.66.164
+    roles:
+      config_database:
+      analytics_database:
+  5b8s32-vm1:
+    provider: bms
+    ip: 10.87.66.165
+    roles:
+      openstack:
+      webui:
+  5b8s32-vm2:
+    provider: bms
+    ip: 10.87.66.166
+    roles:
+      config:
+      control:
+  5b8s32-vm3:
+    provider: bms
+    ip: 10.87.66.167
+    roles:
+      analytics:
+  5b8s32-vm4:
+    provider: bms
+    ip: 10.87.66.168
+    roles:
+      config_database:
+      analytics_database:
+  5b8s33:
+    provider: bms
+    ip: 10.87.66.148
+    roles:
+      openstack_compute:
+      vrouter:
+  5b8s35:
+    provider: bms
+    ip: 10.87.66.150
+    roles:
+      openstack_compute:
+      vrouter:
+  #5b8s36:
+  #  provider: bms
+  #  ip: 10.87.66.151
+  #  roles:
+  #    openstack_compute:
+  #    vrouter:
+  5b8s37:
+    provider: bms
+    ip: 10.87.66.152
+    roles:
+      openstack_compute:
+      vrouter:
+  5b8s38:
+    provider: bms
+    ip: 10.87.66.153
+    roles:
+      openstack_compute:
+      vrouter:
+  5b8s39:
+    provider: bms
+    ip: 10.87.66.154
+    roles:
+      openstack_compute:
+      vrouter:
+
+contrail_configuration:
+  CONTAINER_REGISTRY: ci-repo.englab.juniper.net:5000
+  CONTRAIL_VERSION: ocata-master-70
+  CLOUD_ORCHESTRATOR: openstack
+  METADATA_PROXY_SECRET: c0ntrail123
+  AUTH_MODE: keystone
+  KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123
+  KEYSTONE_AUTH_HOST: 172.17.90.185
+  KEYSTONE_AUTH_URL_VERSION: "/v3"
+  RABBITMQ_NODE_PORT: 5673
+  IPFABRIC_SERVICE_HOST: 172.17.90.185
+  CONTROL_DATA_NET_LIST: 172.17.90.0/24
+  VROUTER_GATEWAY: 172.17.90.249
+  CONTROL_NODES:     172.17.90.2,172.17.90.6,172.17.90.10 
+  CONTROLLER_NODES:  172.17.90.2,172.17.90.6,172.17.90.10 
+  CONFIG_NODES:      172.17.90.2,172.17.90.6,172.17.90.10
+  CONFIGDB_NODES:    172.17.90.4,172.17.90.8,172.17.90.12  
+  ZOOKEEPER_NODES:   172.17.90.4,172.17.90.8,172.17.90.12  
+  RABBITMQ_NODES:    172.17.90.4,172.17.90.8,172.17.90.12  
+  ANALYTICSDB_NODES: 172.17.90.4,172.17.90.8,172.17.90.12  
+  KAFKA_NODES:       172.17.90.4,172.17.90.8,172.17.90.12  
+  ZOOKEEPER_ANALYTICS_NODES: 172.17.90.4,172.17.90.8,172.17.90.12  
+  ANALYTICS_NODES: 172.17.90.3,172.17.90.7,172.17.90.11  
+  REDIS_NODES: 172.17.90.3,172.17.90.7,172.17.90.11 
+  AAA_MODE: rbac
+  UPGRADE_KERNEL: true
+  EXTERNAL_ROUTERS: mx1:7.7.7.78
+
+kolla_config:
+  kolla_globals:
+    kolla_internal_vip_address: 172.17.90.185
+    kolla_external_vip_address: 10.87.66.185
+    contrail_api_interface_address: 172.17.90.2,172.17.90.6,172.17.90.10 
+    enable_haproxy: yes
+    docker_registry: ci-repo.englab.juniper.net:5000
+    docker_namespace: kolla
+    enable_ironic: "no"
+    enable_swift: "no"
+  kolla_passwords:
+    metadata_secret: c0ntrail123
+    keystone_admin_password: c0ntrail123
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+  internal_vip: 172.17.90.185
+  external_vip: 10.87.66.185
+
+test_configuration:
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    web_server:
+        server: "zephyrine.englab.juniper.net"
+        username: "stack"
+        password: "stack@123"
+        report_path: "/var/www/html/sanity/fb-sanity/FB-master-ocata-centos7-ha-ansible-regression"
+        log_path: "/var/www/html/Docs/logs"
+        web_root: "/Docs/logs"
+    mail_server:
+        server: "10.84.24.64"
+        port: "4000"
+        to: "dl-contrail-sw@juniper.net"
+        sender: "contrail-build@juniper.net"
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/cs-shared/images/centos-7.5-copy.qcow2.gz
+  hypervisors:
+    kvm_host1:
+      username: root
+      ip: 10.87.66.145
+      password: c0ntrail123
+      vm_config:
+        host1:
+          name: 5b8s30-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_host1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:02'
+                model: virtio
+        host2:
+          name: 5b8s30-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_host1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:03'
+                model: virtio
+        host3:
+          name: 5b8s30-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_host1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:04'
+                model: virtio
+        host4:
+          name: 5b8s30-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_host1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:05'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:05'
+                model: virtio
+
+    kvm_host2:
+      username: root
+      ip: 10.87.66.146
+      password: c0ntrail123
+      vm_config:
+        host5:
+          name: 5b8s31-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_host2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:06'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:06'
+                model: virtio
+        host6:
+          name: 5b8s31-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_host2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:07'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:07'
+                model: virtio
+        host7:
+          name: 5b8s31-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_host2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:08'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:08'
+                model: virtio
+        host8:
+          name: 5b8s31-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_host2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:09'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:09'
+                model: virtio
+
+    kvm_host3:
+      username: root
+      ip: 10.87.66.147
+      password: c0ntrail123
+      vm_config:
+        host9:
+          name: 5b8s32-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_host3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:0A'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:0A'
+                model: virtio
+        host10:
+          name: 5b8s32-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_host3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:0B'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:0B'
+                model: virtio
+        host11:
+          name: 5b8s32-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_host3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:0C'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:0C'
+                model: virtio
+        host12:
+          name: 5b8s32-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_host3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '52:53:55:01:00:0D'
+                model: virtio
+              intf2:
+                bridge: br1
+                mac: '52:53:55:02:00:0D'
+                model: virtio
+
+control_data:
+    host1:
+      ip: 10.87.66.157
+      ctrldata_ip: 172.17.90.1
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host2:
+      ip: 10.87.66.158
+      ctrldata_ip: 172.17.90.2
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host3:
+      ip: 10.87.66.159
+      ctrldata_ip: 172.17.90.3
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host4:
+      ip: 10.87.66.160
+      ctrldata_ip: 172.17.90.4
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host5:
+      ip: 10.87.66.161
+      ctrldata_ip: 172.17.90.5
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host6:
+      ip: 10.87.66.162
+      ctrldata_ip: 172.17.90.6
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host7:
+      ip: 10.87.66.163
+      ctrldata_ip: 172.17.90.7
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host8:
+      ip: 10.87.66.164
+      ctrldata_ip: 172.17.90.8
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host9:
+      ip: 10.87.66.165
+      ctrldata_ip: 172.17.90.9
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host10:
+      ip: 10.87.66.166
+      ctrldata_ip: 172.17.90.10
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host11:
+      ip: 10.87.66.167
+      ctrldata_ip: 172.17.90.11
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host12:
+      ip: 10.87.66.168
+      ctrldata_ip: 172.17.90.12
+      prefix: 24
+      gw: 172.17.90.249
+      device: eth1
+    host13:
+      ip: 10.87.66.148
+      ctrldata_ip: 172.17.90.13
+      prefix: 24
+      gw: 172.17.90.249
+      device: bond0
+    host14:
+      ip: 10.87.66.150
+      ctrldata_ip: 172.17.90.14
+      prefix: 24
+      gw: 172.17.90.249
+      device: bond0
+    host15:
+      ip: 10.87.66.152
+      ctrldata_ip: 172.17.90.16
+      prefix: 24
+      gw: 172.17.90.249
+      device: bond0
+    host16:
+      ip: 10.87.66.153
+      ctrldata_ip: 172.17.90.17
+      prefix: 24
+      gw: 172.17.90.249
+      device: bond0
+    host17:
+      ip: 10.87.66.154
+      ctrldata_ip: 172.17.90.18
+      prefix: 24
+      gw: 172.17.90.249
+      device: bond0

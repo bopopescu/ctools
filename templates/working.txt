@@ -1,0 +1,26 @@
+This is similar to run_basic_job.sh but uses the virtual testbed infra
+
+-> Base cluster to launch the virtual testbed can be selected using Jenkins env variables
+-> We lock the testbed based on the AVAILABLE_TESTBEDS variable. This testbed.py need not be checked into github.
+-> Hack: Change variable TBFILE_NAME to template_HA.py that is checked in. We replace the testbed.py on Jenkins-slave with the testbed.py we generate using build_infra.sh
+-> We select testbed template(HA, non-HA, other topology) details from contrail-tools/templates (template can be chosen using Jenkins env variables)
+
+The Basic flow of the code to generate the virtualizaed infrastructure using build_infra.sh:
+-> We have a input.json file in which we specify all the infrastructure details like, number of servers, number of networks, specific ip addresses to the inetrfaces of the servers.
+-> We start the task by runnig the build_infra.sh file which takes in 2 arguments. (1) is the unique project name and (2) is the OS name for the VMs.
+-> The build_infra.sh file first creates a new openstack project and generates the dashed format of that project UUID.
+-> According to the second parameter to the build_infra.sh file, we will check if that OS image is added to openstack, if yes we go ahead. If no, we first download the image locally and add to openstack.
+-> We then create 'network.yaml' and 'server.yaml' file so and then these file are used for launchng the heat stacks. We launch the network stack first and then the server stack.
+-> With all the servers we will also launch a VM that will work as the server-manager.
+-> After the stacks are created, we create various files that are important for our sanity to run. Namely, cluster.json & server.json that will be used for server-manager provisioning.
+-> We will also create the testbed.py file that will be imp for contrail-test to run properly.
+
+-> All theses file: server.json, cluster.json, testbed.py will be created with combination of inputs. One of the inputs is Unique Jenkins ID and the other major input is the input.json file that contains the input parameters. 
+-> preconfigure the cluster to get puppet packages as we don’t reimage the cluster
+-> Provision servers using server-manager, check that provision completed and kernel_upgrade were completed.
+-> Install docker on one of the config nodes and run sanity
+-> Switch TBFILE_NAME to AVAILABLE_TESTBEDS so that we can unlock the correct testbed
+-> Delete the stacks if tests ran fine and PASS percentage is higher than 85%
+-> Else keep the stacks as it is and add stack info to the lockfile
+-> In case of cleanup or debug_and_die, delete stacks if LOCK_TESTBED_ON_FAILURE is 1
+-> Send out email with the link to the results and log location

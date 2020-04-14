@@ -1,0 +1,28 @@
+{
+	"inp_params":{
+		"clusters":{
+			"cluster_1":{
+				"cluster_id": "cluster-5b8s9",
+				"config_node_ip": "10.87.66.138",
+				"floating_ip_network_name": "public",
+				"floating_ip_network_UUID": "26c2b374-8bc6-4ef2-abd0-2da9b6a114e6",
+				"gateway_ip": "10.87.120.62"
+			},
+                        "cluster_2":{
+                                "cluster_id": "cluster-5b10s1",
+                                "config_node_ip": "10.87.67.196",
+                                "floating_ip_network_name": "public",
+                                "floating_ip_network_UUID": "61ba43e8-0c2d-49a5-98f8-ea5def722211",
+				"gateway_ip": "10.87.118.129"
+                        },
+			"cluster_3":{
+				"cluster_id": "cluster-5b9s1",
+				"config_node_ip": "10.87.67.93",
+				"floating_ip_network_name": "public",
+				"floating_ip_network_UUID": "5512214b-e17b-4567-a283-07819f7c10b7",
+				"gateway_ip": ""
+			}
+
+		}
+	}
+}

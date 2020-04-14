@@ -1,0 +1,7 @@
+localhost ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+
+[instances]
+localhost
+
+[contrail_test_input]
+10.204.217.158

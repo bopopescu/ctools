@@ -1,0 +1,52 @@
+---
+
+- name: Create the Vagrant file
+  template:
+    src: "{{playbook_dir}}/roles/create_vagrant_vms/templates/libvirt_block.j2"
+    dest: "/root/vagrant/Vagrantfile"
+
+- name: Copy enable root login script to VM
+  copy:
+    force: yes
+    src: "{{playbook_dir}}/files/enable_root_login.sh"
+    dest: "/root/vagrant/"  
+
+- name: List of VMs for current host
+  set_fact:
+   vm_info_list : "{{ item.value.vm_config }}"  
+  with_dict:
+    - "{{ vm_info.hypervisors }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host']
+
+- name:  Add VMs info to Vagrant file
+  blockinfile:
+    path: /root/vagrant/Vagrantfile
+    block: |
+      config.vm.define "{{ item.value.name }}" do |{{ item.value.name.split('-')[1] }}|
+        {{ item.value.name.split('-')[1] }}.vm.box = "centos/7"
+        {{ item.value.name.split('-')[1] }}.vm.hostname="{{ item.value.name }}"
+        {{ item.value.name.split('-')[1] }}.vm.provider :libvirt do |domain|
+            domain.memory = 2048
+            domain.cpus = 4
+            domain.boot 'hd'
+        end
+        {{ item.value.name.split('-')[1] }}.vm.network :public_network, :dev => '{{ item.value.network.interfaces.intf1.bridge }}', :ip => '{{ item.value.ip }}', :mac => '{{ item.value.network.interfaces.intf1.mac }}' , :netmask => '255.0.0.0'
+      end  
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.value.name }}"
+    insertbefore : ".*END VMS.*"
+  with_dict:
+    - "{{ vm_info_list }}"
+
+- name: Bring up VMs
+  shell: "{{ item }}"
+  with_items:
+    - vagrant up
+  args:
+      chdir: /root/vagrant/
+
+- name: Check VM status
+  shell: "{{ item }}"
+  with_items:
+    - vagrant global-status
+  args:
+      chdir: /root/vagrant/ 

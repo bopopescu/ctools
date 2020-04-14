@@ -1,0 +1,188 @@
+deployment:
+  type:
+    contrail:
+      branch: master
+      registry: 10.204.217.152:5010
+    kolla:
+      branch: contrail/queens
+      registry: 10.204.217.152:5010
+  version: master-602
+  sku: queens
+  os: centos
+#  deployer: contrail_command
+  orchestrator: openstack
+
+provider_config:
+  bms:
+      domainsuffix: englab.juniper.net
+      ntpserver: 10.204.217.158
+      ssh_pwd: c0ntrail123
+      ssh_user: root
+
+instances:
+  nodek10:
+      ip: 10.204.216.230
+      provider: bms
+      roles:
+        openstack:
+        config_database:
+        config:
+        control:
+        analytics:
+        analytics_database:
+        webui:
+  nodek9:
+      ip: 10.204.216.229
+      provider: bms
+      roles:
+          openstack_compute:
+          vrouter:
+            PHYSICAL_INTERFACE: eno2
+  nodek8:
+      ip: 10.204.216.228
+      provider: bms
+      roles:
+          openstack_compute:
+          vrouter:
+            PHYSICAL_INTERFACE: eno2
+
+contrail_configuration:
+  LOG_LEVEL: SYS_DEBUG
+  ENCAP_PRIORITY: VXLAN,MPLSoGRE,MPLSoUDP
+  CONTROLLER_NODES: 10.204.216.230
+  CONTROL_NODES: 192.168.200.10
+  VROUTER_GATEWAY: 192.168.200.254
+
+orchestrator_configuration:
+  contrail_api_interface_address: 10.204.216.230
+  keystone:
+      password: contrail123
+      version: v3
+  enable_ironic: yes
+  enable_swift: yes
+
+test_configuration:
+  use_project_scoped_token: True
+  bms:
+      nodeg8:
+          interfaces:
+          - host_mac: 00:25:90:c5:61:b5
+            tor: contrail-qfx5110-6
+            tor_port: ge-0/0/8
+          mgmt_ip: 10.204.217.48
+          password: c0ntrail123
+          username: root
+      nodeg9:
+          interfaces:
+          - host_mac: 00:25:90:c4:84:cd
+            tor: contrail-qfx5110-6
+            tor_port: ge-0/0/9
+          mgmt_ip: 10.204.217.49
+          password: c0ntrail123
+          username: root
+  fabric:
+        - namespaces:
+            asn:
+                - max: 64512
+                  min: 64512
+            management:
+                - cidr: 10.204.216.205/32
+                - cidr: 10.204.216.122/32
+                - cidr: 10.204.216.155/32
+                - cidr: 10.204.216.147/32
+                - cidr: 10.204.216.131/32
+                - cidr: 10.204.216.236/32
+            loopback:
+                - cidr: 100.100.100.0/24
+            pnf_servicechain:
+                - cidr: 100.1.1.0/24
+          credentials:
+            - device_family: qfx
+              password: c0ntrail123
+              username: root
+              vendor: Juniper
+
+  image_web_server: 10.84.5.120
+  physical_routers:
+      bng-contrail-qfx-1k2:
+          asn: 64512
+          mgmt_ip: 10.204.216.155
+          mode: qfx10002-36q
+          name: bng-contrail-qfx-1k2
+          role: border_leaf
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 1.255.255.10
+          type: tor
+          vendor: juniper
+      bng-contrail-qfx-1k2-4:
+          asn: 64512
+          mgmt_ip: 10.204.216.122
+          mode: qfx10002-36q
+          name: bng-contrail-qfx-1k2-4
+          role: border_leaf
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 1.255.255.20
+          type: tor
+          vendor: juniper
+      contrail-qfx5110-1:
+          asn: 64512
+          mgmt_ip: 10.204.216.131
+          mode: qfx5110-48s-4c
+          name: contrail-qfx5110-1
+          role: spine
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 1.255.255.1
+          type: tor
+          vendor: juniper
+      contrail-qfx5110-6:
+          asn: 64512
+          mgmt_ip: 10.204.216.205
+          mode: qfx5110-48s-4c
+          name: contrail-qfx5110-6
+          role: erb_leaf
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 1.255.255.6
+          type: tor
+          vendor: juniper
+      contrail-qfx5110-7:
+          asn: 64512
+          mgmt_ip: 10.204.216.147
+          mode: qfx5110-48s-4c
+          name: contrail-qfx5110-7
+          role: spine
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 1.255.255.7
+          type: tor
+          vendor: juniper
+      contrail-srx5600-2:
+          asn: 64512
+          mgmt_ip: 10.204.216.236
+          mode: srx5600
+          name: contrail-srx5600-2
+          role: pnf
+          ssh_password: c0ntrail123
+          ssh_username: root
+          type: pnf
+          vendor: juniper
+          right_attachment_point: bng-contrail-qfx-1k2:ae1
+          left_attachment_point: bng-contrail-qfx-1k2-4:ae0
+          pnf_left_intf: contrail-srx5600-2:reth0
+          pnf_right_intf: contrail-srx5600-2:reth1
+
+static_routes:
+  nodek10:
+  - gw: 192.168.200.254
+    ip: 1.255.255.1
+  - gw: 192.168.200.254
+    ip: 1.255.255.6
+  - gw: 192.168.200.254
+    ip: 1.255.255.7
+  - gw: 192.168.200.254
+    ip: 1.255.255.10
+  - gw: 192.168.200.254
+    ip: 1.255.255.20

@@ -1,0 +1,91 @@
+---
+- name: set contrail ansible repo version if undefined
+  set_fact:
+    contrail_branch: master
+  when: deployment.type.contrail.branch is undefined
+
+- name: set contrail ansible repo version if defined
+  set_fact:
+    contrail_branch: "{{ deployment.type.contrail.branch }}"
+  when: deployment.type.contrail.branch is defined
+
+- name: create temp directory for contrail
+  tempfile:
+     state: directory
+     suffix: _contrail_command
+  register: tmpdir
+
+- name: set contrail provision dir
+  set_fact:
+      tmp_dir: "{{ tmpdir.path }}"
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail.registry is defined
+
+- name: set controller nodes if defined
+  set_fact: 
+    controller_nodes: "{{ contrail_configuration.CONTROLLER_NODES }}"
+  when: contrail_configuration.CONTROLLER_NODES is defined
+
+- name: install packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    - rsync
+- name: Add repository
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: install packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - docker-ce-18.03.1.ce
+
+- name: sysctl start docker
+  shell: systemctl start docker
+
+- name: Set insecure registry
+  include: roles/install_packages/tasks/insecure_registry.yaml
+  
+- name: set command server ip
+  set_fact:
+    command_server_ip: "{{ item.value.ip }}"
+  when: item.value.roles.contrail_command is defined
+  with_dict: "{{ instances }}"
+
+- name: update contrail instances yaml file
+  template:
+    src: contrail-ansible-deployer/instances.yaml.j2
+    dest: "{{ tmp_dir }}/instances.yaml"
+
+- name: update command servers file
+  template:
+    src: contrail-command/command_servers.yaml.j2
+    dest: "{{ tmp_dir }}/command_servers.yaml"
+
+- name: Install contrail command and provision contrail
+  shell: "docker run -t --net host -e action=provision_cluster -e orchestrator={{ orchestrator }} -v {{ tmp_dir }}/command_servers.yaml:/command_servers.yml -v {{ tmp_dir }}/instances.yaml:/instances.yml --privileged --name contrail_command_deployer {{ contrailregistry }}/contrail-command-deployer:{{ version }}"
+
+- name: sleep till contrail command launches
+  pause: 
+    minutes: 10
+
+- name: wait till provision completes
+  command: "python ./get_provisioning_status.py -u admin -a {{ command_server_ip }} -p {{ admin_password }}"
+  args:
+     chdir: "{{ role_path }}/files/command-deployer"
+
+- name: Deploy Multicloud
+  include: deploy_multicloud.yml
+  when:
+    - deployment.topology is defined
+    - deployment.topology == 'onprem_multicloud'
+  tags:
+    - multicloud

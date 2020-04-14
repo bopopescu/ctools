@@ -1,0 +1,150 @@
+deployment:
+    deployer: rhosp
+provider_config:
+  bms:                                                                          
+    ssh_pwd: contrail123                                                        
+    ssh_user: heat-admin 
+    ntpserver: 10.204.217.158                                                   
+    domainsuffix: tenant.localdomain 
+instances:                                                                      
+  overcloud-contrailcontroller-0:                                                                       
+    provider: bms                                                               
+    ip: 10.1.0.20
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-contrailcontroller-1:
+    provider: bms                                                               
+    ip: 10.1.0.12
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-contrailcontroller-2:
+    provider: bms                                                               
+    ip: 10.1.0.14
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-controller-0:                                                                      
+    provider: bms                                                               
+    ip: 10.1.0.21
+    roles:                                                                      
+      openstack:                                                        
+  overcloud-controller-1:
+    provider: bms                                                               
+    ip: 10.1.0.15
+    roles:                                                                      
+      openstack:                                                        
+  overcloud-controller-2:
+    provider: bms                                                               
+    ip: 10.1.0.22
+    roles:                                                                      
+      openstack:  
+  overcloud-novacompute-0: 
+    provider: bms                                                               
+    ip: 10.0.0.19                                                
+    roles:                                                                      
+      openstack_compute:                                                        
+      vrouter:                                                                  
+       PHYSICAL_INTERFACE: enp4s0f0
+  overcloud-novacompute-1:                                                      
+    provider: bms                                                               
+    ip: 10.0.0.22                                                            
+    roles:                                                                      
+      openstack_compute:                                                        
+      vrouter:                                                                  
+       PHYSICAL_INTERFACE: enp4s0f0
+  overcloud-novacompute-2:                                                      
+    provider: bms                                                               
+    ip: 10.0.0.11                                                               
+    roles:                                                                      
+      openstack_compute:                                                        
+      vrouter:                                                                  
+       PHYSICAL_INTERFACE: enp4s0f0
+contrail_configuration:                                                         
+  CLOUD_ORCHESTRATOR: openstack                                                 
+  OPENSTACK_NODES: 10.1.0.21,10.1.0.15,10.1.0.22
+  CONTROLLER_NODES: 10.1.0.20,10.1.0.12,10.1.0.14
+  CONTROL_NODES: 10.0.0.10,10.0.0.17,10.0.0.15
+  VROUTER_GATEWAY: 10.0.0.1
+  RABBITMQ_NODE_PORT: 5673
+  KEYSTONE_AUTH_HOST: 10.2.0.12
+  KEYSTONE_AUTH_ADMIN_PASSWORD: 62s7fCZr86C3MrWKsHbEBy3wy
+  KEYSTONE_AUTH_URL_VERSION: /v3
+  XMPP_SSL_ENABLE: True
+
+orchestrator_configuration:                                                     
+  keystone:                                                                     
+    version: v3                                                                 
+    password: 62s7fCZr86C3MrWKsHbEBy3wy
+    region: regionOne
+  internal_vip: 10.1.0.11
+  external_vip: 10.2.0.12
+  contrail_api_interface_address: 192.168.24.18
+  enable_haproxy: "yes"                                                         
+  enable_heat: "no"                                                             
+  enable_ironic: "no"                                                           
+  enable_swift: "no"                                                            
+  #network_interface: enp6s0f0
+  
+test_configuration:
+  cfgm0_host_string: heat-admin@192.168.24.18
+  cfgm0_host_pwd: c0ntrail123
+  cluster_id: i21_i26_cluster
+  stack_user: admin
+  stack_password: 62s7fCZr86C3MrWKsHbEBy3wy
+  stack_tenant: admin
+  image_web_server: 10.204.217.158                                              
+  use_project_scoped_token: True
+  public_host: 10.84.5.120
+  public_rt: 142
+  public_virtual_network: 10.204.221.8/29
+  public_subnet: 10.204.221.8/29
+  ext_routers:
+    blr-mx2: 10.0.0.245
+  physical_routers:
+    blr-mx2:
+      vendor: juniper
+      model : mx
+      asn   : 64512
+      name  : blr-mx2
+      control_ip : 10.0.0.245
+      tunnel_ip : 10.0.0.245
+      ports :
+      ssh_username : root
+      ssh_password : c0ntrail123
+      mgmt_ip  : 10.204.216.245
+      type  : router
+      role: gw
+      bgp_protocol_group: rhosp_sanity_i21
+      group_name: rhosp_sanity_i21
+  web_server:
+      server: 10.204.216.50
+      username: bhushana
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-rhosp13-queens-ha-sanity
+      log_path: /home/bhushana/Documents/technical/logs
+      web_root: Docs/logs
+  mail_server:
+      server: 10.47.226.20
+      port: 25
+      to: dl-contrail-sw-in@juniper.net
+      sender: contrailbuild@juniper.net  
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: redhat-7.6
+  client: /cs-shared/server-manager/client/server-manager

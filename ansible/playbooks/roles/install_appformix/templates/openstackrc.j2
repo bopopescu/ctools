@@ -1,0 +1,13 @@
+
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_TENANT_NAME=admin
+{% if orchestrator_configuration is defined %}
+export OS_USERNAME=admin
+export OS_PASSWORD={{ orchestrator_configuration.keystone.password }}
+export OS_AUTH_URL=http://{{ orchestrator_configuration.internal_vip }}:35357/{{ orchestrator_configuration.keystone.version }}
+{% endif %}
+export OS_INTERFACE=internal
+export OS_IDENTITY_API_VERSION=3
+export OS_BAREMETAL_API_VERSION=1.29

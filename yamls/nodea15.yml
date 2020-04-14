@@ -1,0 +1,202 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: ci-repo.englab.juniper.net:5000
+        contrail:
+            branch: master
+            registry: ci-repo.englab.juniper.net:5000
+        helm:
+            branch: master
+            registry: 10.204.217.152:5000
+    sku: ocata
+    os: ubuntu
+    version: latest
+    orchestrator: openstack
+
+openstackregistry:
+   registry: 10.204.217.152:5000
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+master_node:
+    host: nodea15
+    ip: 10.204.216.11
+slave_nodes:
+    nodeg2:
+      ip: 10.204.217.42
+    nodeg3: 
+      ip: 10.204.217.43
+instances:
+  nodea15:
+    provider: bms
+    ip: 10.204.216.11
+    ansible_fqdn: nodea15.englab.juniper.net
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+
+  nodeg2:
+    provider: bms
+    ip: 10.204.217.42
+    ansible_fqdn: nodeg2.englab.juniper.net
+    roles:
+      vrouter:
+  nodeg3:
+    provider: bms
+    ip: 10.204.217.43
+    ansible_fqdn: nodeg3.englab.juniper.net
+    roles:
+      vrouter:
+
+contrail_configuration:
+  AAA_MODE: rbac
+  VROUTER_GATEWAY: 10.204.217.254
+  CONTROL_NODES: 10.204.216.11
+  BGP_PORT: 1179
+  CONTROL_DATA_NET_LIST: 10.204.217.0/24
+  AGENT_MODE: nic
+  RABBITMQ_NODE_PORT: 5673
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+  internal_vip: 10.10.0.200
+  external_vip: 10.0.0.200
+  network_interface: eth1
+
+test_configuration:
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    web_server:
+        server:
+        username:
+        password:
+        report_path:
+        log_path:
+        web_root:
+    mail_server:
+        server:
+        port:
+        to:
+        sender:
+
+server_manager:
+  ip: 10.84.5.1
+  username: test
+  password: test123
+  image: centos74
+  client: /cs-shared/server-manager/client/server-manager
+
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/images/node_vm_images/centos-7.4-copy.qcow2.gz
+  hypervisors:
+    kvm_5c3s29_1:
+      username: 
+      ip: 
+      password: 
+      vm_config:
+        host1:
+          name:
+          ram: 
+          vcpus:
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge:
+                mac: 
+                model: 
+              intf2:
+                bridge:
+                model: 
+        host2:
+          name: 
+          ram: 
+          vcpus:
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge:
+                mac: 
+                model: 
+              intf2:
+                bridge: 
+                model: 
+        host3:
+          name: 
+          ram: 
+          vcpus: 
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge: 
+                mac: 
+                model:
+
+control_data:
+    host1:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host2:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device: 
+    host3:
+      ip:
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host4:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host5:
+      ip: 
+      ctrldata_ip:
+      prefix: 
+      gw: 
+      device:
+    host6:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host7:
+      ip: 
+      ctrldata_ip:
+      prefix: 
+      gw: 
+      device:
+    host8:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device: 

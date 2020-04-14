@@ -1,0 +1,9 @@
+network_ether_interfaces:
+  - device: eno1
+    bootproto: static
+    address: 192.168.0.26
+    netmask: 255.255.255.0
+    route:
+      - network: 172.16.0.0
+        netmask: 255.255.255.0
+        gateway: 192.168.0.2

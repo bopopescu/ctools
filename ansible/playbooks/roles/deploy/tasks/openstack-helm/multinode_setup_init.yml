@@ -1,0 +1,30 @@
+- hosts: all
+  tasks:
+   - name: set k8s git repo version
+     set_fact:
+       k8s_git_version: "{{ deployment.k8s_git_version }}"
+     when: deployment.k8s_git_version is defined
+   - name: Copy sources.list
+     command: cp -f /etc/apt/sources.list.servermanager /etc/apt/sources.list
+   - name: apt-get update
+     command: apt-get update
+   - name: rm /opt/contrail-helm-deployer
+     file:
+        path: /opt/contrail-helm-deployer
+        state: absent
+   - name: rm /opt/openstack-helm
+     file:
+        path: /opt/openstack-helm
+        state: absent
+   - name: rm /opt/openstack-helm-infra
+     file:
+        path: /opt/openstack-helm-infra
+        state: absent
+   - name: apt-get install 
+     command:  apt-get install -y vim curl git dnsutils sshpass
+   - name: clone git repos1
+     command: git clone -b "{{ k8s_git_version }}" https://github.com/Juniper/openstack-helm.git /opt/openstack-helm   
+   - name: clone git repos2
+     command: git clone -b "{{ k8s_git_version }}" https://github.com/Juniper/openstack-helm-infra.git /opt/openstack-helm-infra
+   - name: clone git repos3
+     command: git clone -b "{{ k8s_git_version }}" https://github.com/Juniper/contrail-helm-deployer.git /opt/contrail-helm-deployer

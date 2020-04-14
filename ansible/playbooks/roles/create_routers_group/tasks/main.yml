@@ -1,0 +1,25 @@
+- name: add leafs
+  add_host:
+    hostname: "{{ item.key }}"
+    ansible_ssh_host: "{{ item.value.mgmt_ip }}"
+    ansible_user: "{{ item.value.ssh_username }}"
+    ansible_ssh_pass: "{{ item.value.ssh_password }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    peers: "{{ item.value.peers }}"
+    group: vqfx10k
+  when:
+    - item.value.role=='leaf' or item.value.role=='spine'
+    - item.value.model=='vqfx10k' or item.value.model=='vmx'
+  with_dict: "{{ test_configuration.physical_routers }}"
+
+- name: add gateway
+  add_host:
+    hostname: "{{ item.key }}"
+    ansible_ssh_host: "{{ item.value.mgmt_ip }}"
+    ansible_user: "{{ item.value.ssh_username }}"
+    ansible_ssh_pass: "{{ item.value.ssh_password }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    peers: "{{ item.value.peers }}"
+    group: gateway
+  when: item.value.role=='mx'
+  with_dict: "{{ test_configuration.physical_routers }}"

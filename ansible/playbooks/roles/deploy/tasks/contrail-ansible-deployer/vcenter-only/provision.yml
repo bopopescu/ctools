@@ -1,0 +1,32 @@
+
+- name: Configure vcenter server
+  command: >
+    ansible-playbook playbooks/vcenter.yml -v
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    chdir: "{{ contrail_provision_dir }}"
+  when: deployment.type.contrail and deployment.type.vcenter is defined
+
+- name: wait for contrail_vms to settle
+  pause: seconds=180
+
+- name: set cluster
+  set_fact:
+     cluster_name: "{{lookup('env','CLUSTER_NAME')}}"  
+
+- name: Configure network for ctrl-data interface if any
+  command: >
+    ansible-playbook -i inventory/ playbooks/configure_network.yml -v
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    #chdir: "/root/contrail-tools-{{cluster_name}}/ansible/"
+    chdir: "/root/contrail-tools/ansible/"
+  when: deployment.type.contrail and deployment.type.vcenter is defined

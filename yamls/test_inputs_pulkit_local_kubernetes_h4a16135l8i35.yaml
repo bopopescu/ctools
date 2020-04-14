@@ -1,0 +1,164 @@
+deployment:
+    type:
+        kolla:
+        contrail:
+            branch: master
+            registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+    sku: ocata
+    os: centos7
+    version: null
+    orchestrator: kubernetes
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+instances:
+  nodeh4:
+    provider: bms
+    ip: 10.204.217.108
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      k8s_master:
+      kubemanager:
+  nodea16:
+    provider: bms
+    ip: 10.204.216.12
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      kubemanager:
+  nodea35:
+    provider: bms
+    ip: 10.204.216.31
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      kubemanager:
+  nodel8:
+    provider: bms
+    ip: 10.204.217.218
+    roles:
+      k8s_node:
+      vrouter:
+        PHYSICAL_INTERFACE: ens2f1
+  nodei38:
+    provider: bms
+    ip: 10.204.217.150
+    roles:
+      k8s_node:
+      vrouter:
+        PHYSICAL_INTERFACE: enp4s0f1
+
+REGISTRY_PRIVATE_INSECURE: True
+CONTAINER_REGISTRY: 10.204.217.152:5000
+
+contrail_configuration:
+  KUBERNETES_PUBLIC_FIP_POOL: {'project': 'k8s-default', 'domain': 'default-domain', 'name': '__fip_pool_public__', 'network': '__public__'}
+  CONTROLLER_NODES: 10.204.217.108,10.204.216.12,10.204.216.31
+  CONTROL_NODES: 22.22.22.10,22.22.22.20,22.22.22.30
+  CLOUD_ORCHESTRATOR: kubernetes
+  #CONTROL_DATA_NET_LIST: 22.22.22.0/24
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  #CONTAINER_REGISTRY: opencontrailnightly
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTRAIL_VERSION: null
+  RABBITMQ_NODE_PORT: 5673
+  VROUTER_GATEWAY: 22.22.22.101
+  JVM_EXTRA_OPTS: "-Xms1g -Xmx2g"
+  LOG_LEVEL: SYS_DEBUG
+  KUBERNETES_IP_FABRIC_SUBNETS: 22.22.22.160/27
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "32"
+
+test_configuration:
+    cfgm0_host_string: root@10.204.217.108
+    cfgm0_host_pwd: c0ntrail123
+    cluster_id: cluster_pulkit_new
+    image_web_server: 10.204.217.158
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    ext_routers:
+        hooper: 22.22.22.101
+    router_asn: 64512
+    public_rt: 12005
+    public_subnet: 10.204.219.136/29
+    public_virtual_network: 10.204.219.136/29
+    physical_routers:
+        hooper:
+            vendor: juniper
+            model : mx
+            asn   : 64512
+            name  : hooper
+            control_ip : 22.22.22.101
+            ssh_username : root
+            ssh_password : c0ntrail123
+            mgmt_ip  : 10.204.217.240
+            type  : router
+    web_server:
+        server: 10.204.216.50
+        username: bhushana
+        password: c0ntrail!23
+        #report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-R5.0-ocata-centos7-ha-ansible-sanity
+        log_path: /home/bhushana/Documents/technical/logs
+        web_root: Docs/logs
+    mail_server:
+        server: 10.204.216.49
+        port: 25
+        to: dl-contrail-sw@juniper.net
+        sender: contrailbuild@juniper.net
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.4
+  client: /cs-shared/server-manager/client/server-manager
+
+control_data:
+    nodeh4:
+        ip: 10.204.217.108
+        ctrldata_ip: 22.22.22.10
+        prefix: 24
+        gw: 22.22.22.101
+        device: enp3s0f1
+    nodea16:
+        ip: 10.204.216.12
+        ctrldata_ip: 22.22.22.20
+        prefix: 24
+        gw: 22.22.22.101
+        device: eno1
+    nodea35:
+        ip: 10.204.216.31
+        ctrldata_ip: 22.22.22.30
+        prefix: 24
+        gw: 22.22.22.101
+        device: eno1
+    nodel8:
+        ip: 10.204.217.218
+        ctrldata_ip: 22.22.22.11
+        prefix: 24
+        gw: 22.22.22.101
+        device: ens2f1
+    nodei38:
+        ip: 10.204.217.150
+        ctrldata_ip: 22.22.22.21
+        prefix: 24
+        gw: 22.22.22.101
+        device: enp4s0f1

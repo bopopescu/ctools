@@ -1,0 +1,82 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ lookup('env','COMMANDER_NODE_IP') }}"
+        ansible_ssh_host: "{{ lookup('env','COMMANDER_NODE_IP') }}"
+        ansible_ssh_user: "{{ lookup('env','COMMANDER_NODE_USER') }}"
+        ansible_ssh_pass: "{{ lookup('env','COMMANDER_NODE_PASSWORD') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "contrail_commander_hosts"
+
+- hosts: localhost
+  gather_facts: no
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  tasks:
+    - name: install rsync packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - rsync
+
+- hosts: contrail_commander_hosts
+  gather_facts: no
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  tasks:
+    - name: install packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+        - rsync
+    - name: Add repository
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: install packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - docker-ce-18.03.1.ce
+    - name: sysctl start docker
+      shell: systemctl start docker
+
+    - name: Set insecure registry
+      include: roles/install_packages/tasks/insecure_registry.yaml
+
+- hosts: contrail_commander_hosts
+  tasks:
+    - name: Transfer command_servers.yml
+      synchronize:
+        src: /root/contrail-tools/yamls/command_servers.yaml.sample
+        dest: /root/command_servers.yml
+      delegate_to: localhost
+    - name: Transfer instances.yml
+      synchronize:
+        src: /root/contrail-tools/ansible/inventory/group_vars/all.yml
+        dest: /root/instances.yml
+      delegate_to: localhost
+
+- hosts: contrail_commander_hosts
+  tasks:
+    - name: pull contrail commander image
+      include: roles/install_contrail_command/tasks/main.yml
+
+- hosts: contrail_commander_hosts
+  gather_facts: no
+  tasks:
+    - name: run docker commander
+      command: >
+         docker run -t --net host -e orchestrator=openstack -e action=import_cluster -v /root/command_servers.yml:/command_servers.yml -v /root/instances.yml:/instances.yml -d --privileged --name contrail_command_deployer {{ lookup('env','CONTRAIL_REGISTRY') }}/contrail-command-deployer:{{ lookup('env','COMMANDER_VERSION') }}

@@ -1,0 +1,50 @@
+deployment:
+  type:
+    contrail:
+      branch: master
+      registry: svl-artifcatory.juniper.net/contrail-nightly
+    kolla:
+      branch: 
+      registry: 10.84.5.85:5010
+  version:
+  sku: ocata
+  os: centos
+  deployer: contrail_command
+  orchestrator: openstack
+  appformix_version:
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+contrail_configuration:
+  AAA_MODE: rbac
+  RABBITMQ_NODE_PORT: 5673
+  LOG_LEVEL: SYS_DEBUG
+  ENCAP_PRIORITY: VXLAN,MPLSoUDP,MPLSoGRE
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: contrail123
+  enable_ironic: yes
+  enable_swift: yes
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  use_project_scoped_token: True
+  web_server:
+    server: zephyrine.englab.juniper.net
+    username: stack
+    password: stack@123
+    report_path:
+    log_path: /var/www/html/Docs/logs
+    web_root: /Docs/logs
+  mail_server:
+    server: 10.84.24.64
+    port: 4000
+    to: dl-contrail-sw@juniper.net
+    sender: contrail-build@juniper.net

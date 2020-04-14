@@ -1,0 +1,77 @@
+{
+    "cluster" : [
+        {
+            "id": "container_cluster_i31",
+            "parameters" : {
+                "domain": "englab.juniper.net",                                                
+                "subnet_mask": "255.255.255.0",
+                "gateway": "10.204.217.254",
+                "provision": {
+                    "contrail_4": {
+                        "controller_config": {
+                            "external_routers_list": {
+                                "blr-mx2": "10.204.216.245"
+                            },
+                            "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                            "bgp_asn": "64520"
+                        },
+                        "api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "aaa_mode": "rbac",
+                            "cloud_admin_role": "admin",
+                            "global_read_only_role": ""
+                        },
+                        "analytics_api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "log": "/var/log/contrail/contrail-analytics-api.log",
+                            "aaa_mode": "rbac"
+                        }
+                    },
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "openstack":{
+                        "enable_ceilometer": true,
+                        "ceilometer": {
+                            "polling_interval": 60
+                        },
+                        "keystone": {
+                            "admin_password": "contrail123",
+                            "ip": "10.204.217.143"
+                        },
+                        "openstack_manage_amqp": true
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "container_cluster_i31",
+            "domain": "englab.juniper.net",
+            "id": "nodei31",
+            "ipmi_address": "10.207.25.1",
+            "ipmi_username": "ADMIN",
+            "ipmi_password": "ADMIN",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.143/24",
+                        "dhcp": true,
+                        "mac_address": "00:25:90:E7:7F:AC",
+                        "name": "em1"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "openstack", "contrail-controller", "contrail-analytics", "contrail-analyticsdb", "contrail-compute"
+            ],
+            "parameters": {
+            }
+        }
+    ]
+}

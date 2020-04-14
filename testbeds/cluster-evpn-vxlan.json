@@ -1,0 +1,305 @@
+{
+    "image": [{
+        "category": "package",
+        "id": "contrail_4_1_0_35",
+        "path": "/root/contrail-cloud-docker_4.1.0.0-35-newton_xenial.tgz",
+        "type": "contrail-ubuntu-package",
+        "version": "4.1.0.0-35"
+    }],
+    "cluster": [{
+        "id": "cluster-evpn-vxlan",
+        "parameters": {
+            "domain": "englab.juniper.net",
+            "subnet_mask": "255.255.255.128",
+            "gateway": "10.87.69.126",
+            "provision": {
+                "contrail_4": {
+                    "controller_config": {
+                        "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                        "bgp_asn": "65000"
+                    }
+                },
+		"openstack": {
+			"openstack_manage_amqp": true,
+			"keystone": {
+				"admin_password": "c0ntrail123"
+			}
+		}
+            },
+            "contrail": {}
+        }
+
+    }],
+    "server": [{
+            "cluster_id": "cluster-evpn-vxlan",
+            "domain": "englab.juniper.net",
+            "id": "5b11s14",
+            "parameters": {
+                "provision": {
+                    "contrail_4": {
+                        "kernel_upgrade": false,
+                        "kernel_version": "",
+                        "vrouter_physical_interface": "",
+                        "ctrl_data_ip": "172.16.180.101",
+                        "ctrl_data_gw": "172.16.180.254",
+                        "controller_components": [
+                            "config", "control", "webui"
+                        ],
+                        "tsn_evpn_mode": true,
+                        "tsn_server_list": ["172.16.180.101", "172.16.180.103"],
+                        "flow_entries": "4000000",
+                        "mpls_labels": "131072",
+                        "nexthops": "131072",
+                        "vrfs": "65536",
+                        "macs": "262144"
+                    }
+                }
+            },
+            "contrail": {
+                "control_data_interface": "ens2f1"
+            },
+            "network": {
+                "interfaces": [{
+                        "name": "eno1",
+                        "dhcp": true,
+                        "mac_address": "0c:c4:7a:a8:9a:d6",
+                        "ip_address": "10.87.69.1",
+                        "default_gateway": "10.87.69.126"
+                    },
+                    {
+                        "name": "ens2f1",
+                        "dhcp": false,
+                        "mac_address": "90:e2:ba:a7:30:cd",
+                        "ip_address": "172.16.180.101/24"
+                    }
+                ],
+                "management_interface": "eno1",
+                "provisioning": "kickstart",
+                "routes": [{
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.2.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.3.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.4.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.6.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "ens2f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.10"
+                    }
+                ]
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "openstack",
+                "contrail-controller",
+                "contrail-analytics",
+                "contrail-analyticsdb",
+                "contrail-compute"
+            ],
+            "ipmi_address": "10.87.122.33",
+            "ipmi_username": "ADMIN",
+            "ipmi_password": "ADMIN"
+        },
+        {
+            "cluster_id": "cluster-evpn-vxlan",
+            "domain": "englab.juniper.net",
+            "id": "5b11s15",
+            "parameters": {
+                "provision": {
+                    "contrail_4": {
+                        "kernel_upgrade": false,
+                        "kernel_version": "",
+                        "vrouter_physical_interface": "",
+                        "ctrl_data_ip": "172.16.180.102",
+                        "ctrl_data_gw": "172.16.180.254",
+                        "flow_entries": "4000000",
+                        "mpls_labels": "131072",
+                        "nexthops": "131072",
+                        "vrfs": "65536",
+                        "macs": "262144"
+                    }
+                }
+            },
+            "contrail": {
+                "control_data_interface": "enp4s0f1"
+            },
+            "network": {
+                "interfaces": [{
+                        "name": "eno1",
+                        "dhcp": true,
+                        "mac_address": "00:25:90:c7:52:4a",
+                        "ip_address": "10.87.69.2/25",
+                        "default_gateway": "10.87.69.126"
+                    },
+                    {
+                        "name": "enp4s0f1",
+                        "dhcp": false,
+                        "mac_address": "90:e2:ba:55:84:2d",
+                        "ip_address": "172.16.180.102/24"
+                    }
+                ],
+                "management_interface": "eno1",
+                "provisioning": "kickstart",
+                "routes": [{
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.2.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.3.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.4.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.6.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f1",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.10"
+                    }
+                ]
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ],
+            "ipmi_address": "10.87.122.34",
+            "ipmi_username": "ADMIN",
+            "ipmi_password": "ADMIN"
+        },
+        {
+            "cluster_id": "cluster-evpn-vxlan",
+            "domain": "englab.juniper.net",
+            "id": "5b11s17",
+            "parameters": {
+                "provision": {
+                    "contrail_4": {
+                        "kernel_upgrade": false,
+                        "kernel_version": "",
+                        "vrouter_physical_interface": "",
+                        "ctrl_data_ip": "172.16.180.103",
+                        "ctrl_data_gw": "172.16.180.254",
+                        "tsn_evpn_mode": true,
+                        "tsn_server_list": ["172.16.180.101", "172.16.180.103"],
+                        "flow_entries": "4000000",
+                        "mpls_labels": "131072",
+                        "nexthops": "131072",
+                        "vrfs": "65536",
+                        "macs": "262144"
+                    }
+                }
+            },
+            "contrail": {
+                "control_data_interface": "enp4s0f0"
+            },
+            "network": {
+                "interfaces": [{
+                        "name": "eno1",
+                        "dhcp": true,
+                        "mac_address": "00:25:90:c7:51:22",
+                        "ip_address": "10.87.69.4/25",
+                        "default_gateway": "10.87.69.126"
+                    },
+                    {
+                        "name": "enp4s0f0",
+                        "dhcp": false,
+                        "mac_address": "90:e2:ba:55:86:c8",
+                        "ip_address": "172.16.180.103/24"
+                    }
+                ],
+                "management_interface": "eno1",
+                "provisioning": "kickstart",
+                "routes": [{
+                        "gateway": "172.16.180.254",
+                        "interface": "enp2s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.2.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.3.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.4.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.6.1"
+                    },
+                    {
+                        "gateway": "172.16.180.254",
+                        "interface": "enp4s0f0",
+                        "netmask": "255.255.255.255",
+                        "network": "172.16.5.10"
+                    }
+                ]
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ],
+            "ipmi_address": "10.87.122.239",
+            "ipmi_username": "ADMIN",
+            "ipmi_password": "ADMIN"
+        }
+
+    ]
+
+}

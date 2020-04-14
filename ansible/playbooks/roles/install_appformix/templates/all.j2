@@ -1,0 +1,33 @@
+
+appformix_jti_network_device_monitoring_enabled: true
+openstack_platform_enabled: true
+appformix_remote_host_monitoring_enabled: true
+appformix_network_device_monitoring_enabled: true
+network_device_discovery_enabled: true
+
+contrail_config_url: http://{{ contrail_configuration.CONTROLLER_NODES.split(',')[0] }}:8082
+contrail_analytics_url: http://{{ contrail_configuration.CONTROLLER_NODES.split(',')[0] }}:8081
+
+contrail_cluster_name: 'contrail-cluster'
+
+appformix_version: {{ deployment.appformix_version }}
+appformix_manager_version: {{ deployment.appformix_version }}
+appformix_license: {{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}/OpenstackAppFormixLicense.sig           # Location of License Provided
+
+appformix_docker_images:
+  - {{ tmpdir.path }}/appformix-platform-images-{{ deployment.appformix_version }}.tar.gz 
+  - {{ tmpdir.path }}/appformix-dependencies-images-{{ deployment.appformix_version }}.tar.gz
+  - {{ tmpdir.path }}/appformix-openstack-images-{{ deployment.appformix_version }}.tar.gz
+  - {{ tmpdir.path }}/appformix-network_device-images-{{ deployment.appformix_version }}.tar.gz
+
+{% raw %}
+appformix_plugins: '{{ appformix_openstack_factory_plugins }} + {{ appformix_application_factory_plugins }} + {{ appformix_contrail_factory_plugins }} + {{ appformix_remote_host_factory_plugins }} + {{ appformix_network_device_factory_plugins }}'
+{% endraw %}
+
+appformix_haproxy_datamanager_port_http: 8200
+appformix_haproxy_datamanager_port_https: 8201
+
+openstack_identity_api_version: 3
+openstack_interface: internal
+openstack_baremetal_api_version: 1.29
+

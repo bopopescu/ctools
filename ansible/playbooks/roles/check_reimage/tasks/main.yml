@@ -1,0 +1,54 @@
+- name:
+  set_fact:
+    client: "{{ server_manager.client|default('server-manager', true)}}"
+
+- block:
+  - name: set cluster_id from server manager section
+    set_fact:
+      cluster_id: "{{ server_manager.cluster_id }}"
+    when: server_manager.cluster_id is defined
+
+  - name: set cluster_id from test_configuration section (for backward compatibility)
+    set_fact:
+      cluster_id: "{{ test_configuration.cluster_id }}"
+    when: cluster_id is undefined
+
+  - name: Wait till reimage completes
+    script: "wait_till_reimage_completes.sh {{ cluster_id }} {{ client }}"
+
+  - meta: end_play
+  when: server_manager.cluster_id is defined or test_configuration.cluster_id is defined
+
+- name: adding all the servers added into the server manager
+  shell: "{{ client }} status server"
+  register: added_servers
+
+- name: Check if the reimage was successful
+  shell: "{{ client }} status server --server_id {{item.key}} | grep -c -E  '(server_added|reimage_completed)'"
+  retries: 30
+  delay: 20
+  register: result
+  until: result.stdout == '1'
+  when: cluster_id is undefined and item.key in added_servers.stdout and bond_info is not defined
+  with_dict: "{{ instances }}"
+  ignore_errors: yes
+
+- name: Check if the reimage was successful with bond_info dict
+  shell: "{{ client }} status server --server_id {{ item.value.name }} | grep -c -E  '(server_added|reimage_completed)'"
+  retries: 50
+  delay: 20
+  register: result
+  until: result.stdout == '1'
+  when: cluster_id is undefined and item.value.name in added_servers.stdout and bond_info is defined
+  with_dict: "{{ bond_info }}"
+  ignore_errors: yes
+
+- name: Wait for port 22 to become open and contain "OpenSSH"
+  wait_for:
+    port: 22
+    host: '{{ item.value.ip }}'
+    search_regex: OpenSSH
+    delay: 10
+  when: bond_info is defined
+  with_dict: "{{ bond_info }}"
+  connection: local 

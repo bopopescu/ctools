@@ -1,0 +1,260 @@
+deployment:
+    deployer: null
+    type:
+        kolla:
+            #branch: contrail/ocata
+            #registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+        contrail:
+            branch: master 
+            #registry: 10.204.217.152:5000
+            registry: 10.204.216.63:6666
+            #registry: opencontrailnightly
+    sku: queens
+    os: centos7
+    version: null
+    orchestrator: openstack
+
+
+
+provider_config:
+  bms:
+      domainsuffix: englab.juniper.net
+      ntpserver: 10.204.217.158
+      ssh_pwd: c0ntrail123
+      ssh_user: root
+
+instances:
+  nodep8-vm1:
+    ip: 10.204.220.50
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      analytics_alarm:
+      analytics_snmp:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  nodep8-vm2:
+    ip: 10.204.220.49
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      analytics_alarm:
+      analytics_snmp:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  nodep8-vm3:
+    ip: 10.204.220.48
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      analytics_alarm:
+      analytics_snmp:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  nodep8-vm4:
+    ip: 10.204.220.47
+    provider: bms
+    roles:
+      vrouter:
+        VROUTER_GATEWAY: 10.10.10.101
+      openstack_compute:
+  nodec9:
+    ip: 10.204.216.66
+    provider: bms
+    roles:
+      vrouter:
+        VROUTER_GATEWAY: 10.10.10.101
+      openstack_compute:
+  nodec16:
+    ip: 10.204.217.1
+    provider: bms
+    roles:
+      vrouter:
+        VROUTER_GATEWAY: 10.10.10.101
+      openstack_compute:
+
+REGISTRY_PRIVATE_INSECURE: True
+CONTAINER_REGISTRY: 10.204.216.63:6666
+#CONTAINER_REGISTRY: 10.204.217.152:5000
+
+contrail_configuration:
+  CONTRAIL_VERSION: null
+  CLOUD_ORCHESTRATOR: openstack
+  RABBITMQ_NODE_PORT: 5673
+  OPENSTACK_NODES: 10.204.220.50,10.204.220.49,10.204.220.48
+  CONTROLLER_NODES: 10.204.220.50,10.204.220.49,10.204.220.48
+  CONTROL_NODES: 10.10.10.1,10.10.10.2,10.10.10.3
+  VROUTER_GATEWAY: 10.10.10.101
+  CONFIG_API_VIP: 10.204.220.50
+  ENCAP_PRIORITY: MPLSoGRE,MPLSoUDP,VXLAN
+  KEYSTONE_AUTH_URL_VERSION: /v3
+  UPGRADE_KERNEL: False
+  AUTH_MODE: keystone
+  OPENSTACK_VERSION: queens
+  CONFIG_DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+
+
+orchestrator_configuration:
+  contrail_api_interface_address: 10.204.220.50
+  vrrp_id: 159
+  internal_vip: 10.204.220.29
+  external_vip: 10.204.220.29
+  keystone:
+      password: c0ntrail123
+      version: v3
+  enable_haproxy: "yes"
+  docker_registry: docker.io
+  docker_namespace: kolla
+  enable_ironic: no
+  enable_swift: no
+
+
+test_configuration:
+  use_project_scoped_token: True
+  cfgm0_host_pwd: c0ntrail123
+  cfgm0_host_string: root@10.204.220.50
+  cluster_id: p8_cluster
+  image_web_server: 10.204.217.158
+  web_server:
+      log_path: /home/bhushana/Documents/technical/logs
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-queens-centos7-dev-sanity
+      server: 10.204.216.50
+      username: bhushana
+      web_root: Docs/logs
+  mail_server:
+      server: 10.47.226.20
+      port: 25
+      to: vappachan@juniper.net
+      sender: contrailbuild@juniper.net
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.4
+  client: /cs-shared/server-manager/client/server-manager
+
+
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.204.217.158/images/node_vm_images/centos-7.5-backward-compatible.qcow2.gz
+  hypervisors:
+    nodep8:
+      username: root
+      ip: 10.204.220.8
+      password: c0ntrail123
+      vm_config:
+        host1:
+          name: nodep8-vm1
+          ram: 32768
+          vcpus: 8
+          server: 10.204.220.8
+          network:
+            interfaces:
+              intf1:
+                bridge: br1
+                mac: '42:53:57:01:00:01'
+                model: virtio
+              intf2:
+                bridge: br0
+                mac: '42:53:57:02:00:01'
+                model: virtio
+        host2:
+          name: nodep8-vm2
+          ram: 32768
+          vcpus: 8
+          server: 10.204.220.8
+          network:
+            interfaces:
+              intf1:
+                bridge: br1
+                mac: '42:53:57:01:00:02'
+                model: virtio
+              intf2:
+                bridge: br0
+                mac: '42:53:57:02:00:02'
+                model: virtio
+        host3:
+          name: nodep8-vm3
+          ram: 32768
+          vcpus: 8
+          server: 10.204.220.8
+          network:
+            interfaces:
+              intf1:
+                bridge: br1
+                mac: '42:53:57:01:00:03'
+                model: virtio
+              intf2:
+                bridge: br0
+                mac: '42:53:57:02:00:03'
+                model: virtio
+        host4:
+          name: nodep8-vm4
+          ram: 32768
+          vcpus: 8
+          server: 10.204.220.8
+          network:
+            interfaces:
+              intf1:
+                bridge: br1
+                mac: '42:53:57:01:00:04'
+                model: virtio
+              intf2:
+                bridge: br0
+                mac: '42:53:57:02:00:04'
+                model: virtio
+
+control_data:
+    nodep8-vm1:
+        ip: 10.204.220.50
+        ctrldata_ip: 10.10.10.1
+        prefix: 24
+        gw: 10.10.10.254
+        device: eth1
+    nodep8-vm2:
+        ip: 10.204.220.49
+        ctrldata_ip: 10.10.10.2
+        prefix: 24
+        gw: 10.10.10.254
+        device: eth1
+    nodep8-vm3:
+        ip: 10.204.220.48
+        ctrldata_ip: 10.10.10.3
+        prefix: 24
+        gw: 10.10.10.254
+        device: eth1
+    nodep8-vm4:
+        ip: 10.204.220.47
+        ctrldata_ip: 10.10.10.4
+        prefix: 24
+        gw: 10.10.10.254
+        device: eth1

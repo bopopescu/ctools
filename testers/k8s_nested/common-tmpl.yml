@@ -1,0 +1,127 @@
+heat_template_version: "2015-04-30"
+
+description: >
+  HOT template for creating image, flavor and public-vn for
+  kubernetes nested deployment
+
+outputs:
+  image:
+    description: ID of image to be used for Kubernetes VM
+    value: { get_attr: ['image', 'show', 'id'] }
+  flavor:
+    description: ID of flavor to be used for Kubernetes VM
+    value: { get_attr: ['flavor', 'show', 'id'] }
+  publicvn:
+    description: ID of public VN
+    value: { get_resource: 'publicvn' }
+  fippool:
+    description: ID of FIP pool
+    value: { get_resource: 'fippool' }
+
+parameters:
+  ipam_name:
+    type: string
+    description: Name of IPAM for public network
+
+  fip_pool_name:
+    type: string
+    description: Name of FIP pool on public network
+
+  publicvn_name:
+    type: string
+    description: Name of public network to be created
+  publicvn_prefix:
+    type: string
+    description: Public network address prefix
+  publicvn_prefix_len:
+    type: string
+    description: Public network address prefix len
+  publicvn_rt:
+    type: string
+    description: Public network route target
+  publicvn_asn:
+    type: string
+    description: Public network ASN
+
+  image_container:
+    type: string
+    description: Container format of image
+  image_disk:
+    type: string
+    description: Disk format of image.
+  image_name:
+    type: string
+    description: Name for the image. The name of an image is not unique to a Image Service node.
+  image_location:
+    type: string
+    description: URL where the data for this image already resides. 
+
+  flavor_name:
+    type: string
+    description: Name for VM flavor
+  flavor_ram:
+    type: number
+    description: Memory size of VM
+  flavor_vcpus:
+    type: number
+    description: Number of Virtual CPU for VM
+  flavor_disk:
+    type: number
+    description: Disk size of VM
+
+resources:
+  ipam:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: { get_param: ipam_name }
+
+  flavor:
+    type: OS::Nova::Flavor
+    properties:
+      name: { get_param: flavor_name }
+      vcpus: { get_param: flavor_vcpus }
+      ram: { get_param: flavor_ram }
+      disk: { get_param: flavor_disk }
+
+  image:
+    type: OS::Glance::Image
+    properties:
+      container_format: { get_param: image_container }
+      disk_format: { get_param: image_disk }
+      name: { get_param: image_name }
+      location: { get_param: image_location }
+      is_public: True
+      protected: False
+
+  publicvn:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ ipam ]
+    properties:
+      name: { get_param: publicvn_name }
+      router_external: True
+      route_target_list:
+        route_target_list_route_target: 
+          - { list_join: [':', ['target', { get_param: publicvn_asn },
+                                          { get_param: publicvn_rt }]] }
+      network_ipam_refs: [{ get_resource: ipam }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix:
+                    { get_param: publicvn_prefix },
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len:
+                    { get_param: publicvn_prefix_len },
+                },
+              network_ipam_refs_data_ipam_subnets_addr_from_start: True
+            }]
+         }]
+
+  fippool:
+    type: OS::ContrailV2::FloatingIpPool
+    depends_on: [publicvn]
+    properties:
+      name: { get_param: fip_pool_name }
+      virtual_network: { get_resource: publicvn }

@@ -1,0 +1,144 @@
+- name: set default deployment
+  vars:
+    types:
+      kolla:
+      contrail:
+  set_fact:
+    deployment: "{{ deployment|default({})|combine({'type': types }) }}"
+  when: deployment is undefined or deployment.type is undefined
+
+- name: get openstack version from env, if defined
+  set_fact:
+    sku: "{{ lookup('env', 'SKU') }}"
+  when: lookup('env', 'SKU') != ''
+
+- name: set openstack version
+  set_fact:
+    sku: "{{ deployment.sku }}"
+  when: lookup('env', 'SKU') == '' and deployment.sku is defined
+  
+- name: get contrail version from env, if defined
+  set_fact:
+    version: "{{ lookup('env', 'VERSION') | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') != ''
+
+- name: set contrail version
+  set_fact:
+    version: "{{ deployment.version | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') == '' and deployment.version is defined
+
+- name: set orchestrator
+  set_fact:
+    orchestrator: "{{ deployment.orchestrator }}"
+  when: deployment.orchestrator is defined
+
+- name: set deployer if defined and deployment type helm or openshift
+  set_fact:
+    deployer: "{{ deployment.deployer }}"
+  when: (deployment.type.helm is defined or deployment.type.openshift is defined) and deployment.deployer is defined
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail is defined and deployment.type.contrail.registry is defined
+
+- name: set helm contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.helm.registry }}"
+  when: deployment.type.helm is defined and deployment.type.helm.registry is defined
+
+- name: set openshift contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.openshift.registry }}"
+  when: deployment.type.openshift is defined and deployment.type.openshift.registry is defined
+
+- name: trim contrailregistry 
+  set_fact:
+    contrailregistry: "{{ contrailregistry | replace('docker.io/', '') }}"
+    contrail_rabbitmq_port: 5673 
+  when: deployment.type.helm is defined
+
+- debug:
+   msg: "Contrail Registry : {{ contrailregistry }}" 
+
+- name: set contrail_api ip if contrail_configuration.CONTROLLER_NODES is defined
+  set_fact:
+     contrail_api_ip: "{{ contrail_configuration.CONTROLLER_NODES.split(',') | first }}"
+  when: deployment.type.helm is defined and contrail_configuration.CONTROLLER_NODES is defined
+
+- name: Pull docker test image
+  command: >
+    docker pull "{{ contrailregistry }}/contrail-test-test:{{ version }}"
+
+- name: create temp directory for test
+  tempfile:
+     state: directory
+     suffix: _test
+  register: tmpdir
+
+- name: Populate contrail-test-input.yml file
+  template:
+    src: contrail_test_input.yml.j2
+    dest: "{{ tmpdir.path }}/contrail_test_input.yml"
+  when: deployment.type.vcenter is undefined and test_configuration.k8s_nested is undefined
+
+- name: Set yml file path
+  set_fact:
+     yml_path: "{{ tmpdir.path }}/contrail_test_input.yml"
+  when: deployment.type.vcenter is undefined
+
+- name: Copy contrail_test_input.yml to tmp file
+  copy:
+    src: "{{ inventory_dir }}/group_vars/contrail_test_input.yml"
+    dest: "{{ tmpdir.path }}/contrail_test_input.yml"
+  when: deployment.type.vcenter is defined or test_configuration.k8s_nested is defined
+
+- name: Copy vcenter_vars.yml to tmp file
+  copy:
+    src: "{{ inventory_dir }}/group_vars/vcenter_vars.yml"
+    dest: "{{ tmpdir.path }}/vcenter_vars.yml"
+  when: deployment.type.vcenter is defined
+
+#For vcenter we are passing 2 files , separated.
+#testrunner.sh code is changed accordingly
+- name: Set yml files path for vcenter
+  set_fact:
+     yml_path: "{{ tmpdir.path }}/contrail_test_input.yml,{{ tmpdir.path }}/vcenter_vars.yml"
+  when: deployment.type.vcenter is defined
+
+- name: Get testrunner script from github
+  get_url:
+    url: "https://raw.githubusercontent.com/Juniper/contrail-test/master/testrunner.sh"
+    dest: "{{ tmpdir.path }}/testrunner.sh"
+    mode: 0755
+
+- name: write to test_runner.sh
+  replace:
+    path: "{{ tmpdir.path }}/testrunner.sh"
+    regexp: '--privileged'
+    replace: '--privileged --network host'
+ 
+- name: set feature from env to execute
+  set_fact:
+     feature: "{{ lookup('env', 'FEATURES').split(',') }}"
+  when: lookup('env', 'FEATURES') != ''
+
+- name: set feature to execute
+  set_fact:
+     feature: "{{ feature_dict[orchestrator] }}"
+  when: feature is undefined
+
+- debug:
+   msg: "Features to execute : {{ feature }}"
+
+- pause:
+    minutes: 2
+
+- name: Run contrail-test containers
+  shell: >
+    "{{ tmpdir.path }}"/testrunner.sh run -P "{{ yml_path }}" -f "{{ item }}" "{{ contrailregistry }}"/contrail-test-test:"{{ version }}"
+  become: yes
+  ignore_errors: yes
+  environment:
+    CT_JENKINS_TRIGGERED: True
+  with_items: "{{ feature }}"

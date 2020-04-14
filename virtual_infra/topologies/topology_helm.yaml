@@ -1,0 +1,33 @@
+networks:
+    management:
+        cidr: 10.0.0.0/24
+    ctrl1:
+        cidr: 10.10.0.0/24
+        gateway: null
+
+instances:
+  - name: helm-kube-master
+    type: helm-kube-master
+    roles:
+        openstack:
+        config_database:
+        config:
+        control:
+        analytics:
+        analytics_database:
+        webui:
+        analytics_alarm:
+        analytics_snmp:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3
+  - name: compute
+    type: compute
+    roles:
+        vrouter:
+        openstack_compute:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3

@@ -1,0 +1,16 @@
+{% for key,value in emc.iteritems() %}
+{% if 'add_cld' in key %}
+aws_access_key: "{{ value['access_key'] }}"
+aws_secret_key: "{{ value['secret_key'] }}"
+{% if 'add_cld' in key and "azure_provider" in value %}
+azure_client_id: "{{ value['azure_client_id'] }}"
+azure_tenant_id: "{{ value['azure_tenant_id'] }}"
+azure_subscription_id: "{{ value['azure_subscription_id'] }}"
+azure_client_secret: "{{ value['azure_client_secret'] }}"
+{% endif %}
+{% if 'add_cld' in key and "gcp_provider" in value %}
+google_account_json: "{{ value['google_account_json'] }}"
+{% endif %}
+cloud_provider_uuid: "{{ value['provider'] | to_uuid }}"
+{% endif %}
+{% endfor %}

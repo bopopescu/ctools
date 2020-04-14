@@ -1,0 +1,157 @@
+- name: Create container host group
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+    - [../inventory/group_vars/all.yml,../inventory/group_vars/contrail_test_input.yml]
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "container_hosts"
+      with_dict: "{{ instances }}"
+
+
+- hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - [../inventory/group_vars/all.yml,../inventory/group_vars/contrail_test_input.yml]
+  tasks:
+    - add_host:
+        name: "{{ test_configuration.web_server.server }}"
+        ansible_ssh_host: "{{ test_configuration.web_server.server }}"
+        ansible_ssh_user: "{{ test_configuration.web_server.username | default('root') }}"
+        ansible_ssh_pass: "{{ test_configuration.web_server.password | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "web_server"
+
+- hosts: web_server
+  vars_files:
+    - [../inventory/group_vars/all.yml,../inventory/group_vars/contrail_test_input.yml]
+  tasks:
+      - name: Create dir for storing cores
+        file:
+            path: /cs-shared/sanity/logs/{{ contrail_configuration.CONTRAIL_VERSION }}
+            state: directory
+
+
+- hosts: localhost
+  tasks:
+      - name: Create dir for storing logs
+        file:
+            path: /var/log/temp_logcore/logs
+            state: directory
+      - name: Create dir for storing core
+        file:
+            path: /var/log/temp_logcore/core
+            state: directory
+      - name: Create dir for storing kolla logs
+        file:
+            path: /var/log/temp_logcore/kolla_logs
+            state: directory
+      - name: Create dir for storing container logs
+        file:
+            path: /var/log/temp_logcore/container_logs
+            state: directory
+
+
+- hosts: container_hosts
+  tasks:
+
+
+       ######## KOLLA LOGS
+      
+       - name: Tar logs and copy .
+         archive:
+             path: /var/lib/docker/volumes/kolla_logs/_data
+             dest: /var/log/kollalogs.tar.gz
+             format: gz
+         ignore_errors: yes
+
+       - name: Ansible fetch kolla logs
+         fetch:
+             src: /var/log/kollalogs.tar.gz
+             dest: /var/log/temp_logcore/kolla_logs
+         ignore_errors: yes
+
+       ###### CONTAINER LOGS
+
+       - name: List running containers
+         command: 'docker ps -a --format "{% raw %}{{.Names}}{% endraw %}"'
+         become: true
+         register: container_list
+
+       - name: Create container logdir
+         file:
+             path: '/var/log/container_logs'
+             state: 'directory'
+
+       - name: Dump container logs
+         shell: 'docker logs {{ item }} 1> /var/log/container_logs/{{ item }}.log 2>&1'
+         become: true
+         ignore_errors: true
+         with_items: '{{ container_list.stdout_lines }}'
+
+       - name: Tar container logs and copy.
+         archive:
+             path: /var/log/container_logs/
+             dest: /var/log/container_logs.tar.gz
+             format: gz
+
+       - name: Fetch container logs
+         fetch:
+             src: /var/log/container_logs.tar.gz
+             dest: /var/log/temp_logcore/container_logs
+
+
+       ####### CONTAINER CORES
+
+       - shell: (docker ps 2>/dev/null |grep contrail | awk '{print $NF}')
+         register: contrail_containers
+       - debug: var=contrail_containers.stdout_lines
+       - shell: (docker cp {{ item }}:/var/crashes/ /var/)
+         ignore_errors: yes
+         with_items: "{{ contrail_containers.stdout_lines }}"
+
+       ########## CORES IN /var/crashes
+
+       - shell: (cd /var/crashes/; find . -maxdepth 1 -type f) | cut -d'/' -f2
+         register: core_to_copy
+       - debug: var=core_to_copy.stdout_lines
+       - fetch: 
+             src: "/var/crashes/{{ item }}"
+             dest: /var/log/temp_logcore/core/
+         with_items: "{{ core_to_copy.stdout_lines }}"
+
+
+       ########  CONTRAIL LOGS
+
+       - shell: (cd /var/log/contrail/; find . -maxdepth 1 -type f) | cut -d'/' -f2
+         register: files_to_copy
+       - debug: var=files_to_copy.stdout_lines
+       - fetch: 
+             src: "/var/log/contrail/{{ item }}"
+             dest: /var/log/temp_logcore/logs/
+         with_items: "{{ files_to_copy.stdout_lines }}"
+
+- hosts: localhost
+  tasks:
+      - name: Tar logs.
+        archive:
+            path: /var/log/temp_logcore
+            dest: /var/log/logcore.tar.gz
+            format: gz
+
+- hosts: web_server
+  vars_files:
+    - [../inventory/group_vars/all.yml,../inventory/group_vars/contrail_test_input.yml]
+  tasks:
+      - name: Copy logs to cs-shared
+        copy:
+            dest: "/cs-shared/sanity/logs/{{ contrail_configuration.CONTRAIL_VERSION }}/logcore_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.tar.gz"
+            src: /var/log/logcore.tar.gz
+
+

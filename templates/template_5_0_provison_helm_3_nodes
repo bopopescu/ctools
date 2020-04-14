@@ -1,0 +1,207 @@
+{
+	"inp_params": {
+		"description":{
+			"msg" : "3 node cluster for mainline build with multiple interfaces and Openstack  HA"
+		},
+		"params":{
+			"no_of_servers" : 3,
+			"no_of_networks" : 2,
+			"network_stack_name" : "test_network_final",
+			"server_stack_name" : "test_server_final",
+			"disable_openstack_port_security_on_all_vms": "true",
+			"project_uuid" : "project_uuid_val"	
+		},
+		"networks":{
+			"final_test_network_1_Helm":{
+				"name": "final_test_network_1_Helm",
+				"ip_block_with_mask" : "10.0.0.0/24",
+				"default_gateway" : "10.0.0.1",
+				"role" : "management"
+			},
+			"final_test_network_2_Helm":{
+                                "name": "final_test_network_2_Helm",
+                                "ip_block_with_mask" : "10.10.0.0/24",
+                                "default_gateway" : "10.10.0.1",
+                                "role" : "control-data"
+                        }
+		 },
+		"floating_ip_network":{
+                        "param":{
+                                "floating_ip_network_uuid" : "fip_uuid",
+                                "name" : "floatingIpPool_final_script_test"
+                        }
+                },
+		"cluster":{
+			"cluster_1":{
+				"servers":{
+					"server1":{
+						"name":"server1-_project_hash_" , 
+						"ip_address" : { "final_test_network_1_Helm":"10.0.0.4", "final_test_network_2_Helm":"10.10.0.4"},
+						"flavor" : "m1.xxlarge",
+						"image" : "image_val",
+						"floating_ip" : "true",
+						"server_manager" : "flase",
+						"roles" : ["openstack","config_database", "config", "control", "analytics_database", "analytics", "webui"]
+					},
+                                        "server2":{
+                                                "name":"server2-_project_hash_" ,
+                                                "ip_address" : { "final_test_network_1_Helm":"10.0.0.5", "final_test_network_2_Helm":"10.10.0.5"},
+                                                "flavor" : "m1.xxlarge",
+                                                "image" : "image_val",
+                                                "floating_ip" : "true",
+                                                "server_manager" : "flase",
+                                                "roles" : ["openstack","config_database", "config", "control", "analytics_database", "analytics", "webui"]
+                                        },
+                                        "server3":{
+                                                "name":"server3-_project_hash_" ,
+                                                "ip_address" : { "final_test_network_1_Helm":"10.0.0.6", "final_test_network_2_Helm":"10.10.0.6"},
+                                                "flavor" : "m1.xxlarge",
+                                                "image" : "image_val",
+                                                "floating_ip" : "true",
+                                                "server_manager" : "flase",
+                                                "roles" : ["openstack","config_database", "config", "control", "analytics_database", "analytics", "webui"]
+                                        },
+					"server4":{
+                                                "name":"server4-_project_hash_" ,
+                                                "ip_address" : { "final_test_network_1_Helm":"10.0.0.7", "final_test_network_2_Helm":"10.10.0.7"},
+                                                "flavor" : "m1.xxlarge",
+                                                "image" : "image_val",
+                                                "floating_ip" : "true",
+                                                "server_manager" : "flase",
+                                                "roles" : ["vrouter"]
+                        		},
+					"server5":{
+                                                "name":"server5-_project_hash_" ,
+                                                "ip_address" : { "final_test_network_1_Helm":"10.0.0.8", "final_test_network_2_Helm":"10.10.0.8"},
+                                                "flavor" : "m1.xxlarge",
+                                                "image" : "image_val",
+                                                "floating_ip" : "true",
+                                                "server_manager" : "flase",
+                                                "roles" : ["vrouter"]
+                                        },
+					"server6":{
+                                                "name":"server6-_project_hash_" ,
+                                                "ip_address" : { "final_test_network_1_Helm":"10.0.0.9", "final_test_network_2_Helm":"10.10.0.9"},
+                                                "flavor" : "m1.xxlarge",
+                                                "image" : "image_val",
+                                                "floating_ip" : "true",
+                                                "server_manager" : "flase",
+                                                "roles" : ["vrouter"]
+                                        }
+				},
+				"cluster_json_params": {
+					"server_password" : "c0ntrail123",
+					"keystone_admin_password": "c0ntrail123",
+					"keystone_admin_token": "c0ntrail123",
+					"management_interface": "ens3",
+					"control_data_iterface": "ens4",
+                        		"cluster_id": "test-cluster",
+					"mtu": "1400",
+					"provisioning_type": "kickstart",
+                        		"parameters": {
+                                		"domain": "englab.juniper.net",
+                                		"provision":{
+							"contrail_4": {
+								"enable_lbaas": "true",
+                                                                "rbac": "true",
+								"api_server_ssl": "true",
+								"global_config": {
+                                         "xmpp_auth_ssl": "true",
+                                         "sandesh_ssl": "true"
+								}
+							},
+                                        		"contrail": {
+                                                		"kernel_upgrade": "true",
+								"manage_neutron": "false"
+                                        		},
+                                        		"openstack":{
+								"external_vip": "10.0.0.100",
+								"internal_vip": "10.10.0.100",
+								"openstack_manage_amqp": "true",
+								"keystone_admin_password": "c0ntrail123",
+								"keystone_version": "v3",
+								"keystone_auth_protocol": "https",
+								"keystone_admin_token": "c0ntrail123"
+                                        		}
+                                		}
+                        		}
+                		},
+				"provison_5_0_config": {
+					"contrail_config": {
+						"AAA_MODE": "rbac",
+ 						"CONTROLLER_NODES": "10.204.216.11"
+                                                "CONTROL_NODES": "10.204.216.11"
+                                                "CONTROL_DATA_NET_LIST": "10.204.217.0/24"
+                                                "VROUTER_GATEWAY": "10.204.217.254"
+                                                "BGP_PORT": 1179,
+						"AGENT_MODE": "nic"
+					},
+					"openstack_config": {
+						"keystone": {
+							"version":"v3",
+                                                        "password": "password",
+                                                        "auth_ip":"keystone.openstack.svc.cluster.local"
+						}
+					},
+					"deployment_config": {
+						"deployments": {
+							"helm": {
+								"branch": "master",
+								"registry": "ci-repo.englab.juniper.net:5000"
+							}
+						},
+						"version": "__VERSION__",
+						"os": "ubuntu",
+						"orchestrator": "openstack"
+					},
+					"provider_config": {
+						"ssh_password": "c0ntrail123",
+						"ssh_user": "root",
+						"ntp_server": "10.84.5.100",
+						"domainsuffix": "local"
+					},
+					"test_config": {
+						"image_web_server": "10.84.5.120",
+                                                "auth_url": "http://keystone.openstack.svc.cluster.local:80/v3",
+                                                "auth_port": "80",
+						"web_server" : {
+                            "server": "anamika.englab.juniper.net",
+                            "username": "stack",
+                            "password" : "stack@123",
+                            "report_path": "/var/www/html/sanity/fb-sanity/FB-master-ocata-ubuntu16-ha-helm-sanity",
+                            "log_path": "/var/www/html/Docs/logs", 
+                            "web_root": "/Docs/logs" 
+						},
+						"mail_server": {
+							"server": "10.84.24.64",
+							"port": "4000",
+							"to": "dl-contrail-sw@juniper.net",
+							"sender": "contrail-build@juniper.net"
+						}
+					}
+				},
+				"testbed_py_params": {
+					"env_password": "c0ntrail123",
+					"env_ostypes" : "ubuntu",
+					"openstack_admin_password" : "password",
+					"minimum_diskGB" : 32,
+					"env.test_repo_dir": "/home/stack/multi_interface_parallel/ubuntu/icehouse/contrail-test",
+					"env.mail_from": "contrail-build@juniper.net",
+					"env.mail_to" : "dl-contrail-sw@juniper.net",
+					"env.mail_server": "10.84.24.64",
+					"env.mail_port" : "4000",
+					"multi_tenancy": "True",
+					"env.interface_rename": "False",
+					"env.encap_priority" : "'VXLAN','MPLSoUDP','MPLSoGRE'",
+					"env.enable_lbaas" : "True",
+					"enable_ceilometer" : "True",
+					"env.image_web_server": "10.84.5.120",
+					"env.ntp_server" : "10.84.5.100",
+					"env.testbed_location": "US",
+					"ceilometer_polling_interval": 60,
+					"do_parallel": "True"
+				}	
+			}
+		}
+	}
+}

@@ -1,0 +1,50 @@
+
+- name: Configure nodes
+  command: >
+    ansible-playbook -i inventory/ -e orchestrator="{{ orchestrator }}" playbooks/configure_instances.yml -v      
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    chdir: "{{ contrail_provision_dir }}"
+
+- name: Install Openstack
+  command: >
+    ansible-playbook -i inventory/ playbooks/install_openstack.yml -v
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    chdir: "{{ contrail_provision_dir }}"
+  when: orchestrator == "openstack"
+
+- name: Install Kubernetes
+  command: >
+    ansible-playbook -i inventory/ -e orchestrator="{{ orchestrator }}" playbooks/install_k8s.yml
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    chdir: "{{ contrail_provision_dir }}"
+  when: orchestrator == "kubernetes"
+
+- name: Provision with Contrail
+  command: >
+    ansible-playbook -i inventory/ -e orchestrator="{{ orchestrator }}" playbooks/install_contrail.yml -v
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+    DOCKER_CLIENT_TIMEOUT: 120
+    COMPOSE_HTTP_TIMEOUT: 120
+  args:
+    chdir: "{{ contrail_provision_dir }}"
+
+

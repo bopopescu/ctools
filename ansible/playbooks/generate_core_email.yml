@@ -1,0 +1,33 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "compute_hosts"
+      with_dict: "{{ instances }}"
+      when: item.value.roles.openstack_compute is defined
+
+- hosts: compute_hosts
+  gather_facts: no
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  tasks:
+    - name: install packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - vim
+        - gdb
+
+- hosts: compute_hosts
+  gather_facts: no
+  roles:
+  - generate_core_email

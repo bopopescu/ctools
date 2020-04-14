@@ -1,0 +1,216 @@
+{
+"cluster": [
+    {   
+        "id": "cluster-esxi-new",
+        "parameters": {
+            "provision": {
+                "contrail": {
+                },
+                "contrail_4": {
+                    "cloud_orchestrator": "vcenter",
+                    "vcenter_servers": [
+                        {   
+                            "server1": {
+                                "datacenters": {
+                                    "i27_datacenter11": {
+                                        "datacenter_mtu": "1500",
+                                        "dv_switch_control_data": {
+                                            "dv_port_group_control_data": {
+                                                "dv_portgroup_name": "",
+                                                "number_of_ports": "",
+                                                "uplink": ""
+                                            },
+                                            "dv_switch_name": ""
+                                        },
+                                        "dv_switch_mgmt": {
+                                            "dv_port_group_mgmt": {
+                                                "dv_portgroup_name": "",
+                                                "number_of_ports": "",
+                                                "uplink": ""
+                                            },
+                                            "dv_switch_name": ""
+                                        },
+                                        "dv_switches": [
+                                            {   
+                                                "clusternames": [
+                                                    "i27_cluster11",
+                                                    "i27_cluster12"
+                                                ],
+                                                "dv_port_group": {
+                                                    "dv_portgroup_name": "vm_dvs_pg2",
+                                                    "number_of_ports": "3"
+                                                },
+                                                "dv_switch_name": "vm_dvs2"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "hostname": "10.204.217.246",
+                                "password": "Contrail123!",
+                                "username": "administrator@vsphere.local",
+                                "validate_certs": false
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+],
+"server": [
+    {   
+        "cluster_id": "cluster-esxi-new",
+        "domain": "englab.juniper.net",
+        "host_name": "nodei27",
+        "id": "nodei27",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.217.139",
+                    "mac_address": "00:25:90:e7:7f:b4",
+                    "name": "eno1",
+                    "default_gateway": "10.204.217.254"
+                }
+            ],
+            "management_interface": "eno1"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster-esxi-new",
+        "domain": "englab.juniper.net",
+        "host_name": "nodei32",
+        "id": "nodei32",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.217.144",
+                    "mac_address": "00:25:90:e7:81:dc",
+                    "name": "em1",
+                    "default_gateway": "10.204.217.254"
+                }
+            ],
+            "management_interface": "em1"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster-esxi-new",
+        "domain": "englab.juniper.net",
+        "host_name": "nodei28",
+        "id": "nodei28",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.217.140",
+                    "mac_address": "00:25:90:e7:7e:70",
+                    "name": "em1",
+                    "default_gateway": "10.204.217.254"
+                }
+            ],
+            "management_interface": "em1"
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-controller",
+            "contrail-analytics",
+            "contrail-analyticsdb",
+            "contrail-vcenter-plugin"
+        ]
+    },
+    {   
+        "cluster_id": "cluster-esxi-new",
+        "domain": "englab.juniper.net",
+        "host_name": "nodei35-compute-vm",
+        "id": "nodei35-compute-vm",
+        "ip_address": "10.204.217.204",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.217.204",
+                    "mac_address": "00:77:56:cd:bc:ba",
+                    "name": "ens160",
+                    "default_gateway": "10.204.217.254"
+                }
+            ],
+            "management_interface": "ens160"
+        },
+        "parameters": {
+            "esxi_parameters": {
+                "cluster": "i27_cluster11",
+                "contrail_vm": {
+                    "vmdk": "/root/vmdk/vmdk.tar",
+                    "control_data_switch": "vSwitch0", 
+                    "mgmt_pg": "contrail-fab-pg"
+                },
+                "datacenter": "i27_datacenter11",
+                "datastore": "nodei35-ds",
+                "name": "10.204.217.147",
+                "password": "c0ntrail123",
+                "username": "root",
+                "validate_certs": false,
+                "vcenter_server": "server1"
+            }
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-compute"
+        ]
+    },
+    {   
+        "cluster_id": "cluster-esxi-new",
+        "domain": "englab.juniper.net",
+        "host_name": "nodei36-compute-vm",
+        "id": "nodei36-compute-vm",
+        "ip_address": "10.204.217.229",
+        "network": {
+            "interfaces": [
+                {   
+                    "dhcp": true,
+                    "ip_address": "10.204.217.229",
+                    "mac_address": "00:77:56:aa:ba:ba",
+                    "name": "ens160",
+                    "default_gateway": "10.204.217.254"
+                }
+            ],
+            "management_interface": "ens160"
+        },
+        "parameters": {
+            "esxi_parameters": {
+                "cluster": "i27_cluster11",
+                "contrail_vm": {
+                    "vmdk": "/root/vmdk/vmdk.tar",
+                    "control_data_switch": "vSwitch0",
+                    "mgmt_pg": "contrail-fab-pg"
+                },
+                "datacenter": "i27_datacenter11",
+                "datastore": "nodei36-ds",
+                "name": "10.204.217.148",
+                "password": "c0ntrail123",
+                "username": "root",
+                "validate_certs": false,
+                "vcenter_server": "server1"
+            }
+        },
+        "password": "c0ntrail123",
+        "roles": [
+            "contrail-compute"
+        ]
+    }
+ ],

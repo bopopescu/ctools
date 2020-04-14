@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+multi_node=0
+
+function check_ceph_status() {
+    if [ $SKIP_CEPH_STATUS -ne 0 ]
+    then
+        return 0
+    fi
+    
+    echo "Connect to config node to check ceph -s output"
+    sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} " (
+    set -e 
+    $SM_FILES_DIR/check_ceph_status.py $CLUSTER_NAME $EXPECTED_OSD_COUNT
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "ceph status verification is sucessfull!!!"
+    else
+        echo "ERROR: ceph status verification failed!!! aborting the process"
+        exit 1
+    fi
+
+}
+
+function start_ntp_server_SM() {
+  sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} "
+   service ntp stop;
+   service ntp start;
+  "
+}
+
+# This function will reimage the provided setup.
+# Performs the following steps:
+# Adds the iso and contrail packages to SM database
+# Adds cluster and servers to SM database
+# Does reimage of the setup.
+
+function add_server_and_images_to_SM() {
+
+    if [[ $DISTRO =~ ubuntu-12.04 ]]; then
+        SMID=ubuntu12$SKU${BUILDID}
+    elif [[ $DISTRO =~ ubuntu-14.04 ]]; then 
+        SMID=ubuntu14$SKU${BUILDID}
+    fi
+
+    server_json="$SM_FILES_DIR/$SERVER_FILE_NAME.json"
+
+    
+    SMID=`echo $SMID | tr '[:upper:]' '[:lower:]'`
+
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+
+    cluster_json="$SM_FILES_DIR/$CLUSTER_FILE_NAME.json"
+
+    echo "Connect to SM_SERVER to reimage and provision the targets"
+    sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} " (
+        set -e
+        echo "add required image/server/cluster for reimage and provision of the target"
+
+        echo "delete iso image if it exists"
+        if [ ${BRANCH} == "R1.10" ]
+        then
+            server-manager delete image ${DISTRO}
+        else
+            server-manager delete image --image_id ${DISTRO}
+        fi
+
+        echo "add base ISO image to server manager database"
+        if [ ${DISTRO} == "ubuntu-14-04" ]
+        then
+            server-manager add image -f /root/images/image14.json
+        else
+            server-manager add image -f /root/images/image12.json
+        fi
+        if [ $? == 0 ]
+        then
+            echo "Server-manager adding image command is successful"
+        else
+            echo "Server-manager adding image command failed, aborting the process"
+            exit 1
+        fi
+
+        echo "check if the image was added successfully"
+        server-manager show image | grep $DISTRO
+        if [ $? != 0 ] 
+        then
+            echo "Adding Base ISO image failed"
+            exit 1
+        fi
+
+        echo "delete contrail package if it exists"
+        if [ ${BRANCH} == "R1.10" ]
+        then
+            server-manager delete image $SMID
+        else
+            server-manager delete image --image_id $SMID
+        fi
+        echo "add contrail package to the SM database"
+      
+        echo "server-manager upload_image $SMID ${BUILDID} $INSTALL_PKG_TYPE $INSTALL_PKG_FILE"
+        server-manager upload_image $SMID ${BUILDID} $INSTALL_PKG_TYPE $INSTALL_PKG_FILE
+        if [ $? == 0 ]
+        then
+            echo "Server-manager adding contrail-package command is successful"
+        else
+            echo "Server-manager adding contrail-package command failed, aborting the process"
+            exit 1
+        fi
+
+        echo "delete contrail storage package if it exists"
+        if [ ${BRANCH} == "R1.10" ]
+        then
+            server-manager delete image contrail-storage-packages
+        else
+            server-manager delete image --image_id contrail-storage-packages
+        fi
+
+        echo "add contrail storage package to the SM database"
+      
+        echo "server-manager upload_image contrail-storage-packages ${BUILDID} ${STORAGE_PKG_TYPE} $STORAGE_PKG_FILE"
+        server-manager upload_image contrail-storage-packages ${BUILDID} ${STORAGE_PKG_TYPE} $STORAGE_PKG_FILE
+        if [ $? == 0 ]
+        then
+            echo "Server-manager adding storage-package command is successful"
+        else
+            echo "Server-manager adding storage-package command failed, aborting the process"
+            exit 1
+        fi
+
+        echo "check if the package was added successfully"
+        server-manager show image | grep contrail-storage-packages
+        if [ $? != 0 ] 
+        then
+            echo "Adding storage-packages contrail-storage-packages failed"
+            exit 1
+        fi
+
+        server-manager show image
+
+        $SM_FILES_DIR/delete_cluster.py
+
+        echo "add cluster to SM database"
+        server-manager add cluster -f $cluster_json
+        if [ $? == 0 ]
+        then
+            echo "Adding cluster to server-manager is sucessful!!!"
+        else
+            echo "Adding cluster to server-manager failed, aborting the process"
+            exit 1
+        fi
+
+        server-manager show cluster --detail
+
+        echo "add server to SM database"
+        echo "server-manager add server -f $server_json"
+        server-manager add server -f $server_json
+        if [ $? == 0 ]
+        then
+            echo "Adding server to server-manager is sucessful!!!"
+        else
+            echo "Adding server to server-manager failed, aborting the process"
+            exit 1
+        fi
+       )"
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 150
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+}
+
+function reimage_using_SM_ceph() {
+
+   sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} " (
+        set -e
+
+        server-manager show server --detail
+
+        echo "reimage the target setup"
+        echo "server-manager reimage -F --cluster_id $CLUSTER_NAME $REIMAGE_ID"
+        server-manager reimage -F --cluster_id $CLUSTER_NAME $REIMAGE_ID
+
+        if [ $? == 0 ]
+        then
+            echo "Issue of Reimage command to reimage target nodes is sucessful!!!"
+        else
+            echo "Issue of Reimage command to reimage target nodes failed, aborting the process"
+            exit 1
+        fi
+
+        #echo "reimage in progress please wait ..."
+        #sleep 10
+ 
+        #check if reimage is completed.
+        $SM_FILES_DIR/check_reimage_complete.py
+        if [ $? == 0 ]
+        then
+            echo "check_reimage_complete.py : reimaged the target $CLUSTER_NAME successfully"
+        else
+            echo "check_reimage_complete.py: reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 150
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+}
+
+#upgrade/install SM on either cenots/ubuntu server.
+#Multi-node setup will refer to SM running on ubuntu
+#Single-node setup will refer to SM running on centos
+function bringup_SM_setup_ceph() {
+
+    if [ $SKIP_BRINGUP -ne 0 ]
+    then
+        return 0
+    fi
+
+    echo "Bringup/upgrade SM setup"
+
+    #copy the SM PKGs to SM server.
+
+    echo "Connect to SM_SERVER to install/upgrade SM packages"
+    sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} " (
+            set -e
+
+            echo "file exists, upgrading Server manager"
+            cd $SM_FILES_DIR; 
+            if [ $SM_TYPE == ubuntu ]
+            then
+                ./ubuntu_smgr_upgrade.sh $SM_INSTALLER_PKG_FILE
+            else
+                ./centos_smgr_upgrade.sh $SM_INSTALLER_PKG_FILE
+            fi
+            if [ $? != 0 ] 
+            then
+                echo "upgrade/installation of server-manager failed, aborting the process"
+                exit 1
+            fi
+
+            sleep 1
+            echo "check if SM has been installed by following checks"
+            sleep 30
+
+            netstat -nap | grep 9001
+            if [ $? != 0 ]
+            then
+                echo "Server Manager pkg installation failed!!!"
+                exit 1
+            else
+                echo "Server Manager pkg installed successfully"
+            fi
+
+            echo "check if SM client installed"
+            if [ -e /usr/bin/server-manager ]
+            then
+                echo "SM client installed successfully"
+            else
+                echo "SM client pkg installion failed"
+                exit 1
+            fi
+            sleep 1
+
+        echo "Installation is fine"
+    ) "
+}
+
+function provision_using_SM_ceph() {
+    if [ $SKIP_SM_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    
+    echo "Connect to SM_SERVER to provision the targets/cluster"
+    sshpass -p ${SM_HOST_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${SM_NODE_LOGIN} ${SM_NODE_IP} " (
+        set -e
+        echo "provision the target setup"
+        server-manager provision -F --cluster_id $CLUSTER_NAME $SMID
+        if [ $? == 0 ]
+        then
+            echo "Server-manager provision command is successful"
+        else
+            echo "Server-manager provision command failed, aborting the process"
+            exit 1
+        fi
+        echo "provisioning in progress please wait ..."
+        sleep 100
+
+        #check provisioing status.
+        $SM_FILES_DIR/check_provision.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "Provisioning of the target/cluster is sucessfull!!!"
+        else
+            echo "Provisioning of the target/cluster failed!!! aborting the process"
+            if [ ${BRANCH} == "R1.10" ]
+            then
+                server-manager delete image $SMID
+            else
+                server-manager delete image --image_id $SMID
+        fi
+
+            exit 1
+        fi
+
+        server-manager status server --cluster_id $CLUSTER_NAME --detail
+        if [ ${BRANCH} == "R1.10" ]
+        then
+            server-manager delete image $SMID
+        else
+            server-manager delete image --image_id $SMID
+    fi
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "Provisioning of the target/cluster is sucessfull!!!"
+        sleep 120
+    else
+        echo "Provisioning of the target/cluster failed!!! aborting the process"
+        exit 1
+    fi
+
+}
+function run_smgr_task_ceph() {
+    echo "Running tests on $1.."
+    search_package_ceph || die "Failed to search packages"
+    copy_pkgs_to_sm_fab_node
+    bringup_SM_setup_ceph || die "Failed to bringup SM setup" 
+    add_server_and_images_to_SM || die "Failed to bringup SM setup"
+    reimage_using_SM_ceph || die "reimage failed"
+    provision_using_SM_ceph || die "provision failed"
+    start_ntp_server_SM 
+    #check_ceph_status || die "Run_sanity step failed"
+    #collect_tech_support_local || die "Task to collect logs/cores failed"
+    echo "Ending test on $1"
+}

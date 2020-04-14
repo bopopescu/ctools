@@ -1,0 +1,68 @@
+---
+
+- name: applying to every host
+  vars:
+    vm_name:
+    vm_network:
+    vm_ram:
+    vm_disk:
+    vm_vcpus:
+  set_fact:
+    vm_name: "{{ host_dict[item].name }}"
+    vm_network: "{{ host_dict[item].network }}"
+    vm_ram: "{{ host_dict[item].ram }}"
+    vm_server: "{{ host_dict[item].server }}"
+    vm_vcpus: "{{ host_dict[item].vcpus }}"
+  when: iter == item
+  with_items: "{{ host_dict }}"
+
+- name: setting network list
+  vars:
+    net_list:
+  set_fact:
+    net_list: []
+
+- name: setting network string
+  vars:
+    vm_network_arg:
+  set_fact:
+    vm_network_arg: '--network '
+
+- name: setting interfaces list
+  set_fact:
+    net_list: "{{ net_list + [item.value] }}"
+  with_dict: "{{ vm_network.interfaces }}"
+
+- name: constructing the network string
+  set_fact:
+    vm_network_arg: "{{ vm_network_arg + item.key + '=' + item.value + ','}}"
+  with_dict: "{{ net_list[0] }}"
+
+- name: constructing the network string
+  set_fact:
+    vm_network_arg: "{{ vm_network_arg + ' --network ' }}"
+
+- name: constructing the network string
+  set_fact:
+    vm_network_arg: "{{ vm_network_arg + item.key + '=' + item.value + ',' }}"
+  with_dict: "{{ net_list[1] }}"
+
+- name: set disk file name
+  vars:
+    disk_file_name:
+  set_fact:
+    disk_file_name: "{{ vm_name + '.img' }}"
+
+- name: including delete vm task
+  include_tasks: delete_vm.yml
+
+- name: including copy image task
+  include_tasks: copy_image.yml
+
+- name: including create vm task
+  include_tasks: create_vm.yml
+
+
+
+
+#or run the virtmanager python file

@@ -1,0 +1,112 @@
+from fabric.api import env
+import os
+
+host1 = 'root@10.84.13.32'
+host2 = 'root@10.84.13.33'
+host3 = 'root@10.84.13.38'
+host4 = 'root@10.84.13.2'
+host5 = 'root@10.84.13.22'
+host6 = 'root@10.84.13.44'
+
+#If there is only single interface,  MX ip is 10.84.13.200
+#ext_routers = [('a5-mx80-2', '10.84.13.200')]
+#For multi-interface setup, mx ip is 192.168.10.200
+
+ext_routers = [('a5-mx80-2', '192.168.10.200')]
+router_asn = 64512
+public_vn_rtgt = 10000
+public_vn_subnet = "10.84.51.96/27"
+
+host_build = 'stack@10.84.24.64'
+
+if os.getenv('HA_TEST',None) == 'True':
+    env.roledefs = {
+        'all': [host1, host2, host3, host4, host5, host6],
+        'cfgm': [host1, host2, host3],
+        'openstack': [host1, host2, host3],
+        'control': [host1, host2, host3],
+        'compute': [host4, host5],
+        'collector': [host1, host2, host3],
+        'webui': [host1, host2, host3],
+        'database': [host1, host2, host3],
+        'build': [host_build],
+    }
+else:
+    env.roledefs = {
+        'all': [host1, host2, host3, host4, host5, host6],
+        'cfgm': [host1, host2],
+        'openstack': [host6],
+        'control': [host1, host3],
+        'compute': [host4, host5],
+        'collector': [host1],
+        'webui': [host1],
+        'database': [host1, host2, host3],
+        'build': [host_build],
+    }
+
+env.hostnames = {
+    'all': ['a6s32', 'a6s33', 'a6s38', 'a6s2', 'a6s22', 'a6s44']
+}
+
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    host5: 'c0ntrail123',
+    host6: 'c0ntrail123',
+
+    host_build: 'contrail123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    host5:'ubuntu',
+    host6:'ubuntu',
+}
+control_data= {
+
+    host1 : { 'ip': '192.168.10.1/24', 'gw' : '192.168.10.254', 'device':'eth0' },
+    host2 : { 'ip': '192.168.10.2/24', 'gw' : '192.168.10.254', 'device':'eth0' },
+    host3 : { 'ip': '192.168.10.3/24', 'gw' : '192.168.10.254', 'device':'eth0' },
+    host4 : { 'ip': '192.168.10.4/24', 'gw' : '192.168.10.254', 'device':'eth2' },
+    host5 : { 'ip': '192.168.10.5/24', 'gw' : '192.168.10.254', 'device':'eth0' },
+    host6 : { 'ip': '192.168.10.6/24', 'gw' : '192.168.10.254', 'device':'eth0' },
+}
+
+# VIP cofiguration for HA
+if os.getenv('HA_TEST',None) == 'True':
+    env.ha = {
+        'internal_vip' : '192.168.10.210',
+        'external_vip' : '10.84.13.201'
+    }
+# HA Test configuration
+    ha_setup = 'True'
+    ipmi_username = 'ADMIN'
+    ipmi_password = 'ADMIN'
+    env.hosts_ipmi = {
+        '10.84.13.32': '10.84.6.82',
+        '10.84.13.33': '10.84.6.83',
+        '10.84.13.38': '10.84.6.88',
+        '10.84.13.2': '10.84.6.22',
+        '10.84.13.22': '10.84.6.72',
+        '10.84.13.44': '10.84.6.94',
+    }
+minimum_diskGB=32
+env.test_repo_dir="/home/stack/ubuntu_sanity/contrail-test"
+env.mail_from='vjoshi@juniper.net'
+env.mail_to='dl-contrail-sw@juniper.net'
+multi_tenancy=True
+env.encap_priority="'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.mail_server='10.84.24.64'
+env.mail_port='4000'
+env.mx_gw_test=True
+env.testbed_location='US'
+env.interface_rename = False 
+env.image_web_server = '10.84.5.120'
+env.enable_lbaas = True
+env.log_scenario='Multi-Interface Sanity[mgmt, ctrl=data]'

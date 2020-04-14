@@ -1,0 +1,102 @@
+global_configuration:
+{% if insecure_registry is defined %}
+   REGISTRY_PRIVATE_INSECURE: {{ insecure_registry }}
+{% else %}
+   REGISTRY_PRIVATE_INSECURE: True
+{% endif %}
+{% if registry_username is defined %}
+   CONTAINER_REGISTRY_USERNAME: {{ registry_username }}
+   CONTAINER_REGISTRY_PASSWORD: {{ registry_password }}
+{% endif %}
+   CONTAINER_REGISTRY: {{ contrailregistry }}
+   
+{% if provider_config is defined %}
+provider_config:
+  bms:
+{% if provider_config.bms.domainsuffix is undefined %}
+    domainsuffix: local
+{% endif %}
+    {{ provider_config.bms | to_nice_yaml | indent(4, False) }}
+{% endif %}
+
+{% if instances is defined %}
+instances:
+{% for key, value in instances.iteritems() %}
+{% if "contrail_command" not in value['roles'] and "appformix_controller" not in value['roles'] and "gateway" not in value['roles'] %}
+  {{ key }}:
+    {{ value | to_nice_yaml | indent(4, False) }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if contrail_configuration is defined %}
+contrail_configuration:
+  CONTRAIL_VERSION: "{{ version }}"
+  CLOUD_ORCHESTRATOR: {{ orchestrator }} 
+  METADATA_PROXY_SECRET: {{ metadata_secret }}
+{% if openstack_nodes is defined %}
+  OPENSTACK_NODES: {{ openstack_nodes }}
+{% endif %}
+{% if controller_nodes is defined %}
+  CONTROLLER_NODES: {{ controller_nodes }}
+{% endif %}
+{% if orchestrator == 'openstack' %}
+  AUTH_MODE: keystone
+  KEYSTONE_AUTH_ADMIN_PASSWORD: {{ admin_password }}
+  KEYSTONE_AUTH_URL_VERSION: "/{{ keystone_version }}"
+  RABBITMQ_NODE_PORT: {{ contrail_rabbitmq_port }}
+{% if sku is defined %}
+  OPENSTACK_VERSION: {{ sku }}
+{% endif %}
+{% if auth_ip is defined %}
+  KEYSTONE_AUTH_HOST: {{ auth_ip }}
+  IPFABRIC_SERVICE_HOST: {{ auth_ip }}
+{% endif %}
+{% endif %}
+{% if k8s_master_ip is defined %}
+  KUBERNETES_API_NODES: {{ k8s_master_ip }}
+  KUBERNETES_API_SERVER: {{ k8s_master_ip }}
+{% endif %}
+  {{ contrail_configuration | to_nice_yaml | indent(2, False) }}
+{% endif %}
+
+{% if orchestrator_configuration is defined and orchestrator == 'openstack' %}
+kolla_config:
+  kolla_globals:
+{% if auth_ip is defined %}
+    kolla_internal_vip_address: {{ auth_ip }}
+{% endif %}
+{% if kolla_external_vip is defined %}
+    kolla_external_vip_address: {{ kolla_external_vip }}
+{% endif %}
+{% if orchestrator_configuration.network_interface is defined %}
+    network_interface: {{ orchestrator_configuration.network_interface }}
+{% endif %}
+{% if orchestrator_configuration.external_vip_interface is defined %}
+    kolla_external_vip_interface: {{ orchestrator_configuration.external_vip_interface }}
+{% endif %}
+{% if contrail_api_ip is defined %}
+    contrail_api_interface_address: {{ contrail_api_ip }}
+{% endif %}
+{% if orchestrator_configuration.vrrp_id is defined %}
+    keepalived_virtual_router_id: {{ orchestrator_configuration.vrrp_id }}
+{% endif %}
+    enable_haproxy: {{ orchestrator_configuration.enable_haproxy | default("yes") }}
+    docker_registry: {{ kolla_registry }}
+    docker_namespace: {{ kolla_namespace }}
+    enable_ironic: {{ orchestrator_configuration.enable_ironic | default("no") }}
+    enable_swift: {{ orchestrator_configuration.enable_swift | default("no") }}
+    force_checkout: {{ orchestrator_configuration.force_checkout | default("no") }}
+{% if sku is defined and sku == 'rocky' %}
+    enable_neutron_fwaas: {{ orchestrator_configuration.enable_neutron_fwaas | default("yes") }}
+    neutron_fwaas_version: {{ orchestrator_configuration.neutron_fwaas_version | default("v2") }}
+{% endif %}
+  kolla_passwords:
+    metadata_secret: {{ metadata_secret }}
+    keystone_admin_password: {{ admin_password }}
+  customize:
+    nova.conf: |
+      [libvirt]
+      virt_type={{ nova_virt_driver }}
+      cpu_mode=none
+{% endif %}

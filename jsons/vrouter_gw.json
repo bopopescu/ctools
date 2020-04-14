@@ -1,0 +1,131 @@
+{
+    "cluster" : [
+        {  
+            "id": "cluster_vrouter_gw",
+            "parameters" : {
+                "domain": "englab.juniper.net",
+                "subnet_mask": "255.255.255.0",
+                "provision": {
+                    "contrail_4": {
+                        "enable_lbaas": true
+                    },
+                    "openstack":{
+                        "multi_tenancy": true,
+                        "openstack_manage_amqp": true,
+			"keystone": {
+                            "admin_password": "contrail123",
+			    "admin_token": "admin"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "cluster_vrouter_gw",
+            "domain": "englab.juniper.net",
+            "id": "nodea11",
+            "contrail": {
+                "control_data_interface": "em1"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p4p1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:aa:09:b4",
+                        "ip_address": "10.204.216.7/24",
+                        "default_gateway": "10.204.216.254"
+                    },
+                    {
+                        "name": "em1",
+                        "mac_address": "00:25:90:aa:09:b5",
+                        "ip_address": "192.168.250.4/24"
+                    }
+                ],
+                "management_interface": "p4p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analytics",
+                     "contrail-analyticsdb",
+                     "openstack"
+                     ]
+        },
+        {
+            "cluster_id": "cluster_vrouter_gw",
+            "domain": "englab.juniper.net",
+            "id": "nodea14",
+            "contrail": {
+                "control_data_interface": "em1"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p4p1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:aa:09:a4",
+                        "ip_address": "10.204.216.10/24",
+                        "default_gateway": "10.204.216.254"
+                    },
+                    {
+                        "name": "em1",
+                        "mac_address": "00:25:90:aa:09:a5",
+                        "ip_address": "192.168.250.5/24"
+                    }
+                ],
+                "management_interface": "p4p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+		     "contrail-compute"
+                     ]
+        },
+        {
+            "cluster_id": "cluster_vrouter_gw",
+            "contrail": {
+                "control_data_interface": "p6p2"
+            },
+            "parameters" : {
+                "provision": {
+                    "contrail_4": {
+                        "compute_as_gateway_mode": "server"
+                    }
+                 }
+             },
+            "domain": "englab.juniper.net",
+            "id": "nodei9",
+            "ip_address": "10.204.217.121",
+            "network": {
+                "interfaces": [
+                    {
+                        "ip_address": "192.168.250.19/24",
+                        "mac_address": "00:25:90:e4:08:e5",
+                        "name": "p6p2"
+                    },
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "dhcp": false,
+                        "ip_address": "10.204.217.121/24",
+                        "mac_address": "00:25:90:e7:80:92",
+                        "name": "em1"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "compute_as_gateway_mode": "server",
+            "password": "c0ntrail123",
+            "roles": [
+		     "contrail-compute"
+                     ]
+        }
+    
+    ]
+}

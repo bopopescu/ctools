@@ -1,0 +1,175 @@
+deployment:
+    type:
+      kolla:
+      contrail:
+        branch: master
+        registry: 10.204.217.152:5010
+        #registry: ci-repo.englab.juniper.net:5010
+    sku: queens
+    os: centos7
+    version: null
+    orchestrator: openstack
+    deployer: contrail-ansible-deployer
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+
+instances:
+  nodea7:
+    provider: bms
+    ip: 10.204.216.45
+    roles:
+      openstack:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+
+  nodea11:
+    provider: bms
+    ip: 10.204.216.7
+    roles:
+      openstack:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+
+  nodea30:
+    provider: bms
+    ip: 10.204.216.26
+    roles:
+      openstack:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+
+  nodec35:
+    provider: bms
+    ip: 10.204.216.160
+    roles:
+      openstack_compute:
+       network_interface: enp1s0f0
+      vrouter:
+       PHYSICAL_INTERFACE: enp1s0f0
+       VROUTER_GATEWAY: 10.204.216.254
+
+  nodeg19:
+    provider: bms
+    ip: 10.204.217.59
+    roles:
+      openstack_compute:
+       network_interface: enp1s0f0
+      vrouter:
+       PHYSICAL_INTERFACE: enp1s0f0
+       VROUTER_GATEWAY: 10.204.217.254
+
+  nodegh4:
+    provider: bms
+    ip: 10.204.217.108
+    roles:
+      openstack_compute:
+       network_interface: enp3s0f0
+      vrouter:
+       PHYSICAL_INTERFACE: enp3s0f0
+       VROUTER_GATEWAY: 10.204.217.254
+
+global_configuration:
+  CONTAINER_REGISTRY: 10.204.217.152:5010
+  REGISTRY_PRIVATE_INSECURE: True
+  #CONTAINER_REGISTRY: ci-repo.englab.juniper.net:5010
+
+contrail_configuration:
+  LOG_LEVEL: SYS_DEBUG
+  CONTRAIL_VERSION: null
+  CLOUD_ORCHESTRATOR: openstack
+  OPENSTACK_VERSION: queens
+  #CONTAINER_REGISTRY: ci-repo.englab.juniper.net:5010
+  CONTAINER_REGISTRY: 10.204.217.152:5010
+  REGISTRY_PRIVATE_INSECURE: True
+  CONFIG_API_VIP: 10.204.216.45
+  OPENSTACK_NODES: 10.204.216.45,10.204.216.7,10.204.216.26
+  CONTROLLER_NODES: 10.204.216.45,10.204.216.7,10.204.216.26
+  CONTROL_NODES: 10.204.216.45,10.204.216.7,10.204.216.26
+  RABBITMQ_NODE_PORT: 5673
+  KEYSTONE_AUTH_HOST: 10.204.216.210
+  KEYSTONE_AUTH_URL_VERSION: /v3
+  #KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123
+  AAA_MODE: rbac
+  IPFABRIC_SERVICE_IP: 10.204.216.210
+  VROUTER_GATEWAY: 10.204.216.254
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  JVM_EXTRA_OPTS: "-Xms1g -Xmx2g"
+  #JVM_EXTRA_OPTS: "-Xms4g -Xmx8g"
+
+kolla_config:
+  kolla_globals:
+    kolla_internal_vip_address: 10.204.216.210
+    kolla_external_vip_address: 10.204.216.210
+    contrail_api_interface_address: 10.204.216.45
+    enable_haproxy: "yes"
+    enable_ironic: "no"
+    enable_swift: "no"
+    enable_heat: "yes"
+    contrail_docker_registry: 10.204.217.152:5010
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    username: admin
+    password: contrail123
+  vrrp_id: 222
+  internal_vip: 10.204.216.210
+  external_vip: 10.204.216.210
+  contrail_api_interface_address: 10.204.216.45
+  enable_haproxy: "yes"
+  enable_ironic: "no"
+  enable_swift: "no"
+  enable_heat: "yes"
+
+test_configuration:
+  cfgm0_host_string: root@10.204.216.45
+  cfgm0_host_pwd: c0ntrail123
+  image_web_server: 10.204.217.158
+  use_project_scoped_token: True
+  public_host: 10.84.5.120
+  router_asn: 64512
+  public_rt: 600
+  public_virtual_network: public
+  public_subnet: 10.204.219.128/29
+  fip_pool_name: publicpool
+  ext_routers:
+      hooper: 10.204.217.240
+  #cluster_id: 
+  web_server:
+      server: 10.204.216.50
+      username: bhushana
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-queens-centos7-ha-ansible-sanity
+      log_path: /home/bhushana/Documents/technical/logs
+      web_root: Docs/logs
+  mail_server:
+      server: 10.47.226.20
+      port: 25
+      to: sunilbasker@juniper.net
+      sender: sunilbasker@juniper.net
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.5
+  client: /cs-shared/server-manager/client/server-manager
+

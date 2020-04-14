@@ -1,0 +1,87 @@
+
+- name: install the latest version of packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - python-pip
+    - python-devel
+    - "@Development tools"
+    - openssl-devel
+    - libffi-devel
+
+- name: Install dependencies
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - ansible==2.3.2.0
+    - markupsafe 
+    - httplib2 
+
+- name: Generate SSH keys
+  shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+  args:
+    creates: /root/.ssh/id_rsa
+
+- name: Copy SSH key to all nodes
+  command: sshpass -p c0ntrail123 ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ item.value.ip }}
+  with_dict: "{{ instances }}"
+
+- name: create temp directory for appformix
+  tempfile:
+    state: directory
+    suffix: _appformix
+  register: tmpdir
+
+- name: Download appformix packages 
+  get_url:
+    url: "http://dl.appformix.juniper.net/releases/v{{ deployment.appformix_version }}/{{ item }}"
+    dest: "{{ tmpdir.path }}"
+  with_items:
+    - 'appformix-{{ deployment.appformix_version }}.tar.gz'
+    - 'appformix-platform-images-{{ deployment.appformix_version }}.tar.gz' 
+    - 'appformix-dependencies-images-{{ deployment.appformix_version }}.tar.gz'
+    - 'appformix-network_device-images-{{ deployment.appformix_version }}.tar.gz'
+    - 'appformix-openstack-images-{{ deployment.appformix_version }}.tar.gz'
+ 
+- name: Unpack Appformix tarball
+  unarchive:
+    src: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}.tar.gz"
+    dest: "{{ tmpdir.path }}"
+    remote_src: yes
+
+- name: create inventory
+  file: 
+    path: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}/inventory/group_vars"
+    state: directory
+
+- name: create hosts inventory file
+  template:
+    src: "hosts.j2"
+    dest: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}/inventory/hosts" 
+
+- name: create configuration parameters all file
+  template:
+    src: all.j2
+    dest: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}/inventory/group_vars/all"  
+
+- name: copy the AppFormix Licence file
+  copy:
+    src: OpenstackAppFormixLicense.sig
+    dest: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}"
+
+- name: create openstackrc file
+  template:
+    src: openstackrc.j2
+    dest: "{{ tmpdir.path }}/openstackrc"
+ 
+- name: run playbook to install appformix 
+  shell: >
+    source {{ tmpdir.path }}/openstackrc; ansible-playbook -i inventory appformix_openstack.yml -v      
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_LOG_PATH: "{{ playbook_dir }}/../ansible.log"
+  args:
+    chdir: "{{ tmpdir.path }}/appformix-{{ deployment.appformix_version }}"

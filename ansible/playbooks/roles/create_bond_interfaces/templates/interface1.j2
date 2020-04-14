@@ -1,0 +1,17 @@
+BOOTPROTO=none
+ONBOOT=yes
+MASTER={{ item.value.bond_interface_name }}
+SLAVE=yes
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME={{ item.value.interface1 }}
+UUID=70adf9d8-282b-4805-b00d-596c01e9e7ba
+DEVICE={{ item.value.interface1 }}

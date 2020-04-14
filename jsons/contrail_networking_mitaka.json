@@ -1,0 +1,300 @@
+{
+    "cluster" : [
+        {
+            "id" : "openstack_cluster",
+            "parameters" : {
+                "provision": {
+                    "contrail": {
+                        "config": {
+                            "config_ip_list": ["192.168.100.12"]
+                        }
+                    },
+                    "openstack":{
+                        "openstack_manage_amqp": true,
+                        "rabbitmq": {
+                            "password": "contrail123",
+                            "user": "guest"
+                        },
+                        "keystone": {
+                            "admin_password": "contrail123",
+                            "admin_token": "admin"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id" : "contrail_cluster",
+            "parameters" : {
+                "provision": {
+                    "contrail_4": {
+                        "rabbitmq_config": {
+                            "password": "contrail123",
+                            "user": "guest"
+                        },
+                        "global_config": {
+                            "xmpp_dns_auth_enable": true,
+                            "xmpp_auth_enable": true,
+                            "external_rabbitmq_servers" : "192.168.100.15"
+                        },
+                        "controller_config": {
+                            "external_routers_list": {
+                                "blr-mx2": "192.168.100.100"
+                            },
+                            "encap_priority": "MPLSoUDP,MPLSoGRE,VXLAN",
+                            "bgp_asn": "64512"
+                        },
+                        "api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "aaa_mode": "rbac",
+                            "cloud_admin_role": "admin",
+                            "global_read_only_role": ""
+                        },
+                        "analytics_api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "log": "/var/log/contrail/contrail-analytics-api.log",
+                            "aaa_mode": "rbac"
+                        },
+                        "enable_lbaas": false,
+                        "keystone_config": {
+                            "ip": "192.168.100.15",
+                            "admin_password": "contrail123",
+                            "admin_tenant": "admin"
+                        }
+                    },
+                    "contrail": {
+                        "ha": {
+                            "contrail_internal_vip": "192.168.100.12",
+                            "contrail_external_vip": "10.204.217.77"
+                        }
+                    },
+                    "openstack":{
+                        "external_openstack_ip": "192.168.100.15",
+                        "rabbitmq": {
+                            "password": "contrail123",
+                            "user": "guest"
+                        },
+                        "keystone": {
+                            "admin_password": "contrail123",
+                            "admin_token": "admin"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+       {
+           "contrail": {
+               "control_data_interface": "em2"
+           },
+           "cluster_id": "openstack_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodei19",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "em1",
+               "interfaces": [
+                   {
+                       "name": "em2",
+                       "mac_address": "00:25:90:E7:7E:75",
+                       "ip_address": "192.168.100.15/24"
+                   },
+                   {
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "ip_address": "10.204.217.131/24",
+                       "mac_address": "00:25:90:E7:7E:74",
+                       "name": "em1"
+                   }
+               ]
+           },
+           "roles": ["openstack"],
+           "ipmi_address": "10.207.25.193"
+       },
+       {
+           "contrail": {
+               "control_data_interface": "p1p2"
+           },
+           "cluster_id": "contrail_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodeg37",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "p1p1",
+               "interfaces": [
+                   {
+                       "name": "p1p2",
+                       "mac_address": "00:25:90:c5:60:e1",
+                       "ip_address": "192.168.100.12/24"
+                   },
+                   {
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "ip_address": "10.204.217.77/24",
+                       "mac_address": "00:25:90:c5:60:e0",
+                       "name": "p1p1"
+                   }
+               ]
+           },
+           "roles": ["contrail-lb"],
+           "ipmi_address": "10.207.25.131"
+       },
+       {
+           "contrail": {
+               "control_data_interface": "p1p2"
+           },
+           "cluster_id": "contrail_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodec28",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "p1p1",
+               "interfaces": [
+                   {
+                       "name": "p1p2",
+                       "mac_address": "00:25:90:c3:08:83",
+                       "ip_address": "192.168.100.11/24"
+                   },
+                   {
+                       "name": "p1p1",
+                       "ip_address": "10.204.217.13/24",
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "mac_address": "00:25:90:c3:08:82"
+                   }
+               ]
+           },
+           "roles": ["contrail-controller", "contrail-analytics", "contrail-analyticsdb"],
+           "ipmi_address": "10.207.25.82"
+       },
+       {
+           "contrail": {
+               "control_data_interface": "p1p2"
+           },
+           "cluster_id": "contrail_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodec10",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "p1p1",
+               "interfaces": [
+                   {
+                       "name": "p1p2",
+                       "mac_address": "00:25:90:C4:83:E5",
+                       "ip_address": "192.168.100.13/24"
+                   },
+                   {
+                       "name": "p1p1",
+                       "ip_address": "10.204.217.176/24",
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "mac_address": "00:25:90:C4:83:E4"
+                   }
+               ]
+           },
+           "roles": ["contrail-controller", "contrail-analytics", "contrail-analyticsdb"],
+           "ipmi_address": "10.207.25.64"
+       },
+       {
+           "contrail": {
+               "control_data_interface": "p1p2"
+           },
+           "cluster_id": "contrail_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodec33",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "p1p1",
+               "interfaces": [
+                   {
+                       "name": "p1p2",
+                       "mac_address": "00:25:90:C4:82:29",
+                       "ip_address": "192.168.100.17/24"
+                   },
+                   {
+                       "name": "p1p1",
+                       "ip_address": "10.204.217.168/24",
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "mac_address": "00:25:90:C4:82:28"
+                   }
+               ]
+           },
+           "roles": ["contrail-controller", "contrail-analytics", "contrail-analyticsdb"],
+           "ipmi_address": "10.207.25.87"
+       },
+       {
+           "contrail": {
+               "control_data_interface": "em2"
+           },
+           "cluster_id": "contrail_cluster",
+           "domain": "englab.juniper.net",
+           "id": "nodei17",
+           "email": "sundarkh@juniper.net",
+           "password": "c0ntrail123",
+           "network": {
+               "management_interface": "em1",
+               "interfaces": [
+                   {
+                       "name": "em2",
+                       "mac_address": "00:25:90:e7:82:5b",
+                       "ip_address": "192.168.100.14/24"
+                   },
+                   {
+                       "default_gateway": "10.204.217.254",
+                       "dhcp": true,
+                       "ip_address": "10.204.217.129/24",
+                       "mac_address": "00:25:90:e7:82:5a",
+                       "name": "em1"
+                   }
+               ]
+           },
+           "roles": ["contrail-compute"],
+           "ipmi_address": "10.207.25.191"
+       },
+       {
+              "contrail": {
+                  "control_data_interface": "bond0"
+              },
+              "cluster_id": "contrail_cluster",
+              "domain": "englab.juniper.net",
+              "id": "nodei20",
+              "email": "sundarkh@juniper.net",
+              "password": "c0ntrail123",
+              "network": {
+                  "management_interface": "em1",
+                  "interfaces": [
+                      {
+                          "name": "em2",
+                          "mac_address": "00:25:90:E7:7F:B1"
+                      },
+                      {
+                          "name": "p6p1",
+                          "mac_address": "00:25:90:E4:09:8A"
+                      },
+                      {
+                          "name": "p6p2",
+                          "mac_address": "00:25:90:E4:09:8B"
+                      },
+                      {
+                          "name": "em1",
+                          "ip_address": "10.204.217.132/24",
+                          "default_gateway": "10.204.217.254",
+                          "dhcp": true,
+                          "mac_address": "00:25:90:E7:7F:B0"
+                      },
+                      {
+                          "name": "bond0",
+                          "type": "bond",
+                          "ip_address": "192.168.100.16/24",
+                          "bond_options": {"miimon": "100", "mode": "802.3ad","xmit_hash_policy": "layer3+4"},
+                          "member_interfaces": ["em2", "p6p1", "p6p2"]
+                      }
+                  ]
+              },
+              "roles": ["contrail-compute"],
+              "ipmi_address": "10.207.25.194"
+
+        }
+    ],

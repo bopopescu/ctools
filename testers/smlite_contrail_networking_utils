@@ -1,0 +1,420 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+multi_node=0
+
+function reimage_setup_using_SM {
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+
+    if [[ $DISTRO =~ ubuntu-14.04 ]]; then
+        image_id="ubuntu-14.04.5"
+    elif [[ $DISTRO =~ ubuntu-16 ]]; then
+        image_id="ubuntu-16.04.2.minimal"
+    elif [[ ${CENTOS_72} -eq 1 ]];then
+        image_id="centos-7.2"
+	image="/root/images/CentOS-7-x86_64-Minimal-1511.iso"
+        pkg_type="contrail-centos-package"
+        iso_type="redhat"
+        SMID=centos72$SKU${BUILDID}
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+        isofile="/root/images/centos72.json"
+    elif [[ $DISTRO =~ centos71 ]]; then
+        image_id="centos-7.1"
+	image="/root/images/CentOS-7-x86_64-Minimal-1503-01.iso"
+        pkg_type="contrail-centos-package"
+        iso_type="redhat"
+        SMID=centos71$SKU${BUILDID}
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+        isofile="/root/images/centos71.json"
+    fi
+
+    echo "Connect to SM_SERVER to reimage the targets"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "reimage the target setup"
+        server-manager-client reimage -F --cluster_id $CLUSTER_NAME ${image_id}
+        if [ $? == 0 ]
+        then
+            echo "Issue of Reimage command to reimage target nodes is sucessful!!!"
+        else
+            echo "Issue of Reimage command to reimage target nodes failed, aborting the process"
+            exit 1
+        fi
+
+        echo "reimage in progress please wait ..."
+        sleep 10
+
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 150
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+
+}
+
+# Get the json files for server and cluster
+# if any apecified.
+function set_json_file_path {
+    set -x
+    folder_path=''
+    json=''
+
+    #For the time being we are not checking in the cluster and server json files in contrail-tools
+    #folder_path=${TOOLS_WS}/testbeds
+    #clusterjson=$folder_path/$CLUSTER_JSON
+    #serverjson=$folder_path/$SERVER_JSON
+    folder_path="/root/sm_files"
+    json=$folder_path/$JSON
+
+    #[ -f $clusterjson ] || die "Cluster json file $clusterjson not found"
+    #[ -f $serverjson ] || die "Server json file $serverjson not found"
+    export ABS_PATH_JSON=$json
+
+}
+
+
+#check if the server-manager pkgs are available in artifacts folder.
+function SMLite_check_SM_pkg_availability() {
+    count=0
+    SMLite_get_node_distro
+    if [[ $CB_SANITY -eq 1 ]]; then
+        if [[ $DISTRO =~ ubuntu-16 ]]; then
+                smpkg_dir="/cs-build/CB-${BRANCH}-ubuntu16-${SKU}/${BUILDID}"
+        else
+                smpkg_dir="/cs-build/CB-${BRANCH}-ubuntu14-${SKU}/${BUILDID}"
+        fi
+    else
+        smpkg_dir="/cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts"
+    fi
+    echo $SERVER_MANAGER_INSTALLER
+
+    while [ "$count" -ne 36 ]; do
+        if ls $smpkg_dir/${SERVER_MANAGER_INSTALLER}
+        then
+            echo "SM pkgs are present in artifacts"
+            break
+        else
+            if [ "$count" -eq 35 ]
+            then
+                echo "waited for an hour, still pkgs are not found, aborting"
+                exit 1
+            fi
+            echo "SM pkgs are still not there, let's wait..."
+            sleep 100
+            count=$((count+1))
+        fi
+    done
+}
+
+
+function SMLite_get_node_distro() {
+    lsb_dist_output=`exec_cmds -s ${API_SERVER_HOST_STRING} -p ${API_SERVER_HOST_PASSWORD} -c "
+        cat /etc/lsb-release"`
+    if [[ $lsb_dist_output =~ Ubuntu ]]; then
+        lsb_dist=Ubuntu
+        SERVER_MANAGER_INSTALLER="contrail-server-manager-installer_*\.*-${BUILDID}\~$SKU\_all.deb"
+        CONTRAIL_NW_PACKAGE="contrail-networking-docker_*.tgz"
+	OPENSTACK_PACKAGE="contrail-cloud-docker_*.tgz"
+    else
+        lsb_dist=SomeOtherOS
+        SERVER_MANAGER_INSTALLER="contrail-server-manager-installer-*\.*-${BUILDID}*.el6.noarch.rpm"
+        CONTRAIL_NW_PACKAGE="contrail-install-packages*(.rpm)"
+    fi
+    export lsb_dist
+    export OPENSTACK_PACKAGE
+    export SERVER_MANAGER_INSTALLER
+    export CONTRAIL_NW_PACKAGE
+}
+
+#copy SM-lite and contrail-packages to SM-Lite server
+function copy_smlite_pkg() {
+
+    set -x
+    #check if SM pkgs are available in artifacts before proceeding further.
+    SMLite_check_SM_pkg_availability || die "SM pkg not available in artifacts"
+
+    if [[ $CB_SANITY -eq 1 ]]; then
+        if [[ $DISTRO =~ ubuntu-16 ]]; then
+            pkg_dir="/cs-build/CB-${BRANCH}-ubuntu16-${SKU}/${BUILDID}"
+        else
+            pkg_dir="/cs-build/CB-${BRANCH}-ubuntu14-${SKU}/${BUILDID}"
+        fi
+    else
+        sku_pkg_dir="/cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${OPENSTACK_SKU}"
+        nw_pkg_dir="/cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}"
+    fi
+    echo $OPENSTACK_PACKAGE
+    echo $CONTRAIL_NW_PACKAGE
+    echo $SERVER_MANAGER_INSTALLER
+    sleep 30
+
+    if [[ $CB_SANITY -eq 1 ]]; then
+        sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${pkg_dir}/${SERVER_MANAGER_INSTALLER} ${pkg_dir}/${OPENSTACK_PACKAGE} $ABS_PATH_TBFILE ${API_SERVER_HOST_STRING}:/root/
+        exec_cmds -s root@$SM_SERVER_IP -p "c0ntrail123" -c "sshpass -p ${API_SERVER_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /root/sm_files/check_provision_cliff.sh /root/sm_files/check_image_cliff.sh $ABS_PATH_JSON ${API_SERVER_HOST_STRING}:/root/"
+    else
+        sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${nw_pkg_dir}/artifacts/${SERVER_MANAGER_INSTALLER} ${nw_pkg_dir}/artifacts/${CONTRAIL_NW_PACKAGE} ${sku_pkg_dir}/artifacts/${OPENSTACK_PACKAGE} $ABS_PATH_TBFILE ${API_SERVER_HOST_STRING}:/root/
+        exec_cmds -s root@$SM_SERVER_IP -p "c0ntrail123" -c "sshpass -p ${API_SERVER_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /root/sm_files/check_provision_cliff.sh /root/sm_files/check_image_cliff.sh $ABS_PATH_JSON ${API_SERVER_HOST_STRING}:/root/"
+    fi
+
+    if [ $? == 0 ]
+    then
+        echo "Copy of ${SERVER_MANAGER_INSTALLER}, ${OPENSTACK_PACKAGE} and ${CONTRAIL_NW_PACKAGE} to SMLITE server is successfull"
+    else
+        echo "Copy of ${SERVER_MANAGER_INSTALLER} and ${CONTRAIL_NW_PACKAGE} to SMLITE server is failed!!!"
+        exit 1
+    fi
+
+}
+
+
+
+# This function will provision the provided setup.
+function provision_using_SMLite() {
+    set -x
+    if [ $SKIP_SM_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+  
+    if [[ $DISTRO =~ ubuntu ]]; then
+        pkg_type="contrail-ubuntu-package"
+        iso_type="ubuntu"
+        SMID=ubuntu14$SKU${BUILDID}
+	if [[ $DISTRO =~ ubuntu-16 ]]; then
+            SMID=ubuntu16$SKU${BUILDID}
+        fi
+        OPENSTACK=${OPENSTACK_SKU}
+        if [[ $SKU =~ mitaka ]]; then
+            ubuntu_rel="trusty"
+        elif [[ $SKU =~ ocata ]]; then
+            ubuntu_rel="xenial"
+        fi
+    elif [[ ${CENTOS_72} -eq 1 ]];then
+        pkg_type="contrail-centos-package"
+        iso_type="redhat"
+        SMID=centos72$SKU${BUILDID}
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+    elif [[ $DISTRO =~ centos71 ]]; then
+        pkg_type="contrail-centos-package"
+        iso_type="redhat"
+        SMID=centos71$SKU${BUILDID}
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+    fi
+ 
+    echo "Connect to SM_SERVER to provision the targets/cluster"
+
+    if [[ $CB_SANITY -eq 1 ]]; then
+        if [[ $DISTRO =~ ubuntu-16 ]]; then
+            openstk_pkg_path=`ls /cs-build/CB-${BRANCH}-ubuntu16-${SKU}/${BUILDID}/contrail-cloud-docker_*.tgz`
+        else
+            openstk_pkg_path=`ls /cs-build/CB-${BRANCH}-ubuntu14-${SKU}/${BUILDID}/contrail-cloud-docker_*.tgz`
+        fi
+        openstk_pkg=/root/${openstk_pkg_path##*/}
+        cntl_pkg=`echo $openstk_pkg | sed 's/cloud/networking/' | sed "s/\-$SKU//"`
+    else
+        cntl_pkg_path=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts/contrail-networking-docker_*.tgz`
+        cntl_pkg=/root/${cntl_pkg_path##*/}
+        openstk_pkg_path=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${OPENSTACK_SKU}/artifacts/contrail-cloud-docker_*.tgz`
+        openstk_pkg=/root/${openstk_pkg_path##*/}
+    fi
+
+    echo $openstk_pkg
+    echo $cntl_pkg
+
+    if [[ $CB_SANITY -eq 1 ]]; then
+        sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+            set -e
+            set -x
+            echo "Extract Contrail Networking package from the Cloud Docker TGZ"
+            tar -xzvf ${openstk_pkg}
+        ) "
+    fi
+
+    sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+        set -e
+        set -x
+        echo "Install SM-Lite and provision the target setup"
+        dpkg -i /root/${SERVER_MANAGER_INSTALLER}
+        sed -i '/server-manager provision -F/d' /opt/contrail/contrail_server_manager/provision_containers.sh
+        if [[ $SKU =~ ocata ]]; then
+            echo '\"image\":[{\"category\": \"package\", \"id\": \"openstack_image\", \"type\": \"$pkg_type\", \"path\": \"$openstk_pkg\", \"version\":\"$BUILDID\"}]}' >> /root/${JSON}
+        else
+            echo '\"image\":[{\"category\": \"package\", \"id\": \"openstack_image\", \"type\": \"$pkg_type\", \"path\": \"$openstk_pkg\", \"version\":\"$BUILDID\"},{\"category\": \"package\", \"id\": \"networking_image\", \"type\": \"$pkg_type\", \"path\": \"$cntl_pkg\", \"version\":\"$BUILDID\", \"parameters\": {\"openstack_sku\": \"${OPENSTACK_SKU}\"}}]}' >> /root/${JSON}
+        fi
+        if [ $SKIP_SMLITE_INSTALL -ne 0 ]
+        then
+            if [[ $SKU =~ ocata ]]; then
+                /opt/contrail/contrail_server_manager/provision_containers.sh -ni -j /root/${JSON} -sku ocata
+            else
+                /opt/contrail/contrail_server_manager/provision_containers.sh -ni -j /root/${JSON}
+            fi
+	else
+            if [[ $SKU =~ ocata ]]; then
+                /opt/contrail/contrail_server_manager/provision_containers.sh -j /root/${JSON} -sku ocata
+            else
+                /opt/contrail/contrail_server_manager/provision_containers.sh -j /root/${JSON}
+            fi
+	fi
+        server-manager provision -F --cluster_id ${OS_CLUSTER_NAME} openstack_image
+    ) "
+    sleep 600 
+    #assumption is by this time, SM is installed on cfgm0 and provision is at kernel upgrade and node reboot.
+
+    cluster_name=${OS_CLUSTER_NAME}
+
+    sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+        set -e
+        set -x
+        #check provisioing status.
+        chmod +777 /root/check_provision_cliff.sh
+	/root/check_provision_cliff.sh $cluster_name
+        if [ "$?" -eq 0 ]
+        then
+            echo "Provisioning of the target/cluster is sucessfull!!!"
+        else
+            echo "Provisioning of the target/cluster failed!!! aborting the process"
+            exit 1
+        fi
+    ) "; rv=$?
+
+    if [ $rv == 0 ]
+    then
+        echo "Provisioning openstack is sucessfull!!!"
+    else
+        echo "Provisioning openstack failed!!! aborting the process"
+        exit 1
+    fi
+
+    if [[ $SKU =~ ocata ]]; then
+        sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+            set -e
+            set -x
+            echo "Add Networking Image to SM"
+            echo '{\"image\":[{\"category\": \"package\", \"id\": \"networking_image\", \"type\": \"$pkg_type\", \"path\": \"$cntl_pkg\", \"version\":\"$BUILDID\", \"parameters\": {\"openstack_sku\": \"${OPENSTACK_SKU}\"}}]}' > /root/networking_image.json
+            server-manager add image -f /root/networking_image.json
+            sleep 10
+            chmod +777 /root/check_image_cliff.sh
+            /root/check_image_cliff.sh networking_image
+            if [ "$?" -eq 0 ]
+            then
+                echo "Networking Image successfully added to the SM!!!"
+            else
+                echo "Networking Image add to SM Failed!!! aborting the process"
+            fi
+        ) "; rv=$?
+        if [ $rv == 0 ]; then
+            echo "Networking Image successfully added to the SM!!!"
+        else
+            echo "Networking Image add to SM Failed!!! aborting the process"
+            exit 1
+        fi
+    fi
+
+    sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+        set -e
+        set -x
+        server-manager provision -F --cluster_id ${CLUSTER_NAME} networking_image
+    ) "
+    sleep 600
+    #assumption is by this time, SM is installed on cfgm0 and provision is at kernel upgrade and node reboot.
+
+    cluster_name=${CLUSTER_NAME}
+
+    sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+        set -e
+        set -x
+        #check provisioing status.
+        chmod +777 /root/check_provision_cliff.sh
+        /root/check_provision_cliff.sh $cluster_name
+        if [ "$?" -eq 0 ]
+        then
+            echo "Provisioning of the target/cluster is sucessfull!!!"
+        else
+            echo "Provisioning of the target/cluster failed!!! aborting the process"
+            exit 1
+        fi
+    ) "; rv=$?
+
+    if [ $rv == 0 ]
+    then
+        echo "Provisioning contrail networking is sucessfull!!!"
+    else
+        echo "Provisioning contrail networking failed!!! aborting the process"
+        exit 1
+    fi
+
+}
+
+function run_smgr_task() {
+    echo "Running tests on $1.."
+
+    if [ -z "$SM_SERVER_IP" ]
+    then
+        echo "SM_SERVER_IP is not set, unable to proceede, aborting the process"
+        exit 1
+    fi
+
+    if [ -z $OS_CLUSTER_NAME ] && [ -z $CLUSTER_NAME ]; then
+        echo "Contrail and Openstack CLUSTER_NAME env is not set, aborting the process"
+        exit 1
+    fi
+    create_testbed || die "Failed to create required testbed details"
+    reimage_setup_using_SM || debug_and_die "reimage failed"
+    if [ -z JSON ]; then
+        echo "JSON env variables is not set."
+        exit 1
+    else
+        echo "JSON will be used to provision the setup."
+	set_json_file_path || die "setting json file path for cluster and server failed"
+    fi
+    copy_smlite_pkg || die "copy of sm-lite packages failed"
+    provision_using_SMLite || die "provision failed"
+    #add_sourcelist_SMLite || die "source.list copy failed on all target nodes"
+    #check_kernel_upgrade || die "kernel upgrade failed"
+
+    #add fab basic images.
+    if [ $ADD_IMAGES -eq 1 ]; then
+       (cd ${TOOLS_WS}/contrail-fabric-utils
+        fab add_basic_images)
+    fi
+
+    search_package
+    pkg_file_name=`basename $PKG_FILE`
+    if [[ $USE_CLOUD_PKG -eq 1 ]]; then
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-cloud-docker[_]\([0-9\.\-]*\)-.*/\1/'`
+    elif [[ $USE_NETWORKING_PKG -eq 1 ]]; then
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-networking-docker[_]\([0-9\.\-]*\)_.*/\1/'`
+    else
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-cloud-docker[_]\([0-9\.\-]*\)-.*/\1/'`
+    fi
+    if [[ -z $TEST_HOST_STRING ]]; then
+        export TEST_HOST_STRING=$API_SERVER_HOST_STRING
+        export TEST_HOST_PASSWORD=$API_SERVER_HOST_PASSWORD
+    fi
+    export TEST_HOST_IP=`echo $TEST_HOST_STRING | cut -d @ -f2`
+    export TEST_HOST_USER=`echo $TEST_HOST_STRING | cut -d @ -f1`
+    #install_third_party_pkgs || die "installing GDB/ant failed"
+    setup_testnode || die "test node setup failed"
+    install_dep_pkgs_for_test
+    run_sanity_simple || die "run_sanity_simple failed"
+    run_tempest || die "Run_Tempest step failed"
+    collect_tech_support || die "Task to collect logs/cores failed"
+    echo "Ending test on $1"
+}

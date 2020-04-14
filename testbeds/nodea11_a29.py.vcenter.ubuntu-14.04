@@ -1,0 +1,174 @@
+from fabric.api import env
+
+a11 = '10.204.216.7'
+a18 = '10.204.216.14'
+a19 = '10.204.216.15'
+#g25 = '10.204.217.65'
+#g26 = '10.204.217.66'
+#g27 = '10.204.217.67'
+#k9 =  '10.204.216.229'
+#k10 =  '10.204.216.230'
+l5 = '10.204.217.212'
+l6 = '10.204.217.215'
+#l7 =  '10.204.217.217'
+
+#nodeg25_vm = '10.204.217.26'
+#nodeg26_vm = '10.204.217.27'
+#nodeg27_vm = '10.204.217.28'
+#nodek10_vm = '10.204.216.216'
+
+nodel5_vm = '10.204.217.26'
+nodel6_vm = '10.204.217.27'
+#nodel7_vm = '10.204.217.28'
+
+host1 = 'root@' + a11
+host2 = 'root@' + a18
+host3 = 'root@' + a19
+host4 = 'root@' + nodel5_vm
+host5 = 'root@' + nodel6_vm
+#host6 = 'root@' + nodel7_vm
+#host10 = 'root@' + nodek10_vm
+esx2 = 'root@' + l5
+esx3 = 'root@' + l6
+#esx4 = 'root@' + l7
+#esx7 = 'root@' + k10
+
+
+ext_routers = [('blr-mx1', '10.204.216.253')]
+router_asn = 64510
+public_vn_rtgt = 19006
+public_vn_subnet = "10.204.219.80/29"
+
+host_build = 'stack@10.204.216.49'
+
+env.roledefs = {
+    #'all': [host1, host2, host3, host4,host5, host6, host7, host10],
+    #'all': [host1, host2, host3, host4,host5,host6],
+    'all': [host1, host2, host3, host4,host5],
+    'cfgm': [host1,host2,host3],
+    'webui': [host1],
+    'control': [host2, host3],
+    'collector': [host2,host3],
+    'database': [host1,host2,host3],
+    #'compute': [host4,host5,host6],
+    'compute': [host4,host5],
+    'build': [host_build]
+}
+
+env.hostnames = {
+    #'all': ['nodea11', 'nodea18', 'nodea19', 'nodek9','nodeg25-compute-vm', 'nodeg26-compute-vm','nodeg27-compute-vm','nodek10-compute-vm']
+    #'all': ['nodea11', 'nodea18', 'nodea19', 'nodek9','nodel5-compute-vm','nodel7-compute-vm','nodel7-compute-vm']
+    'all': ['nodea11', 'nodea18', 'nodea19', 'nodek9','nodel5-compute-vm','nodel6-compute-vm']
+}
+
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    host5: 'c0ntrail123',
+    #host6: 'c0ntrail123',
+    #host7: 'c0ntrail123',
+    #host10: 'c0ntrail123',
+    esx2: 'c0ntrail123',
+    esx3: 'c0ntrail123',
+    #esx4: 'c0ntrail123',
+    host_build: 'stack@123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    host5:'ubuntu',
+    #host6:'ubuntu',
+    #host7:'ubuntu',
+    #host10:'ubuntu',
+}
+
+env.orchestrator = 'vcenter'
+
+env.vcenter = {
+        'server':'10.204.217.189',
+        'port': '443',
+        'username': 'administrator@vsphere.local',
+        'password': 'Contrail123!',
+        'auth': 'https',
+        'datacenter': 'a11a29',
+        'cluster': ['a11a29_blr'],
+        'dv_switch': { 'dv_switch_name': 'a11a29_dvs',},
+        'dv_port_group': { 'dv_portgroup_name': 'a11a29_dvpg', 'number_of_ports': '3', },
+}
+
+esxi_hosts = {
+    'nodel5' : {
+        'ip' : l5,
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'cluster' : 'a11a29_blr',
+        'datastore' : '/vmfs/volumes/l5-ds',
+        'contrail_vm' : {
+            'name' : 'nodel5-compute-vm',
+            'mac' : '52:54:00:29:26:b9',
+            'host' : host4,
+            'cluster' : 'a11a29_blr',
+            'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk',
+        }
+    },
+    'nodel6' : {
+        'ip' : l6,
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'cluster' : 'a11a29_blr',
+        'datastore' : '/vmfs/volumes/l6-ds',
+        'contrail_vm' : {
+            'name' : 'nodel6-compute-vm',
+            'mac' : '52:54:00:cd:ff:b9',
+            'host' : host5,
+            'cluster' : 'a11a29_blr',
+            'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk',
+        }
+    },
+#    'nodel7' : {
+#        'ip' : l7,
+#        'username' : 'root',
+#        'password' : 'c0ntrail123',
+#        'cluster' : 'a11a29_blr',
+#        'datastore' : '/vmfs/volumes/l7-ds',
+#        'contrail_vm' : {
+#            'name' : 'nodel7-compute-vm',
+#            'mac' : '52:54:00:f4:19:c5',
+#            'host' : host6,
+#            'cluster' : 'a11a29_blr',
+#            'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk',
+#        }
+#    },
+   # 'nodek10' : {
+   #     'ip' : k10,
+   #     'username' : 'root',
+   #     'password' : 'c0ntrail123',
+   #     'cluster' : 'a11a29_blr',
+   #     'datastore' : '/vmfs/volumes/k10-ds',
+   #     'contrail_vm' : {
+   #         'name' : 'nodek10-compute-vm',
+   #         'mac' : '52:54:00:7d:fd:49',
+   #         'host' : host10,
+   #         'cluster' : 'a11a29_blr',
+   #         'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk',
+   #     }
+   # },
+}
+
+minimum_diskGB=32
+env.test_repo_dir='/root/contrail-test'
+env.mail_from='contrail-build@juniper.net'
+env.mail_to='sandipd@juniper.net'
+multi_tenancy=True
+env.interface_rename = False
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.log_scenario='Vcenter as Compute MultiNode Single Intf Sanity'
+env.enable_lbaas = True
+do_parallel = True
+env.ntp_server = '10.204.217.158'

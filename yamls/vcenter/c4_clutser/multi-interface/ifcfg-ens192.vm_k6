@@ -1,0 +1,20 @@
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO=none
+IPADDR=192.168.0.183
+PREFIX=24
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="no"
+IPV6_AUTOCONF="no"
+IPV6_DEFROUTE="no"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="ens192"
+# This is system specific and can be created using 'uuidgen eth0' command #
+UUID="417b4b53-13e5-4d8f-b2e6-b45ac79c77a7"
+DEVICE="ens192"
+ONBOOT="yes"
+IPV6_PRIVACY="no"
+

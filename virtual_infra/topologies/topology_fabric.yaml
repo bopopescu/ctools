@@ -1,0 +1,221 @@
+networks:
+    management:
+        cidr: 10.0.0.0/24
+    ctrl1:
+        cidr: 10.10.0.0/24
+        gateway: null
+    leaf1-spine1:
+        cidr: 10.20.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf1-spine2:
+        cidr: 10.30.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf2-spine1:
+        cidr: 10.40.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf2-spine2:
+        cidr: 10.50.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf3-spine1:
+        cidr: 10.60.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf3-spine2:
+        cidr: 10.70.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf1-cosim:
+        cidr: 11.11.11.96/29 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf2-cosim:
+        cidr: 11.11.11.96/29 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf3-cosim:
+        cidr: 11.11.11.96/29 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    dummy:
+        cidr: 11.11.11.96/27 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    spine1-cosim:
+        cidr: 11.11.11.96/29 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    spine2-cosim:
+        cidr: 11.11.11.96/29 # Dummy cidr wont be used
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+    leaf1-bms1-1:
+        cidr: 12.12.12.0/29
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+    leaf1-bms1-2:
+        cidr: 12.12.12.0/29
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+    leaf2-bms2:
+        cidr: 12.12.12.0/29
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+    leaf3-bms2:
+        cidr: 12.12.12.0/29
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+
+allowed_address_pairs:
+    internal_vip: 10.10.0.100
+    external_vip: 10.0.0.100
+    lo0_spine1: 1.1.1.1
+    lo0_spine2: 2.2.2.2
+    lo0_leaf1: 3.3.3.3
+    lo0_leaf2: 4.4.4.4
+    lo0_leaf3: 5.5.5.5
+
+instances:
+  - name: command
+    type: command
+    roles:
+        contrail_command:
+    ports:
+        - network: management
+        - network: ctrl1
+  - name: appformix
+    type: appformix
+    roles:
+        appformix_controller:
+    ports:
+        - network: management
+        - network: ctrl1
+  - name: openstack
+    type: openstack
+    roles:
+        openstack:
+    ports:
+        - network: management
+          aap: external_vip
+        - network: ctrl1
+          aap: internal_vip
+  - name: controller
+    type: controller
+    roles:
+        config_database:
+        config:
+        control:
+        analytics:
+        analytics_database:
+        analytics_alarm:
+        analytics_snmp:
+        webui:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3
+  - name: compute
+    type: compute
+    roles:
+        vrouter:
+        openstack_compute:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 2
+  - name: csn
+    type: csn
+    roles:
+        vrouter:
+          TSN_EVPN_MODE: True
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 2
+  - name: bms1
+    type: bms
+    ports:
+        - network: management
+        - network: leaf1-bms1-1
+        - network: leaf1-bms1-2
+  - name: bms2
+    type: bms
+    ports:
+        - network: management
+        - network: leaf2-bms2
+        - network: leaf3-bms2
+  - name: leaf1
+    type: leaf
+    ports:
+        - network: management
+        - network: leaf1-cosim
+        - network: dummy
+        - network: ctrl1
+          aap: lo0_leaf1
+        - network: leaf1-spine1
+          aap: lo0_leaf1
+        - network: leaf1-spine2
+          aap: lo0_leaf1
+        - network: leaf1-bms1-1
+        - network: leaf1-bms1-2
+  - name: leaf2
+    type: leaf
+    ports:
+        - network: management
+        - network: leaf2-cosim
+        - network: dummy
+        - network: ctrl1
+          aap: lo0_leaf2
+        - network: leaf2-spine1
+          aap: lo0_leaf2
+        - network: leaf2-spine2
+          aap: lo0_leaf2
+        - network: leaf2-bms2
+  - name: leaf3
+    type: leaf
+    ports:
+        - network: management
+        - network: leaf3-cosim
+        - network: dummy
+        - network: ctrl1
+          aap: lo0_leaf3
+        - network: leaf3-spine1
+          aap: lo0_leaf3
+        - network: leaf3-spine2
+          aap: lo0_leaf3
+        - network: leaf3-bms2
+  - name: spine1
+    type: spine
+    ports:
+        - network: management
+        - network: spine1-cosim
+        - network: dummy
+        - network: ctrl1
+          aap: lo0_spine1
+        - network: leaf1-spine1
+          aap: lo0_spine1
+        - network: leaf2-spine1
+          aap: lo0_spine1
+        - network: leaf3-spine1
+          aap: lo0_spine1
+  - name: spine2
+    type: spine
+    ports:
+        - network: management
+        - network: spine2-cosim
+        - network: dummy
+        - network: ctrl1
+          aap: lo0_spine2
+        - network: leaf1-spine2
+          aap: lo0_spine2
+        - network: leaf2-spine2
+          aap: lo0_spine2
+        - network: leaf3-spine2
+          aap: lo0_spine2

@@ -1,0 +1,93 @@
+---
+- name: initialize analytics_hosts
+  set_fact:
+    analytics_hosts: []
+
+- name: collect analytics hosts
+  set_fact:
+    analytics_hosts: "{{ analytics_hosts + [item.value.ip] }}"
+  with_dict: "{{ instances }}"
+  when: item.value.roles.analytics is defined
+
+- name: set policy generator ip
+  set_fact:
+    pg_ip: "{{ inventory_hostname }}"
+
+- name: set policy generator port if defined
+  set_fact:
+    pg_port: "{{ contrail_configuration.policy_generator_port }}"
+  when: contrail_configuration.policy_generator_port is defined
+
+- name: set policy generator version if defined
+  set_fact:
+    pg_version: "{{ contrail_configuration.CONTRAIL_VERSION }}"
+  when: contrail_configuration.CONTRAIL_VERSION is defined
+
+- name: set policy generator registry if defined
+  set_fact:
+    pg_registry: "{{ global_configuration.CONTAINER_REGISTRY }}"
+  when:
+    - global_configuration is defined
+    - global_configuration.CONTAINER_REGISTRY is defined
+
+- name: set config_port if defined
+  set_fact:
+    config_port: "{{ contrail_configuration.CONFIG_API_PORT }}"
+  when: contrail_configuration.CONFIG_API_PORT is defined
+
+- name: set config_ip if vip is defined
+  set_fact:
+    config_ip: "{{ contrail_configuration.CONFIG_API_VIP }}"
+  when: contrail_configuration.CONFIG_API_VIP is defined
+
+- name: set config_ip if CONFIG_NODES is defined
+  set_fact:
+    config_ip: "{{ contrail_configuration.CONFIG_NODES.split(',')[0] }}"
+  when: config_ip is undefined and contrail_configuration.CONFIG_NODES is defined
+
+- name: set analytics_ip to local ip
+  set_fact:
+    analytics_ip: "127.0.0.1"
+    analytics_port: 8181
+  when: inventory_hostname in analytics_hosts
+
+- name: set analytics_ip to remote
+  set_fact:
+    analytics_ip: "{{ analytics_hosts[0] }}"
+    analytics_port: 8081
+  when: analytics_ip is undefined
+
+- name: set admin password if defined
+  set_fact:
+    admin_password: "{{ contrail_configuration.KEYSTONE_AUTH_ADMIN_PASSWORD }}"
+  when: contrail_configuration.KEYSTONE_AUTH_ADMIN_PASSWORD is defined
+
+- name: set admin user if defined
+  set_fact:
+    admin_user: "{{ contrail_configuration.KEYSTONE_AUTH_ADMIN_USER }}"
+  when: contrail_configuration.KEYSTONE_AUTH_ADMIN_USER is defined
+
+- name: set admin tenant if defined
+  set_fact:
+    admin_tenant: "{{ contrail_configuration.KEYSTONE_AUTH_ADMIN_TENANT }}"
+  when: contrail_configuration.KEYSTONE_AUTH_ADMIN_TENANT is defined
+
+- name: set auth host
+  set_fact:
+    auth_host: "{{ contrail_configuration.KEYSTONE_AUTH_HOST }}"
+  when: contrail_configuration.KEYSTONE_AUTH_HOST is defined
+
+- name: set auth port
+  set_fact:
+    auth_port: "{{ contrail_configuration.KEYSTONE_AUTH_PUBLIC_PORT }}"
+  when: contrail_configuration.KEYSTONE_AUTH_PUBLIC_PORT is defined
+
+- name: update contrail inventory file
+  template:
+    src: inventory.yml.j2
+    dest: "/root/contrail-security-apps/ansible/inventory/inventory.yml"
+
+- name: deploy policy-generator
+  shell: ansible-playbook -i ansible/inventory/inventory.yml ansible/playbooks/deploy_and_run_all.yml
+  args:
+    chdir: /root/contrail-security-apps/

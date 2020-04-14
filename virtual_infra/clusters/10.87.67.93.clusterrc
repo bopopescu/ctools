@@ -1,0 +1,2 @@
+export FIP_POOL_FQNAME=default-domain:admin:Public:floating-ip-pool
+export API_SERVER_IP=10.87.67.94

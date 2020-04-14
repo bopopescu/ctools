@@ -1,0 +1,109 @@
+deployment:
+  type:
+    contrail:
+      branch: master
+      registry: 10.84.5.81:5010
+    kolla:
+      branch: contrail/queens
+      registry: 10.84.5.85:5010
+  version: __VERSION__
+  sku: rocky
+  os: centos
+  deployer: ansible-deployer
+  orchestrator: openstack
+
+provider_config:
+  bms:
+      domainsuffix: local
+      ntpserver: 10.84.5.100
+      ssh_pwd: c0ntrail123
+      ssh_user: root
+
+instances:
+  b7s31:
+      ip: 10.84.29.31
+      provider: bms
+      roles:
+          openstack:
+          analytics:
+          analytics_database:
+          config:
+          config_database:
+          control:
+          webui:
+  b7s32:
+      ip: 10.84.29.32
+      provider: bms
+      roles:
+          analytics:
+          analytics_database:
+          config:
+          config_database:
+          control:
+          webui:
+  b7s33:
+      ip: 10.84.29.33
+      provider: bms
+      roles:
+          analytics:
+          analytics_database:
+          config:
+          config_database:
+          control:
+          webui:
+  b7s34:
+      ip: 10.84.29.34
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+
+  b7s35:
+      ip: 10.84.29.35
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+
+  b7s36:
+      ip: 10.84.29.36
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+
+  b7s37:
+      ip: 10.84.29.37
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+
+contrail_configuration:
+#  AAA_MODE: rbac
+#  LOG_LEVEL: SYS_DEBUG
+#  ENCAP_PRIORITY: VXLAN,MPLSoGRE,MPLSoUDP
+  CONTROLLER_NODES: 10.84.29.31,10.84.29.32,10.84.29.33
+  CONTROL_NODES: 172.16.80.1,172.16.80.2,172.16.80.3
+  VROUTER_GATEWAY: 172.16.80.254
+
+orchestrator_configuration:
+  keystone:
+      password: c0ntrail123
+      version: v3
+  enable_ironic: no
+  enable_swift: no
+  enable_haproxy: no
+  enable_keepalived: no
+
+server_manager:
+  ip: 10.84.24.64
+  username: stack
+  password: c0ntrail123
+  image: centos-7.6
+  client: /cs-shared/server-manager/client/server-manager
+  cluster_id: cluster6b7s31-37
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  use_project_scoped_token: true

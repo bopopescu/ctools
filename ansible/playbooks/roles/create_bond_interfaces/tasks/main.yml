@@ -1,0 +1,130 @@
+---
+- name : Create bond interface file on CentOS machines
+  template:
+    src: "{{playbook_dir}}/roles/create_bond_interfaces/templates/bond_interface.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ item.value.bond_interface_name }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS'
+
+
+- name : Create first interface file on CentOS machines
+  template:
+    src: "{{playbook_dir}}/roles/create_bond_interfaces/templates/interface1.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ item.value.interface1 }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS' 
+
+- name : Create second interface file on CentOS machines
+  template:
+    src: "{{playbook_dir}}/roles/create_bond_interfaces/templates/interface2.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ item.value.interface2 }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS' 
+
+- name : Disable the NetworkManager service on CentOS machines
+  shell : "systemctl stop NetworkManager.service ; systemctl disable NetworkManager.service"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS'
+
+- name : Bring the interfaces up on CentOS machines
+  shell : "ifup ifcfg-{{ item.value.interface1 }} ; ifup ifcfg-{{ item.value.interface2 }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS'
+
+- name : Restart the network service  on CentOS machines
+  shell : "systemctl restart network"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS' 
+
+- name : Verify bond interface on CentOS machines
+  shell : "cat /proc/net/bonding/{{ item.value.bond_interface_name }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'CentOS'
+     
+
+- name: Copy sources file for Ubuntu machines
+  copy:
+    force: yes
+    src: "{{playbook_dir}}/files/ubuntu16_sources.list"
+    dest: /etc/apt/sources.list  
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu'
+
+- name : Install ifenslave on Ubuntu machines
+  apt :
+    name: ifenslave
+    state: present
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu'
+
+- name : Modify interfaces file on Ubuntu machines
+  blockinfile:
+    backup: yes
+    path: /etc/network/interfaces
+    block: |
+      auto {{ item.value.interface1 }}
+      iface {{ item.value.interface1 }} inet manual
+      bond-master {{ item.value.bond_interface_name }}
+      auto {{ item.value.interface2 }}
+      iface {{ item.value.interface2 }} inet manual
+      bond-master {{ item.value.bond_interface_name }}
+      auto {{ item.value.bond_interface_name }}
+      iface {{ item.value.bond_interface_name }}  inet static
+      address {{ item.value.bond_ip }}
+      netmask {{ item.value.bond_ip_netmask }}
+      bond-mode 4
+      bond-miimon 100
+      bond-lacp-rate 1
+      bond-slaves none
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu' and item.value.bond_ip is defined
+
+- name : Modify interfaces file on Ubuntu machines with no ip on bond interface
+  blockinfile:
+    backup: yes
+    path: /etc/network/interfaces
+    block: |
+      auto {{ item.value.interface1 }}
+      iface {{ item.value.interface1 }} inet manual
+      bond-master {{ item.value.bond_interface_name }}
+      auto {{ item.value.interface2 }}
+      iface {{ item.value.interface2 }} inet manual
+      bond-master {{ item.value.bond_interface_name }}
+      auto {{ item.value.bond_interface_name }}
+      iface {{ item.value.bond_interface_name }}  inet manual
+      bond-mode 4
+      bond-miimon 100
+      bond-lacp-rate 1
+      bond-slaves none
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu' and item.value.bond_ip is not defined
+
+- name : Bring the interfaces up on Ubuntu machines with ip on bond interface 
+  shell : "ifconfig {{ item.value.interface1 }} up ; ifconfig {{ item.value.interface2 }} up"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu'
+
+- name : Restart the network service  on Ubuntu machines
+  shell : "ifdown -a && ifup -a"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu'
+  
+- name : Verify bond interface on Ubuntu machines
+  shell : "cat /proc/net/bonding/{{ item.value.bond_interface_name }}"
+  with_dict:
+    - "{{ bond_info }}"
+  when: item.value.ip == hostvars[inventory_hostname]['ansible_ssh_host'] and ansible_distribution == 'Ubuntu'
+      

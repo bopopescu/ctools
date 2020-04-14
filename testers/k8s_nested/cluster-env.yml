@@ -1,0 +1,19 @@
+parameters:
+  flavor: ""
+  image: ""
+  publicvn: ""
+  fippool: ""
+  project: ""
+  secgrp: ""
+
+  ipam_name: "k8netipam"
+
+  net_name: "k8net"
+  net_prefix: "1.1.1.0"
+  net_prefix_len: "24"
+  fabric_snat: True
+
+  master_name: "k8m"
+  master_intf: "k8mintf"
+  slave1_name: "k8s1"
+  slave2_name: "k8s2"

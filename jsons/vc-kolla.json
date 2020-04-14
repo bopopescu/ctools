@@ -1,0 +1,458 @@
+{
+"cluster": [
+        {
+            "id": "cluster-vcenter-compute", 
+            "parameters": {
+                "domain": "contrail.juniper.net",
+                "subnet_mask": "255.255.255.192",
+                "gateway": "10.87.36.62",
+                "provision": {
+                    "contrail_4": {
+                        "vcenter_servers": [
+                            {
+                                "vcenter1": {
+                                    "hostname": "10.87.131.15",
+                                    "password": "Contrail123!",
+                                    "username": "administrator@vsphere.local",
+                                    "validate_certs": false,
+                                    "datacenters": {
+                                        "A6s32-VC-Compute-Sanity": {
+                                            "datacenter_mtu": 1500,
+                                            "dv_switches": [
+                                                {
+                                                    "dv_switch_name": "Sanity-dvswitch-1",
+                                                    "dv_port_group": {
+                                                         "dv_portgroup_name": "Sanity-dvportgroup-1",
+                                                         "number_of_ports": "1800"
+                                                    },
+                                                    "clusternames": ["cluster-1"],
+                                                    "vcenter_compute": "10.87.36.12"
+                                                },
+                                                {
+                                                    "dv_switch_name": "Sanity-dvswitch-2",
+                                                    "dv_port_group": {
+                                                         "dv_portgroup_name": "Sanity-dvportgroup-2",
+                                                         "number_of_ports": "1800"
+                                                    },
+                                                    "clusternames": ["cluster-2"],
+                                                    "vcenter_compute": "10.87.36.15"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "contrail": {
+                        "ha": {
+                                "contrail_internal_vip": "10.87.36.15",
+                                "contrail_external_vip": "10.87.36.15"
+                    }
+                    },
+                    "openstack":{
+                        "openstack_manage_amqp": true,
+                        "ha": {
+                                "internal_vip": "10.87.36.25",
+                                "internal_virtual_router_id": 102,
+                                "external_vip": "10.87.36.25",
+                                "external_virtual_router_id": 101
+                        },
+                        "keystone": {
+                            "admin_password": "contrail123"
+                        }
+                    },
+                    "kolla_globals": {
+                        "kolla_base_distro": "ubuntu",
+                        "fluentd_image_full": "kolla/ubuntu-binary-fluentd:4.0.0",
+                        "openstack_release": "4.0.0",
+                        "neutron_external_interface": "eno1",
+                        "network_interface": "enp2s0",
+                        "enable_nova_compute": "no"
+                    }
+                }
+            }
+        }
+],
+"server": [
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",   
+          "ipmi_interface": "lan",
+          "id": "5a10s31",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.10/26",
+                "member_interfaces": [],
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "tor": "",
+                "dhcp": true,
+                "mac_address": "00:25:90:AA:31:6C",
+                "type": "physical",
+                "tor_port": ""
+              }
+            ]
+          },
+          "parameters": {
+            "interface_name": "eth0",
+            "disks": []
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "ubuntu-14.04.5",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-controller", 
+                "contrail-analytics", 
+                "contrail-analyticsdb",
+                "openstack"
+          ],              
+          "ipmi_address": "10.87.36.1"
+        },    
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",   
+          "ipmi_interface": "lan",
+          "id": "5a10s30",
+          "network": {
+            "routes": [],
+            "management_interface": "eth1",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.11/26",
+                "member_interfaces": [],
+                "name": "eth1",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "tor": "",
+                "dhcp": true,
+                "mac_address": "00:25:90:aa:a9:1e",
+                "type": "physical",
+                "tor_port": ""
+              }
+            ]
+          },
+          "parameters": {
+            "interface_name": "eth1",
+            "disks": []
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "ubuntu-14.04.5",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-controller", 
+                "contrail-analytics", 
+                "contrail-analyticsdb",
+                "openstack"
+          ],              
+          "ipmi_address": "10.87.36.2"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",   
+          "ipmi_interface": "lan",
+          "id": "5a10s29",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.12/26",
+                "member_interfaces": [],
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "tor": "",
+                "dhcp": true,
+                "mac_address": "00:25:90:aa:31:6a",
+                "type": "physical",
+                "tor_port": ""
+              }
+            ]
+          },
+          "parameters": {
+            "interface_name": "eth0",
+            "disks": []
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "ubuntu-14.04.5",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-controller", 
+                "contrail-analytics", 
+                "contrail-analyticsdb", 
+                "contrail-vcenter-plugin",
+                "contrail-vcenter-compute",
+                "openstack"
+          ],              
+          "ipmi_address": "10.87.36.3"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",
+          "ipmi_interface": "lan",
+          "id": "5a10s26",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.15/26",
+                "member_interfaces": [],
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "tor": "",
+                "dhcp": true,
+                "mac_address": "0C:C4:7A:69:79:FE",
+                "type": "physical",
+                "tor_port": ""
+              }
+            ]
+          },
+          "parameters": {
+            "interface_name": "eth0",
+            "disks": []
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "ubuntu-14.04.5",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-vcenter-plugin",
+                "contrail-vcenter-compute",
+                "contrail-lb"
+          ],
+          "ipmi_address": "10.87.36.6"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",
+          "ipmi_interface": "lan",
+          "id": "5a10s23",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.18/26",
+                "member_interfaces": [],
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "tor": "",
+                "dhcp": true,
+                "mac_address": "0C:C4:7A:69:83:D2",
+                "type": "physical",
+                "tor_port": ""
+              }
+            ]
+          },
+          "parameters": {
+            "interface_name": "eth0",
+            "disks": []
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "ubuntu-14.04.5",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-compute"
+          ],
+          "ipmi_address": "10.87.36.6"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",   
+          "ipmi_interface": "lan",
+          "host_name": "contrailvm-5a10s27",
+          "id": "contrailvm-5a10s27",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.19/26",
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "dhcp": true,
+                "mac_address": "00:77:56:aa:bb:01"
+              }
+            ]
+          },
+          "parameters": {
+                "interface_name": "eth0", 
+                "partition": "/dev/sdd1",         
+                "esxi_parameters": {
+                    "skip_reimage"  : "true",
+                    "contrail_vm": {
+                        "mgmt_pg": "mgmt-pg",
+                        "mode": "vcenter",
+                        "vmdk": "/root/vmdk/vmdk.tar"
+                    },
+                    "datacenter": "A6s32-VC-Compute-Sanity",
+                    "cluster": "cluster-1",
+                    "datastore": "datastore2", 
+                    "name": "10.87.36.14", 
+                    "password": "c0ntrail123", 
+                    "username": "root", 
+                    "validate_certs": false, 
+                    "vcenter_server": "vcenter1"
+                }
+          },      
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "esx6.5.0-update01",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-compute"
+          ],              
+          "ipmi_address": "10.87.36.5"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",
+          "ipmi_interface": "lan",
+          "host_name": "contrailvm-5a10s25",
+          "id": "contrailvm-5a10s25",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.20/26",
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "dhcp": true,
+                "mac_address": "00:77:56:aa:bb:02"
+              }
+            ]
+          },
+          "parameters": {
+                "interface_name": "eth0",
+                "partition": "/dev/sdd1",
+                "esxi_parameters": {
+                    "skip_reimage"  : "true",
+                    "contrail_vm": {
+                        "mgmt_pg": "mgmt-pg",
+                        "mode": "vcenter",
+                        "vmdk": "/root/vmdk/vmdk.tar"
+                    },
+                    "datacenter": "A6s32-VC-Compute-Sanity",
+                    "cluster": "cluster-1",
+                    "datastore": "datastore3",
+                    "name": "10.87.36.16",
+                    "password": "c0ntrail123",
+                    "username": "root",
+                    "validate_certs": false,
+                    "vcenter_server": "vcenter1"
+                }
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "esx6.5.0-update01",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-compute"
+          ],
+          "ipmi_address": "10.87.36.7"
+        },
+        {
+          "domain": "contrail.juniper.net",
+          "ipmi_username": "ADMIN",
+          "tag": {},
+          "cluster_id": "cluster-vcenter-compute",
+          "ipmi_interface": "lan",
+          "host_name": "contrailvm-5a10s31",
+          "id": "contrailvm-5a10s31",
+          "network": {
+            "routes": [],
+            "management_interface": "eth0",
+            "interfaces": [
+              {
+                "ip_address": "10.87.36.21/26",
+                "name": "eth0",
+                "parent": "",
+                "default_gateway": "10.87.36.62",
+                "dhcp": true,
+                "mac_address": "00:77:56:aa:bb:03"
+              }
+            ]
+          },
+          "parameters": {
+                "interface_name": "eth0",
+                "partition": "/dev/sdd1",
+                "esxi_parameters": {
+                    "skip_reimage"  : "true",
+                    "contrail_vm": {
+                        "mgmt_pg": "mgmt-pg",
+                        "mode": "vcenter",
+                        "vmdk": "/root/vmdk/vmdk.tar"
+                    },
+                    "datacenter": "A6s32-VC-Compute-Sanity",
+                    "cluster": "cluster-2",
+                    "datastore": "datastore4",
+                    "name": "10.87.36.29",
+                    "password": "c0ntrail123",
+                    "username": "root",
+                    "validate_certs": false,
+                    "vcenter_server": "vcenter1"
+                }
+          },
+          "top_of_rack": {
+            "switches": []
+          },
+          "package_image_id": "",
+          "base_image_id": "esx6.5.0-update01",
+          "ipmi_password": "ADMIN",
+          "password": "c0ntrail123",
+          "roles": [
+                "contrail-compute"
+          ],
+          "ipmi_address": "10.87.36.28"
+        }
+],

@@ -1,0 +1,33 @@
+
+- name: Update packages on all nodes #WA Bug Id: 1774069
+  apt:
+    update_cache: yes
+
+- name: install packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:    
+    - ntp
+    - git
+
+- name: configure ntp server
+  template: 
+    src: ntp.conf.j2
+    dest: "/etc/ntp.conf"
+
+- name: restart ntp
+  service: name=ntp state=restarted
+
+- name: Check if UFW Service Exists
+  stat: path=/etc/init.d/ufw
+  register: ufw_service_status
+
+- name: Stop service ufw, if running
+  service: name=ufw state=stopped
+  when: ufw_service_status.stat.exists
+
+- name: Update /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '10.84.5.81 ci-repo.englab.juniper.net'

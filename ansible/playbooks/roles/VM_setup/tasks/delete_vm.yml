@@ -1,0 +1,17 @@
+---
+#Delte the Existing VM
+- name: delete VM
+  shell: 'virsh destroy {{ vm_name }};virsh undefine {{ vm_name }}'
+  ignore_errors: yes
+#  virt:
+#    name: foo
+#        command: destroy
+#        xml: "{{ lookup('template', 'container-template.xml.j2') }}"
+#        uri: 'lxc:///'
+#  virt:
+#    name: foo
+#        command: undefine
+#        xml: "{{ lookup('template', 'container-template.xml.j2') }}"
+#        uri: 'lxc:///'
+#  when: {{ hostvars[host]['ansible_eth0']['ipv4']['address'] }} = {{item.value.ip}}
+#  with_dict: "{{ vm_info.vm_config }}"

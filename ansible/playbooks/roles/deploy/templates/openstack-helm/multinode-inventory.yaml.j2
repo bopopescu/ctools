@@ -1,0 +1,39 @@
+all:
+ children:
+   primary:
+     hosts:
+       node_master:
+         ansible_port: 22
+         ansible_host: {{ master_node }}
+         ansible_user: root
+         ansible_ssh_private_key_file: /root/.ssh/id_rsa
+         ansible_ssh_extra_args: -o StrictHostKeyChecking=no
+
+   nodes:
+     children:
+       contrail-controller:
+         hosts:
+{% for node,value in instances.iteritems() %}
+{% if value.ip != ansible_default_ipv4.address and value.roles.control is defined%}
+           node_{{loop.index}}:
+             ansible_port: 22
+             ansible_host: {{ value.ip }}
+             ansible_user: root
+             ansible_ssh_private_key_file: /root/.ssh/id_rsa
+             ansible_ssh_extra_args: -o StrictHostKeyChecking=no
+{% endif %}
+{% endfor %}
+       openstack-compute:
+         children:
+           contrial-vrouter-kernel:
+             hosts:
+{% for node,value in instances.iteritems() %}
+{% if value.ip != ansible_default_ipv4.address and value.roles.vrouter is defined%}
+               node_{{loop.index}}:
+                 ansible_port: 22
+                 ansible_host: {{ value.ip }}
+                 ansible_user: root
+                 ansible_ssh_private_key_file: /root/.ssh/id_rsa
+                 ansible_ssh_extra_args: -o StrictHostKeyChecking=no
+{% endif %}
+{% endfor %}

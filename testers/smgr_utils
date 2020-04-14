@@ -1,0 +1,487 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+multi_node=0
+
+#check if the server-manager pkgs are available in artifacts folder.
+function check_SM_pkg_availability() {
+    count=0
+    if [ $SM_TYPE -eq 1 ] 
+    then
+        pkg_dir="/cs-shared/github-build/${BRANCH}/${BUILDID}/ubuntu-14-04/${SKU}/artifacts"
+    else
+        pkg_dir="/cs-shared/github-build/${BRANCH}/${BUILDID}/centos64_os/${SKU}/artifacts"
+    fi
+    
+    while [ "$count" -ne 36 ]; do
+        if ls $pkg_dir/contrail-server-manager-installer*
+        then
+            echo "SM pkgs are present in artifacts"
+            break
+        else
+            if [ "$count" -eq 35 ]
+            then
+                echo "waited for an hour, still pkgs are not found, aborting"
+                exit 1
+            fi
+            echo "SM pkgs are still not there, let's wait..."
+            sleep 100
+            count=$((count+1))
+        fi
+    done
+}
+
+#upgrade/install SM on either cenots/ubuntu server.
+#Multi-node setup will refer to SM running on ubuntu
+#Single-node setup will refer to SM running on centos
+function bringup_SM_setup() {
+    if [ $SKIP_BRINGUP -ne 0 ]
+    then
+        return 0
+    fi
+
+    echo "Bringup/upgrade SM setup"
+
+    #check if SM pkgs are available in artifacts before proceeding further.
+    check_SM_pkg_availability || die "SM pkg not available in artifacts"
+
+    cd $pkg_dir
+
+    #SM pkg name is different for centos & ubuntu, so set it accordingly.
+    #multi-node uses ubuntu SM and single node uses centos SM.
+    if [ $SM_TYPE -eq 1 ] #if multi node refer to ubuntu folder
+    then
+        SM_SERVER_PKG_FILE=`ls contrail-server-manager-installer_*\.*-${BUILDID}\~$SKU\_all.deb*`
+    else
+        SM_SERVER_PKG_FILE=`ls contrail-server-manager-installer-*\.*-${BUILDID}*.el6.noarch.rpm*`
+        echo $SM_SERVER_PKG_FILE
+    fi
+    pkg_name="$pkg_dir/$SM_SERVER_PKG_FILE"
+ 
+    #copy the SM PKGs to SM server.
+    sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $pkg_name root@$SM_SERVER_IP:/root/sm_files
+
+    echo "Connect to SM_SERVER to install/upgrade SM packages"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+
+        if [ -e /root/sm_files/$SM_SERVER_PKG_FILE ] 
+        then
+            echo "file exists, upgrading Server manager"
+            cd /root/sm_files; 
+            if [ $SM_TYPE -eq 1 ]
+            then
+                ./ubuntu_smgr_purge_and_install.sh $SM_SERVER_PKG_FILE
+            else
+                ./centos_smgr_upgrade.sh $SM_SERVER_PKG_FILE
+            fi
+            if [ $? != 0 ] 
+            then
+                echo "upgrade/installation of server-manager failed, aborting the process"
+                exit 1
+            fi
+
+            sleep 1
+            echo "check if SM has been installed by following checks"
+            sleep 30
+
+            netstat -nap | grep 9001
+            if [ $? != 0 ]
+            then
+                echo "Server Manager pkg installation failed!!!"
+                exit 1
+            else
+                echo "Server Manager pkg installed successfully"
+            fi
+
+            echo "check if SM client installed"
+            if [ -e /usr/bin/server-manager ]
+            then
+                echo "SM client installed successfully"
+            else
+                echo "SM client pkg installion failed"
+                exit 1
+            fi
+            sleep 1
+        else
+            echo "SM PKGs not present in the folder, aborting the process"
+            exit 1
+        fi
+
+        echo "Installation is fine, delete the images from the server"
+        #rm $SM_SERVER_PKG_FILE
+    ) "
+}
+
+# This function will provision the provided setup using cliff client.
+function provision_using_SM() {
+    if [ $SKIP_SM_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+
+    echo "Connect to SM_SERVER to provision the targets/cluster"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "provision the target setup"
+        server-manager-client provision -F --cluster_id $CLUSTER_NAME $SMID
+        if [ $? == 0 ]
+        then
+            echo "Server-manager provision command is successful"
+        else
+            echo "Server-manager provision command failed, aborting the process"
+            exit 1
+        fi
+        echo "provisioning in progress please wait ..."
+        sleep 100
+
+        #check provisioing status.
+        /root/sm_files/check_provision_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "Provisioning of the target/cluster is sucessfull!!!"
+        else
+            echo "Provisioning of the target/cluster failed!!! aborting the process"
+            exit 1
+        fi
+
+        server-manager-client status server --cluster_id $CLUSTER_NAME
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "Provisioning of the target/cluster is sucessfull!!!"
+        sleep 120
+    else
+        echo "Provisioning of the target/cluster failed!!! aborting the process"
+        exit 1
+    fi
+
+}
+
+# This function will delete contrail package with same id from SM using cliff client.
+function delete_pkg_from_SM_cliff_client() {
+    if [ $SKIP_PKG_DELETE_SM -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Connect to SM_SERVER to delete the package and cleanup."
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "delete the package"
+        server-manager-client delete image --image_id $SMID
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "Deletion of the package from the SM node is sucessfull!!!"
+        sleep 10
+    else
+        echo "Deletion of the package from the SM node failed!!! aborting the process"
+        echo "Must delete stray packages manually."
+    fi
+}
+
+# This function will reimage the provided setup using SM cliff client.
+# Performs the following steps:
+# Adds the iso and contrail packages to SM database
+# Adds cluster and servers to SM database
+# Does reimage of the setup.
+function reimage_using_SM() {
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+    # set the parameters required for reimage.
+    if [[ $DISTRO =~ ubuntu-14.04 ]]; then
+        image="/cs-shared/images/ubuntu-14.04.5-server-amd64.iso"
+        pkg_type="contrail-ubuntu-package"
+        iso_type="ubuntu"
+        SMID=ubuntu14$SKU${BUILDID}
+        isofile="/root/images/image145.json"
+    elif [[ ${CENTOS_72} -eq 1 ]];then
+	image="/root/images/CentOS-7-x86_64-Minimal-1511.iso"
+	pkg_type="contrail-centos-package"
+	iso_type="redhat"
+	SMID=centos72$SKU${BUILDID}
+	contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+        isofile="/root/images/centos72.json"
+    elif [[ $DISTRO =~ centos71 ]]; then
+        image="/root/images/CentOS-7-x86_64-Minimal-1503-01.iso"
+        pkg_type="contrail-centos-package"
+        iso_type="redhat"
+        SMID=centos71$SKU${BUILDID}
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+	isofile="/root/images/centos71.json"
+    fi
+
+    pkg_path="/cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/"
+    if [[ $DISTRO =~ ubuntu ]]; then
+        contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts/contrail-cloud-docker_*.tgz`
+    else
+        if [[ $DISTRO =~ centos71 ]]; then
+            contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.rpm`
+        else
+            contrail_pkg=`ls /cs-shared/github-build/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*.deb`
+        fi
+    fi
+
+    #set the parameters for multi/single node setup
+    CLUSTER_FILE_NAME=${CLUSTER_FILE_NAME}_container
+    SERVER_FILE_NAME=${SERVER_FILE_NAME}_container
+    if [[ $DISTRO =~ ubuntu-14.04 ]]; then
+        cluster_json="/root/sm_files/$CLUSTER_FILE_NAME.json"
+        server_json="/root/sm_files/$SERVER_FILE_NAME.json"
+    else
+    # set the cluster,server json for centos
+        CLUSTER_FILE_NAME=${CLUSTER_FILE_NAME}_centos
+        SERVER_FILE_NAME=${SERVER_FILE_NAME}_centos
+        cluster_json="/root/sm_files/$CLUSTER_FILE_NAME.json"
+        server_json="/root/sm_files/$SERVER_FILE_NAME.json"
+    fi
+
+    echo "Connect to SM_SERVER to reimage and provision the targets"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "add required image/server/cluster for reimage and provision of the target"
+
+        echo "delete iso image if it exists"
+        server-manager-client delete image --image_id ${DISTRO}
+
+        echo "add base ISO image to server manager database"
+        server-manager-client add image -f  $isofile 
+        if [ $? == 0 ]
+        then
+            echo "Server-manager adding image command is successful"
+        else
+            echo "Server-manager adding image command failed, aborting the process"
+            exit 1
+        fi
+
+        echo "check if the image was added successfully"
+        server-manager-client display image --json | grep ${DISTRO}
+        if [ $? != 0 ]
+        then
+            echo "Adding Base ISO image failed"
+            exit 1
+        fi
+
+        echo "delete contrail package if it exists"
+        server-manager-client delete image --image_id $SMID
+        echo "add contrail package to the SM database"
+
+        echo '{\"image\":[{\"category\": \"package\", \"id\": \"$SMID\", \"type\": \"$pkg_type\", \"path\": \"$contrail_pkg\", \"version\":\"$BUILDID\", \"parameters\": {\"contrail-container-package\": true}}]}' > image_add_temp_file.json
+	server-manager-client add image -f image_add_temp_file.json
+        if [ $? == 0 ]
+        then
+            echo "Server-manager adding contrail-package command is successful"
+        else
+            echo "Server-manager adding contrail-package command failed, aborting the process"
+            exit 1
+        fi
+
+	sleep 180
+        echo "check if the package was added successfully"
+        server-manager-client display image --json | grep $SMID
+        if [ $? != 0 ]
+        then
+            echo "Adding Contrail-packages $SMID failed"
+            exit 1
+        fi
+
+        server-manager-client display image
+
+        echo "Clean up cluster and server from SM database before adding."
+        server-manager-client delete server --cluster_id $CLUSTER_NAME
+        server-manager-client delete cluster --cluster_id $CLUSTER_NAME
+
+        echo "add cluster to SM database"
+        server-manager-client add cluster -f $cluster_json
+        if [ $? == 0 ]
+        then
+            echo "Adding cluster to server-manager is sucessful!!!"
+        else
+            echo "Adding cluster to server-manager failed, aborting the process"
+            exit 1
+        fi
+
+        server-manager-client display cluster --detail
+
+        echo "add server to SM database"
+        server-manager-client add server -f $server_json
+        if [ $? == 0 ]
+        then
+            echo "Adding server to server-manager is sucessful!!!"
+        else
+            echo "Adding server to server-manager failed, aborting the process"
+            exit 1
+        fi
+
+        server-manager-client display server --detail
+
+        echo "reimage the target setup"
+        server-manager-client reimage -F --cluster_id $CLUSTER_NAME ${DISTRO}
+        if [ $? == 0 ]
+        then
+            echo "Issue of Reimage command to reimage target nodes is sucessful!!!"
+        else
+            echo "Issue of Reimage command to reimage target nodes failed, aborting the process"
+            exit 1
+        fi
+
+        echo "reimage in progress please wait ..."
+        sleep 10
+
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 150
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+
+
+}
+
+function reimage_using_smgr_simple(){
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "reimage the target setup"
+        server-manager-client reimage -F --cluster_id $CLUSTER_NAME ${DISTRO}
+        if [ $? == 0 ]
+        then
+            echo "Issue of Reimage command to reimage target nodes is sucessful!!!"
+        else
+            echo "Issue of Reimage command to reimage target nodes failed, aborting the process"
+            exit 1
+        fi
+
+        echo "reimage in progress please wait ..."
+        sleep 10
+
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+            sleep 150
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+}
+
+function run_smgr_task() {
+    echo "Running tests on $1.."
+
+    if [ ${TEST_SETUP} == "SINGLENODE" ]
+    then
+        multi_node=0
+    elif [ ${TEST_SETUP} == "MULTINODE" ]
+    then
+        multi_node=1
+    elif [ ${TEST_SETUP} == "MULTIINTERFACE" ]
+    then
+        multi_node=1
+        if [ ${tb_filename} == "testbed_smgr_multi_interface.py" ]
+        then
+            SM_SERVER_IP=10.204.217.160
+            echo $SM_SERVER_IP
+        elif [ ${tb_filename} == "testbed_smgr_multi_interface_c28.py" ]
+        then
+            SM_SERVER_IP=10.204.217.153
+            echo $SM_SERVER_IP
+        else
+            echo "Could not get testbed file name for MULTI INTERFACE Setup."
+            echo "Exiting the test."
+            exit 1
+        fi
+    else
+        echo "TEST_SETUP is not defined, abort the process"
+        exit 1
+    fi
+
+    if [ -z "$SM_SERVER_IP" ]
+    then
+        echo "SM_SERVER_IP is not set, unable to proceede, aborting the process"
+        exit 1
+    fi
+
+    if [ -z $CLUSTER_NAME ] && [ -z $SERVER_NAME ]; then
+        echo "CLUSTER_NAME/SERVER_NAME env is not set, aborting the process"
+        exit 1
+    fi
+    create_testbed || die "Failed to create required testbed details"
+    bringup_SM_setup || debug_and_die "Failed to bringup SM setup" 
+    reimage_using_SM || debug_and_die "reimage failed"
+    provision_using_SM || debug_and_die "provision failed"
+
+    #Centos needs neutron server to be restarted as workaround after provision due to bug 1586023
+    if [[ ${TEST_SETUP} == "SINGLENODE" ]] && [[ $DISTRO =~ 'centos' ]] && [[ $SKU =~ 'kilo' ]]; then
+    echo "Centos needs neutron server to be restarted as workaround after provision due to bug 1586023"
+    sshpass -p "c0ntrail123" ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $API_SERVER_HOST_STRING " (
+    set -e
+    set -x
+    openstack-status | grep neutron-server | grep " failed "
+    echo "service neutron-server restart"
+    source /etc/contrail/openstackrc
+    service neutron-server restart
+    sleep 20
+    openstack-status | grep neutron-server | grep " active "
+    sleep 5
+    )"
+
+    fi; ns=$?
+    if [ $ns == 0 ]
+    then
+        echo "neutron server is active"
+    else
+        echo "neutron server is not active"
+    fi
+
+    search_package
+    pkg_file_name=`basename $PKG_FILE`
+    echo $pkg_file_name
+    sleep 10
+    if [[ $USE_CLOUD_PKG -eq 1 || $USE_NETWORKING_PKG -eq 1 ]]; then
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-installer-packages[-_]\([0-9\.\-]*\).*/\1/'`
+    else
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-install-packages[-_]\([0-9\.\-]*\).*/\1/'`
+    fi
+    if [[ -z $TEST_HOST_STRING ]]; then
+        export TEST_HOST_STRING=$API_SERVER_HOST_STRING
+        export TEST_HOST_PASSWORD=$API_SERVER_HOST_PASSWORD
+    fi
+    export TEST_HOST_IP=`echo $TEST_HOST_STRING | cut -d @ -f2`
+    export TEST_HOST_USER=`echo $TEST_HOST_STRING | cut -d @ -f1`
+    setup_testnode || die "test node setup failed"
+    install_dep_pkgs_for_test
+    run_sanity_simple || die "run_sanity_simple failed"
+    run_tempest || die "Run_Tempest step failed"
+    collect_tech_support || die "Task to collect logs/cores failed"
+    if [ ${BRANCH} == "R3.0" ]
+    then
+        delete_pkg_from_SM_cliff_client || die "Task to delete package from SM failed"
+    else
+        delete_pkg_from_SM || die "Task to delete package from SM failed"
+    fi
+    echo "Ending test on $1"
+}

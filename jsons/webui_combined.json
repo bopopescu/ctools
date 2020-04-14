@@ -1,0 +1,145 @@
+{
+    "cluster" : [
+        {
+            "id": "webui_sanity_cluster",
+            "parameters" : {
+                "domain": "englab.juniper.net",
+                "subnet_mask": "255.255.255.240",
+                "gateway": "10.204.221.31",
+                "provision": {
+                    "contrail_4": {
+                        "controller_config": {
+                            "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                            "bgp_asn": "64520"
+                        }
+                    },
+                    "openstack":{
+                        "keystone": {
+                            "admin_password": "contrail123",
+                            "ip": "10.204.221.24"
+                        },
+                        "openstack_manage_amqp": true
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+       {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodeg34",
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "mac_address": "00:25:90:c5:59:34",
+                        "ip_address": "10.204.221.24/28",
+                        "dhcp": true,
+                        "default_gateway": "10.204.221.31"
+                    }
+                ],
+                "management_interface": "p1p1"
+            },
+            "parameters" : {
+                "interface_name": "p1p1"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                     "contrail-analytics",
+                     "contrail-analyticsdb",
+                     "openstack"
+                     ]
+        },
+        {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodec51",
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "mac_address": "00:25:90:c5:59:2e",
+                        "dhcp": true,
+                        "ip_address": "10.204.221.25/28",
+                        "default_gateway": "10.204.221.31"
+                    }
+               ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analyticsdb"
+                     ]
+        },
+        {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodec63",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.221.31",
+                        "ip_address": "10.204.221.26/28",
+                        "dhcp": true,
+                        "mac_address": "00:25:90:c5:59:ae",
+                        "name": "p1p1"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                     "contrail-analyticsdb"
+                     ]
+        },
+        {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodec48",
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "mac_address": "00:25:90:c4:76:f6",
+                        "dhcp": true,
+                        "ip_address": "10.204.221.27/28",
+                        "default_gateway": "10.204.221.31"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+                ]
+        },
+        {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodec49",
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "mac_address": "00:25:90:c5:63:2a",
+                        "dhcp": true,
+                        "ip_address": "10.204.221.28/28",
+                        "default_gateway": "10.204.221.31"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+                ]
+        }
+    ],
+
+

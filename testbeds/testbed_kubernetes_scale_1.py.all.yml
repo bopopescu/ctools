@@ -1,0 +1,26 @@
+###################################################
+# Docker configurations
+##
+# docker registry
+#docker_registry: 10.84.5.71:5000
+docker_registry: 10.204.217.152:5000
+docker_registry_insecure: True
+#docker_install_method: package
+ansible_user: root
+ansible_become: true
+cloud_orchestrator: kubernetes
+contrail_compute_mode: container
+docker_py_pkg_install_method: pip
+analytics_api_config: {aaa_mode: no-auth}
+kubernetes_public_fip_pool: {domain: default-domain, project: default, network: __public__, name: __fip_pool_public__ }
+kubernetes_cluster_project: {}
+
+# Testbed specific
+controller_config: {bgp_asn: "64510"}
+webui_config: {http_listen_port: "10000"}
+vrouter_physical_interface: p4p1
+controller_ip: 10.84.22.1
+
+os_release: ubuntu16.04
+contrail_version: 4.0.1.0-23
+kubernetes_access_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tNDh4d3QiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjFhMGM3MzBiLTZmMTUtMTFlNy04ODE5LTAwMjU5MGM2MjNkNCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.ERHtNfXzcUgLfW8Nbj-QjuVxUZOrNR1B6tFhyWYbQo4aq27CybrOHNYprTQiS8OKPxdYAkuP3WqmbZHrb2eIzmvk0x6qdvxooCLTe0-3PFZmCDmReRq_EHcC6jUSFi-YxpQXjMnGDdi6uhMyX1KePZRDCxeyX0hnNfZIrAqa2Wr0Oe50O7LgPnIoy1Qe09T6tmJKba-R8gc1DqN7KncZn0g1b8YZwm-wKwn7sF4Tw2EkwjjYz5r8ROBQQv-6JdQi0hjAtjub1az9sqp9WPoxSprTuvcCT1JMM_IjD-HZAycx_FEUeirfUIQrw7dCJByivZDGfLkjtwtwQ99Ai-vbjA

@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+function apply_ssl() {
+  if [[ "${USE_SSL_OS,,}" != "true" && "${USE_SSL_CONTRAIL,,}" != "true" ]] ; then
+    return
+  fi
+
+  local prefix=$1
+  # next variable should be global
+  ssl_dir="$WORKSPACE/ssl"
+  rm -rf "$ssl_dir"
+  mkdir -p "$ssl_dir"
+
+cat >"$ssl_dir/v3.ext" <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+EOF
+
+  create_root_ca
+
+  if [[ "${USE_SSL_OS,,}" == "true" ]] ; then
+    apply_ssl_os $prefix
+  fi
+  if [[ "${USE_SSL_CONTRAIL,,}" == "true" ]] ; then
+    apply_ssl_contrail $prefix
+  fi
+}
+
+
+function apply_ssl_contrail() {
+  local prefix=$1
+
+  local mch=`get_machine $prefix-controller`
+
+  juju-deploy cs:~containers/$SERIES/easyrsa --to lxd:$mch
+  juju-add-relation easyrsa ${prefix}-controller
+  juju-add-relation easyrsa ${prefix}-analytics
+  juju-add-relation easyrsa ${prefix}-analyticsdb
+  juju-add-relation easyrsa ${prefix}-kubernetes-master || /bin/true
+  juju-add-relation easyrsa ${prefix}-agent
+}

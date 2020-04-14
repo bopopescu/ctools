@@ -1,0 +1,3 @@
+nodea15 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodeg2 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodeg3 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123

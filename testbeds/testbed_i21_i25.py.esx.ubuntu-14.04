@@ -1,0 +1,104 @@
+from fabric.api import env
+
+host1 = 'root@10.204.217.133'
+host2 = 'root@10.204.217.134'
+host3 = 'root@10.204.217.135'
+host4 = 'root@10.204.217.183'
+host5 = 'root@10.204.217.184'
+esx1 = 'root@10.204.217.136'
+esx2 = 'root@10.204.217.137'
+
+ext_routers = [('hooper','192.168.193.253')]
+router_asn = 64512
+public_vn_rtgt = 2224
+public_vn_subnet = '10.204.221.192/28'
+
+host_build = 'stack@10.204.216.49'
+
+env.roledefs = {
+    'all': [host1, host2, host3, host4, host5],
+    'cfgm': [host1],
+    'webui': [host1],
+    'openstack': [host1],
+    'control': [host2, host3],
+    'collector': [host1],
+    'database': [host1],
+    'compute': [host4, host5],
+    'build': [host_build]
+}
+
+env.hostnames = {
+    'all': ['nodei21', 'nodei22', 'nodei23', 'nodei24-compute-vm', 'nodei25-compute-vm']
+}
+env.interface_rename = False
+
+control_data = {
+    host1 : { 'ip': '192.168.193.1/24', 'gw' : '192.168.193.254', 'device':'p6p2' },
+    host2 : { 'ip': '192.168.193.2/24', 'gw' : '192.168.193.254', 'device':'p6p2' },
+    host3 : { 'ip': '192.168.193.3/24', 'gw' : '192.168.193.254', 'device':'p6p2' },
+    host4 : { 'ip': '192.168.193.4/24', 'gw' : '192.168.193.254', 'device':'eth2' },
+    host5 : { 'ip': '192.168.193.5/24', 'gw' : '192.168.193.254', 'device':'eth2' },
+}
+
+env.openstack_admin_password = 'contrail123'
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    host5: 'c0ntrail123',
+    esx1: 'c0ntrail123',
+    esx2: 'c0ntrail123',
+    host_build: 'stack@123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    host5:'ubuntu',
+}
+
+esxi_hosts = {
+    'nodei24' : {
+          'ip' : '10.204.217.136',
+          'username' : 'root',
+          'password' : 'c0ntrail123',
+          'data_port_group' : 'contrail-data-pg',
+          'data_nic' : 'vmnic3',
+          'data_vswitch' : 'vSwitch2',
+          'contrail_vm' : {
+               'name' : 'nodei24-compute-vm',
+               'mac' : '00:50:56:aa:aa:ac',
+               'host' : host4,
+               'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk'
+          }
+    },
+    'nodei25' : {
+          'ip' : '10.204.217.137',
+          'username' : 'root',
+          'password' : 'c0ntrail123',
+          'data_port_group' : 'contrail-data-pg',
+          'data_nic' : 'vmnic3',
+          'data_vswitch' : 'vSwitch2',
+          'contrail_vm' : {
+               'name' : 'nodei25-compute-vm',
+               'mac' : '00:50:56:aa:aa:ad',
+               'host' : host5,
+               'vmdk' : '/cs-shared-test/images/Ubuntu-precise-14.04-LTS.vmdk'
+          }
+    }
+}
+
+
+env.cluster_id='i21_i25_cluster'
+env.test_repo_dir='/home/stack/multi_interface_parallel/ubuntu/icehouse/contrail-test'
+env.mail_from='contrail-build@juniper.net'
+env.mail_to='dl-contrail-sw@juniper.net'
+multi_tenancy=True
+env.interface_rename = False
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.log_scenario='Multi-Interface ESX Sanity[mgmt, ctrl=data]'
+env.enable_lbaas = True

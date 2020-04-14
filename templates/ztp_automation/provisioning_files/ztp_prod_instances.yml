@@ -1,0 +1,105 @@
+global_configuration:
+  CONTAINER_REGISTRY: 10.84.5.81:5010
+  REGISTRY_PRIVATE_INSECURE: True
+provider_config:
+  bms:
+    ssh_user: root
+    ssh_pwd: c0ntrail123
+    ntpserver: 66.129.233.81
+    domainsuffix: local
+instances:
+  openstack-control-3:
+    ip: 10.87.69.135
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  openstack-control-1:
+    ip: 10.87.69.133
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  openstack-control-2:
+    ip: 10.87.69.134
+    provider: bms
+    roles:
+      config:
+      config_database:
+      control:
+      webui:
+      analytics:
+      analytics_database:
+      openstack_control:
+      openstack_network:
+      openstack_storage:
+      openstack_monitoring:
+  compute-node:
+    ip: 10.87.69.139
+    provider: bms
+    roles:
+      vrouter:
+        VROUTER_GATEWAY: 192.168.168.1
+      openstack_compute:
+  csn-1:
+    ip: 10.87.69.136
+    provider: bms
+    roles:
+      vrouter:
+        TSN_EVPN_MODE: true
+        VROUTER_GATEWAY: 192.168.168.1
+  csn-3:
+    ip: 10.87.69.138
+    provider: bms
+    roles:
+      vrouter:
+        TSN_EVPN_MODE: true
+        VROUTER_GATEWAY: 192.168.168.1
+  csn-2:
+    ip: 10.87.69.137
+    provider: bms
+    roles:
+      vrouter:
+        TSN_EVPN_MODE: true
+        VROUTER_GATEWAY: 192.168.168.1
+contrail_configuration:
+  #CONTRAIL_VERSION: 5.0-330
+  CONTRAIL_VERSION: __CONTRAILBUILD__
+  CLOUD_ORCHESTRATOR: openstack
+  RABBITMQ_NODE_PORT: 5673
+  VROUTER_GATEWAY: 192.168.168.1
+  ENCAP_PRIORITY: VXLAN,MPLSoUDP,MPLSoGRE
+  OPENSTACK_VERSION: ocata
+  AUTH_MODE: keystone
+  KEYSTONE_AUTH_HOST: 192.168.168.170
+  KEYSTONE_AUTH_URL_VERSION: /v3
+  OPENSTACK_VERSION: ocata
+  CONTROLLER_NODES: 10.87.69.133,10.87.69.134,10.87.69.135
+  CONTROL_NODES: 192.168.168.133,192.168.168.134,192.168.168.135
+kolla_config:
+  kolla_globals:
+    enable_haproxy: yes
+    kolla_internal_vip_address: 192.168.168.170
+    kolla_external_vip_address: 10.87.69.170
+    enable_haproxy: yes
+    enable_swift: yes
+    enable_ironic: yes
+    keepalived_virtual_router_id: 170
+  kolla_passwords:
+    keystone_admin_password: contrail123

@@ -1,0 +1,12 @@
+network_bond_interfaces:
+  - device: bond0
+    bond_mode: 802.3ad
+    bond_miimon: 100
+    bond_slaves: [ens320, ens352]
+    bootproto: static
+    address: 192.168.0.183
+    netmask: 255.255.255.0
+    route:
+      - network: 172.16.0.0
+        netmask: 255.255.255.0
+        gateway: 192.168.0.2

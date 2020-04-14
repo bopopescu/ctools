@@ -1,0 +1,231 @@
+contrail_configuration:
+  AAA_MODE: no-auth
+  CONTROLLER_NODES: 10.87.96.20
+  CONTROL_NODES: 172.17.90.20
+  KUBERNETES_API_NODES: 172.17.90.20
+  KUBERNETES_API_SERVER: 172.17.90.20
+  KUBERNETES_CLUSTER_PROJECT: {}
+  LOG_LEVEL: SYS_DEBUG
+  RABBITMQ_NODE_PORT: 5673
+  VROUTER_GATEWAY: 172.17.90.254
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  CONFIG_DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+deployment:
+  deployer: contrail_command
+  orchestrator: kubernetes
+  sku: queens
+  type:
+    contrail:
+      branch: master
+      registry: 10.84.5.81:5010
+  version: 5.1-38
+
+global_configuration:
+  CONTAINER_REGISTRY: 10.84.5.81:5010
+  REGISTRY_PRIVATE_INSECURE: True
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 66.129.233.81
+    domainsuffix: local
+
+instances:
+  mc-compute:
+    ip: 10.87.96.18
+    provider: bms
+    roles: 
+      k8s_node: null
+      vrouter: null
+  mc-controller:
+    ip: 10.87.96.20 
+    provider: bms
+    roles:
+      k8s_master: null
+      analytics: null
+      analytics_alarm: null
+      analytics_database: null
+      analytics_snmp: null
+      config: null
+      config_database: null
+      control: null
+      kubemanager: null
+      webui: null
+  mc-command:
+    ip: 10.87.96.21
+    provider: bms
+    roles:
+      contrail_command: null
+  mc-hosta-gw1:
+    ip: 10.87.96.22
+    provider: bms
+    roles: 
+      gateway: null
+  mc-hosta-gw2:   
+    ip: 10.87.96.23
+    provider: bms
+    roles:
+      gateway: null
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  mail_server:
+    port: 4000
+    sender: contrail-build@juniper.net
+    server: 10.84.24.64
+    to: dl-contrail-sw@juniper.net
+  use_project_scoped_token: true
+  web_server:
+    log_path: /var/www/html/Docs/logs
+    password: stack@123
+    report_path: /var/www/html/sanity/fb-sanity/FB-master-k8s-centos7-ha-ansible-sanity
+    server: zephyrine.englab.juniper.net
+    username: stack
+    web_root: /Docs/logs
+
+
+bms_reimage_info:
+  server_manager:
+    ip:
+    username:
+    password:
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/images/centos-7.5-copy.qcow2.gz
+#    image_source: http://10.84.5.120/images/soumilk/vm_images/redhat-7.5.qcow2.gz
+#    image_source: http://10.84.5.120/images/soumilk/vm_images/centos-7.6.qcow2.gz
+  hypervisors:
+
+    kvm_5d3s3_2:
+      username: root
+      ip: 10.87.96.6
+      password: c0ntrail123
+      vm_config:
+        
+        host1:
+          name: mc-compute
+          ram: 65536
+          vcpus: 8
+          server: kvm_5d3s3_1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:03:00:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host2:
+          name: mc-controller
+          ram: 65536
+          vcpus: 8  
+          server: kvm_5d3s3_2
+          network:  
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:03:01:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host3:
+          name: mc-command
+          ram: 32710
+          vcpus: 4
+          server: kvm_5d3s3_2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:03:00:05'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+    kvm_5d3s3_3:
+      image_source: http://10.84.5.120/images/soumilk/vm_images/redhat-7.5.qcow2.gz
+      username: root
+      ip: 10.87.96.7
+      password: c0ntrail123
+      vm_config:
+        host4:
+          name: mc-hosta-gw1
+          ram: 65536
+          vcpus: 8
+          server: kvm_5d3s3_3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:04:00:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host5:
+          name: mc-hosta-gw2
+          ram: 65536
+          vcpus: 8
+          server: kvm_5d3s3_3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:04:00:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+control_data:
+    mc-compute:
+      ip: 10.87.96.18
+      ctrldata_ip: 172.17.90.18
+      prefix: 24
+      gw: 172.17.90.254
+      device: eth1
+    mc-controller:
+      ip: 10.87.96.20
+      ctrldata_ip: 172.17.90.20
+      prefix: 24
+      gw: 172.17.90.254
+      device: eth1
+    mc-command:
+      ip: 10.87.96.21
+      ctrldata_ip: 172.17.90.21
+      prefix: 24
+      gw: 172.17.90.254
+      device: eth1
+      
+    mc-hosta-gw1:
+      ip: 10.87.96.22
+      ctrldata_ip: 172.17.91.22
+      prefix: 24
+      gw: 172.17.91.254
+      device: eth1
+      role: gateway
+    mc-hosta-gw2:
+      ip: 10.87.96.23
+      ctrldata_ip: 172.17.91.23
+      prefix: 24
+      gw: 172.17.91.254
+      device: eth1
+      role: gateway
+
+static_routes:
+  mc-controller:
+  - gw: 172.17.90.254
+    ip: 192.171.0.0/24

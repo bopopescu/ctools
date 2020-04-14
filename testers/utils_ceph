@@ -1,0 +1,459 @@
+#!/usr/bin/env bash
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+source $TOOLS_WS/testers/environment.sh
+source $TOOLS_WS/testers/environment_ceph.sh
+source $TOOLS_WS/testers/smgr_utils_ceph
+
+##
+# search_package
+function search_package_ceph {
+
+    if [ $SKIP_SM_INSTALL -eq 0 ] && [ $PKG_LOCAL -eq 1 ]
+    then 
+      SM_INSTALLER_PKG_FILE=`exec_cmds -s ${SM_HOST_STRING} -p ${SM_HOST_PASSWORD} -c "
+            ls $PKG_LOCAL_PATH/$SM_SERVER_PKG_FILE_LOCAL
+            "` || die "Unable to find SM LOCAL PACKAGE.Copy it to SM/TASK_RUNNER node"
+      SM_INSTALLER_PKG_FILE=$(echo "${SM_INSTALLER_PKG_FILE}" | sed -e 's/\r//g;s/ //g;s/^$//g')
+    elif [ $SKIP_SM_INSTALL -eq 0 ] && [ $SM_TYPE == "ubuntu" ]
+    then 
+      SM_INSTALLER_PKG_FILE=`ls ${BUILD_PREFIX}/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts/contrail-server-manager-installer_*\.*-${BUILDID}\~$SKU\_all.deb*` || die "Unable to find SM install package"
+    elif [ $SKIP_SM_INSTALL -eq 0 ] && [ $SM_TYPE == "centos" ]
+    then 
+      SM_INSTALLER_PKG_FILE=`ls ${BUILD_PREFIX}/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts/contrail-server-manager-installer-*\.*-${BUILDID}\~$SKU.el6.noarch.rpm*` || die "Unable to find SM install package"
+    fi 
+   
+    if [ $PKG_LOCAL -eq 1 ]
+    then
+      INSTALL_PKG_FILE=`exec_cmds -s ${SM_HOST_STRING} -p ${SM_HOST_PASSWORD} -c "
+                     ls $PKG_LOCAL_PATH/$INSTALL_PKG_FILE_LOCAL
+                     "` || die "Unable to find Contrail-install LOCAL PACKAGE.Copy it to SM/TASK_RUNNER node"
+      INSTALL_PKG_FILE=$(echo "${INSTALL_PKG_FILE}" | sed -e 's/\r//g;s/ //g;s/^$//g')
+      STORAGE_PKG_FILE=`exec_cmds -s ${SM_HOST_STRING} -p ${SM_HOST_PASSWORD} -c "
+                     ls $PKG_LOCAL_PATH/$STORAGE_PKG_FILE_LOCAL
+                     "` || die "Unable to find storage LOCAL PACKAGE.Copy it to SM/TASK_RUNNER node" 
+      STORAGE_PKG_FILE=$(echo "${STORAGE_PKG_FILE}" | sed -e 's/\r//g;s/ //g;s/^$//g')
+    else
+      INSTALL_PKG_FILE=`ls ${BUILD_PREFIX}/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/contrail-install-packages*${SKU}_all.deb` || die "Unable to find install package"
+      STORAGE_PKG_FILE=`ls ${BUILD_PREFIX}/${BRANCH}/${BUILDID}/${DISTRO}/${SKU}/artifacts/contrail-storage-packages*~${SKU}_all.deb` || die "Unable to find storage package"
+    fi
+
+    export INSTALL_PKG_TYPE="contrail-ubuntu-package"
+    export STORAGE_PKG_TYPE="contrail-storage-ubuntu-package"
+    export INSTALL_PKG_FILE=$INSTALL_PKG_FILE
+    export STORAGE_PKG_FILE=$STORAGE_PKG_FILE
+    export SM_INSTALLER_PKG_FILE=$SM_INSTALLER_PKG_FILE
+
+    export PKG_FILE_DIR=`dirname $INSTALL_PKG_FILE`
+
+}
+
+function update_testbed_file {
+
+    iface=`sshpass -p ${SM_HOST_PASSWORD} ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SM_HOST_STRING} '(
+       /home/stack/get_pvt_iface.py HOST1
+      )'`
+    sed -i "s/HOST1_IFACE/$iface/" $ABS_PATH_TBFILE
+
+    iface=`sshpass -p ${SM_HOST_PASSWORD} ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SM_HOST_STRING} '(
+       /home/stack/get_pvt_iface.py HOST2
+      )'`
+    sed -i "s/HOST2_IFACE/$iface/" $ABS_PATH_TBFILE
+
+    iface=`sshpass -p ${SM_HOST_PASSWORD} ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SM_HOST_STRING} '(
+       /home/stack/get_pvt_iface.py HOST3
+      )'`
+    sed -i "s/HOST3_IFACE/$iface/" $ABS_PATH_TBFILE
+
+    iface=`sshpass -p ${SM_HOST_PASSWORD} ssh -t -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SM_HOST_STRING} '(
+       /home/stack/get_pvt_iface.py HOST4
+      )'`
+    sed -i "s/HOST4_IFACE/$iface/" $ABS_PATH_TBFILE
+
+    #sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $ABS_PATH_TBFILE ${FAB_HOST_STRING}:$UTILS_DIR/fabfile/testbeds/testbed.py
+
+}
+
+function identify_tbfile {
+
+    folder_path=${TOOLS_WS}/testbeds
+    tbfile=$folder_path/$PROFILE_TBFILE_NAME
+    [ -f $tbfile ] || die "Testbed file $tbfile not found"
+    cp $tbfile ~
+    export ABS_PATH_TBFILE=~/$PROFILE_TBFILE_NAME
+
+}
+
+
+
+function copy_tbfile_to_fab_server {
+
+  sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $ABS_PATH_TBFILE ${FAB_HOST_STRING}:$UTILS_DIR/fabfile/testbeds/testbed.py
+
+}
+
+function copy_tbfile_to_api_server {
+  sshpass -p ${API_SERVER_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $ABS_PATH_TBFILE ${API_SERVER_HOST_STRING}:/opt/contrail/utils/fabfile/testbeds/testbed.py
+}
+#####
+
+function copy_pkgs_to_sm_fab_node {
+
+    if [ $COPY_BUILD_PKG_TO_TASK_RUNNER -eq 1 ]
+    then
+      exec_cmds -s $SM_HOST_STRING -p ${SM_HOST_PASSWORD}  -c "rm -rf $PKG_FILE_DIR"      
+      exec_cmds -s $SM_HOST_STRING -p ${SM_HOST_PASSWORD}  -c "mkdir -p $PKG_FILE_DIR/artifacts_extra/"      
+      exec_cmds -s $SM_HOST_STRING -p ${SM_HOST_PASSWORD}  -c "mkdir -p $PKG_FILE_DIR/artifacts/"      
+      exec_cmds -s $FAB_HOST_STRING -p ${FAB_HOST_PASSWORD}  -c "rm -rf $PKG_FILE_DIR"      
+      exec_cmds -s $FAB_HOST_STRING -p ${FAB_HOST_PASSWORD}  -c "mkdir -p $PKG_FILE_DIR/artifacts_extra/"      
+      exec_cmds -s $FAB_HOST_STRING -p ${FAB_HOST_PASSWORD}  -c "mkdir -p $PKG_FILE_DIR/artifacts/"      
+     
+      if [ $SKIP_SM_INSTALL -eq 0 ]
+      then
+        sshpass -p ${SM_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $SM_INSTALLER_PKG_FILE ${SM_HOST_STRING}:$SM_INSTALLER_PKG_FILE
+      fi 
+
+      sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $INSTALL_PKG_FILE ${FAB_HOST_STRING}:$INSTALL_PKG_FILE
+      sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $STORAGE_PKG_FILE ${FAB_HOST_STRING}:$STORAGE_PKG_FILE
+    fi 
+}
+
+function copy_pkg_to_fab_server() {
+
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "mkdir -p $PKG_FILE_DIR/artifacts_extra/"
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "mkdir -p $PKG_FILE_DIR/artifacts/"
+
+    sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $1 ${FAB_HOST_STRING}:$1
+
+}
+
+function create_testbed_ceph {
+
+
+    identify_tbfile 
+
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "rm -rf /tmp/$TBFILE_NAME/$CEPH_PROFILE"      
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "mkdir -p /tmp/$TBFILE_NAME/$CEPH_PROFILE"      
+
+    if [ $PKG_LOCAL -eq 1 ]
+    then
+      exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+        cd /tmp/$TBFILE_NAME/$CEPH_PROFILE;
+        ssh-keygen -R github.com;
+        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts;
+        git clone git@github.com:Juniper/contrail-fabric-utils.git
+        "
+      export UTILS_DIR=/tmp/$TBFILE_NAME/$CEPH_PROFILE/contrail-fabric-utils
+    else 
+      #sshpass -p ${FAB_HOST_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $PKG_FILE_DIR/artifacts_extra/contrail-fabric-utils*.tgz ${FAB_HOST_STRING}:/tmp/$TBFILE_NAME/$CEPH_PROFILE
+      #exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "cd /tmp/$TBFILE_NAME/$CEPH_PROFILE;tar xzf contrail-fabric-utils*.tgz" 
+      #export UTILS_DIR=/tmp/$TBFILE_NAME/$CEPH_PROFILE/fabric-utils
+      export UTILS_DIR=/opt/contrail/utils;
+    fi
+
+}
+
+function install_contrail_pkg_on_node(){
+  NODEIP=$1
+  NODELOGIN=$2
+  NODEPASSWORD=$3
+  CONTRAIL_PKG=$4
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "mkdir -p $PKG_FILE_DIR"
+  sshpass -p ${NODEPASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $CONTRAIL_PKG $NODELOGIN@$NODEIP:$CONTRAIL_PKG
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "
+   dpkg -i $CONTRAIL_PKG;
+   cd /opt/contrail/contrail_packages;
+   ./setup.sh;
+  "
+}
+
+
+function install_storage_pkg_on_node(){
+  NODEIP=$1
+  NODELOGIN=$2
+  NODEPASSWORD=$3
+  STORAGE_PKG=$4
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "mkdir -p $PKG_FILE_DIR/artifacts"
+  sshpass -p ${NODEPASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $STORAGE_PKG $NODELOGIN@$NODEIP:$STORAGE_PKG
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "
+   dpkg -i $STORAGE_PKG;
+   cd /opt/contrail/contrail_packages;
+   ./setup_storage.sh;
+  "
+}
+
+function fix_etc_hosts(){
+  NODEIP=$1
+  NODELOGIN=$2
+  NODEPASSWORD=$3
+  NODENAME=$4
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "echo '#!/bin/sh -e' > /etc/rc.local"
+  exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "echo 'ntpdate 172.17.31.136' >> /etc/rc.local"
+
+  for (( ii=1; ii <= $NODE_COUNT;ii++ ))
+  do
+        ipvar="NODE${ii}_IP"
+        loginvar="NODE${ii}_LOGIN"
+        passvar="NODE${ii}_PASSWD"
+        nodename="NODE${ii}_HOSTNAME"
+        exec_cmds -s $NODELOGIN@$NODEIP -p ${NODEPASSWORD}  -c "echo '${!ipvar} ${!nodename}' >> /etc/hosts"
+ done
+
+}
+
+
+function bringup_setup_contrail {
+    if [ $SKIP_BRINGUP -ne 0 ] 
+    then 
+        return 0
+    fi
+
+    if [ $INSTALL_ALL -eq 1 ] 
+    then
+
+       copy_pkg_to_fab_server $INSTALL_PKG_FILE
+   
+       exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+           dpkg -P contrail-setup;
+           dpkg -P contrail-install-packages;
+           dpkg -P contrail-fabric-utils;
+           dpkg -P contrail-storage-packages;
+           dpkg -i $INSTALL_PKG_FILE;
+           cd /opt/contrail/contrail_packages/;
+           ./setup.sh
+          "
+       copy_tbfile_to_fab_server
+
+       exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+             cd $UTILS_DIR;
+             fab install_pkg_all:${INSTALL_PKG_FILE} || die 'fab install_pkg_all:${INSTALL_PKG_FILE} failed'
+             " || debug_and_die_local "install_pkg_all failed"
+    else
+       for (( i=1; i <= $NODE_COUNT;i++ ))
+       do
+        ipvar="NODE${i}_IP"
+        loginvar="NODE${i}_LOGIN"
+        passvar="NODE${i}_PASSWD"
+        install_contrail_pkg_on_node ${!ipvar} ${!loginvar} ${!passvar} ${INSTALL_PKG_FILE}
+      done
+      copy_tbfile_to_fab_server
+    fi
+
+    if [[ "${DISTRO}" =~ "ubuntu" ]]; then
+           exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+             cd $UTILS_DIR;
+             fab upgrade_kernel_all;
+             sleep 60;
+             fab wait_till_all_up:waitdown=False,attempts=30 " || debug_and_die_local "ERROR: kernel upgrade/Failed waiting for nodes to come up"
+    fi
+
+    for (( i=1; i <= $NODE_COUNT;i++ ))
+    do
+        ipvar="NODE${i}_IP"
+        loginvar="NODE${i}_LOGIN"
+        passvar="NODE${i}_PASSWD"
+        nodename="NODE${i}_HOSTNAME"
+        fix_etc_hosts ${!ipvar} ${!loginvar} ${!passvar} ${!nodename}
+    done
+
+
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               export HA_TEST=$HA_TEST;
+               fab install_contrail" || debug_and_die_local "fab install_contrail failed"
+
+    sleep 300; # to let servers to reboot with kernel
+
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               export HA_TEST=$HA_TEST;
+               fab setup_interface || exit 1;
+               fab add_static_route " || debug_and_die_local "fab setup_interface/add_static_route failed"
+
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               fab setup_all" || debug_and_die_local "fab setup_interface or setup_all task failed"
+
+}
+
+function check_contrail_status {
+
+  ipvar="NODE1_IP"
+  loginvar="NODE1_LOGIN"
+  passvar="NODE1_PASSWD"
+  nodename="NODE1_HOSTNAME"
+  result=`exec_cmds -s ${!loginvar}@${!ipvar} -p ${!passvar}  -c "contrail-status"`
+ 
+  # status for following modules will be backup and hence skipped
+  # contrail-device-manager
+  # contrail-schema
+  # contrail-svc-monitor
+ 
+  for mod in supervisor-control: contrail-control contrail-control-nodemgr \
+     contrail-dns contrail-named supervisor-analytics: contrail-analytics-api\
+     contrail-analytics-nodemgr contrail-collector contrail-query-engine\
+     contrail-snmp-collector contrail-topology supervisor-config: contrail-api:0\
+     contrail-config-nodemgr contrail-discovery:0\
+     ifmap supervisor-webui: contrail-webui\
+     contrail-webui-middleware supervisor-database: contrail-database\
+     contrail-database-nodemgr supervisor-support-service: rabbitmq-server
+     #contrail-storage-stats: 
+ do
+   val=`echo $result | grep -c $mod'\s*active'`
+   echo $val
+   if [[ $val -ne 0 ]]
+   then
+    continue 
+   else
+    die "ERROR: contrail-status failed for module : $mod"
+   fi
+ done
+
+ echo "PASS: contrail-status"
+
+}
+
+function bringup_storage {
+
+    if [ $SKIP_CONTRAIL_BRINGUP -eq 1 ]
+    then 
+     copy_tbfile_to_fab_server
+    fi
+ 
+    if [ $INSTALL_ALL -eq 1 ] 
+    then
+
+       copy_pkg_to_fab_server $STORAGE_PKG_FILE
+           
+       exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+           dpkg -i $STORAGE_PKG_FILE;
+           cd /opt/contrail/contrail_packages/;
+           ./setup_storage.sh
+          "
+
+       exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               fab install_storage_pkg_all:${STORAGE_PKG_FILE};
+               "
+     else
+       for (( i=1; i <= $NODE_COUNT;i++ ))
+       do
+        ipvar="NODE${i}_IP"
+        loginvar="NODE${i}_LOGIN"
+        passvar="NODE${i}_PASSWD"
+        install_storage_pkg_on_node ${!ipvar} ${!loginvar} ${!passvar} ${STORAGE_PKG_FILE}
+      done
+     fi
+
+     exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               fab install_storage; " || debug_and_die_local "install_storage failed"
+
+     if [ $SKIP_SETUP_STORAGE -eq 0 ]
+     then
+      exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+               cd $UTILS_DIR;
+               fab setup_storage" || debug_and_die_local "setup_storage failed"
+     fi 
+}
+
+function reimage_and_bringup_ceph {
+
+    if [ $SKIP_REIMAGE -eq 0 ]
+    then
+      reimage_using_SM_ceph || debug_and_die_local "Reimage failed!"
+      sleep 300
+    fi
+
+    if [ $UPDATE_TB_IFACE_DETAILS -eq 1 ]
+    then
+      update_testbed_file || die "Unable to set the testbed properly for use"
+    fi
+
+    if [ $SKIP_CONTRAIL_BRINGUP -eq 0 ]
+    then
+      bringup_setup_contrail || debug_and_die_local "Bringup contrail failed!"
+    fi
+
+    if [ $SKIP_STORAGE_BRINGUP -eq 0 ]
+    then
+      bringup_storage || debug_and_die_local "Bringup storage failed!"
+    fi
+
+    copy_tbfile_to_api_server
+
+}
+
+function run_ceph_check {
+
+  result=`exec_cmds -s ${SM_HOST_STRING} -p ${SM_HOST_PASSWORD} -c  "/home/stack/check_ceph_status.py $CLUSTER_NAME $OSD_COUNT"`
+  echo $result | grep "CEPH_STATUS_CHECK_OK"
+  return_val=`echo $?`
+
+  if [[ $return_val != 0 ]]
+  then
+    die "CEPH_STATUS_CHECK : FAILED"
+  else
+    echo "CEPH_STATUS_CHECK : PASS"
+  fi
+
+}
+
+function collect_tech_support_local {
+    if [ $SKIP_LOGS_COLLECTION -ne 0 ]
+    then
+        return 0
+    fi
+
+    dest_dir_folder=$DEBUG_LOG_DIR/CONFIG_NODE/${SCRIPT_TIMESTAMP}
+    debug_cmds="export HA_TEST=$HA_TEST && fab attach_logs_cores:$DEBUG_LOG_DIR/CONFIG_NODE,${SCRIPT_TIMESTAMP} ; cp fabfile/testbeds/testbed.py $dest_dir_folder ;  cp *.log $dest_dir_folder"
+          
+    exec_cmds -s ${FAB_HOST_STRING} -p ${FAB_HOST_PASSWORD} -c "
+            cd $UTILS_DIR;
+            $debug_cmds"
+}
+
+
+function debug_and_die_local
+{
+    local message=$1
+    if [ $LOCK_TESTBED_ON_FAILURE = 1 ]; then
+        echo "Testbed is set to be locked on failure"
+        if [[ $message =~ 'Test failures exceed' ]]; then
+            collect_tech_support_local
+        fi
+        export RELEASE_TESTBED=0
+        (  
+            set -x
+            flock -n 5
+            echo "Locking testbed $tb_lock_file for debugging"
+            echo "Testbed locked..Unlock when debug complete" >> $tb_lock_file
+            cat $tb_lock_file
+        ) 5>${LOCK_FILE_DIR}/lockfile
+    else
+        collect_tech_support_local
+        unlock_testbed $TBFILE_NAME
+    fi
+    [ -z "$message" ] && message="Died"
+    echo "${BASH_SOURCE[1]}: line ${BASH_LINENO[0]}: ${FUNCNAME[1]}: $message." >&2
+    cat $tb_lock_file
+    exit 1
+}
+
+function run_ceph_fab_sanity() {
+    echo "Running tests on $TBFILE_NAME .." 
+    search_package_ceph
+    copy_pkgs_to_sm_fab_node
+    create_testbed_ceph
+
+
+    bringup_SM_setup_ceph || die "Failed to bringup SM setup"
+
+    add_server_and_images_to_SM || die "Failed to bringup SM setup"
+ 
+    reimage_and_bringup_ceph
+    sleep 300
+    check_contrail_status
+    echo "Test Done" 
+    collect_tech_support_local || die "Task to collect logs/cores failed"
+    echo "Ending test on $TBFILE_NAME"
+}

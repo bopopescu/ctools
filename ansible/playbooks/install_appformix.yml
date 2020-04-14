@@ -1,0 +1,23 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "appformix_controller"
+      with_dict: "{{ instances }}"
+      when: deployment.appformix_version is defined and item.value.roles.appformix_controller is defined
+
+- hosts: appformix_controller 
+  strategy: debug
+  gather_facts: yes
+  become: true
+  become_user: root
+  roles:
+  - install_appformix
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug

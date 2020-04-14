@@ -1,0 +1,25 @@
+
+# List all hosts which needs to be monitored by AppFormix
+[compute]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "openstack_compute" in value['roles'] %}
+{{ value['ip'] }} ansible_ssh_user={{ value['ssh_user'] | default('root') }} ansible_ssh_pass={{ value['ssh_pwd'] | default('c0ntrail123') }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+
+# AppFormix Platform host 
+[appformix_controller]
+{{ ansible_default_ipv4.address }}
+
+[bare_host]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "openstack_compute" and "appformix_controller" not in value['roles'] %}
+{{ value['ip'] }} ansible_ssh_user={{ value['ssh_user'] | default('root') }} ansible_ssh_pass={{ value['ssh_pwd'] | default('c0ntrail123') }}
+{% endif %}
+{% endfor %}
+{% endif %}
+

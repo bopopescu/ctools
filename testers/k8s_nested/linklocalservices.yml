@@ -1,0 +1,8 @@
+linklocal_services:
+  - name: "k8s-cni-to-agent"
+    linklocal_ip: "10.10.10.1"
+    linklocal_port: 9091
+    fabric_port: 9091
+    fabric_ip:
+      - "127.0.0.1"
+

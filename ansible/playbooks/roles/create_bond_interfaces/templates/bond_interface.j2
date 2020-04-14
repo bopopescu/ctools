@@ -1,0 +1,12 @@
+DEVICE={{ item.value.bond_interface_name }}
+NAME={{ item.value.bond_interface_name }}
+TYPE=Bond
+NM_CONTROLLED=no
+BOOTPROTO=none
+BONDING_OPTS="miimon=100 mode=4 xmit_hash_policy=layer3+4"
+BONDING_MASTER=yes
+ONBOOT=yes
+{% if item.value.bond_ip is defined %}
+IPADDR={{ item.value.bond_ip }}
+PREFIX={{ item.value.bond_ip_prefix }}
+{% endif %}

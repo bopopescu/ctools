@@ -1,0 +1,79 @@
+deployment:
+    type:
+        kolla:
+            #branch: contrail/ocata
+            #registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+        contrail:
+            branch: master
+            registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+    sku: ocata
+    os: centos7
+    version: null
+    orchestrator: openstack
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+instances:
+  bms1:
+    provider: bms
+    ip: 10.204.216.232
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vrouter:
+      openstack:
+      openstack_compute:
+global_configuration:
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+contrail_configuration:
+  # Set UPGRADE_KERNEL to True to automatically install the latest kernel version
+  UPGRADE_KERNEL: False
+  CONTRAIL_VERSION: null
+  CLOUD_ORCHESTRATOR: openstack
+  VROUTER_GATEWAY: 10.204.216.254
+  RABBITMQ_NODE_PORT: 5673
+  AUTH_MODE: keystone
+  KEYSTONE_AUTH_URL_VERSION: /v3
+kolla_config:
+  kolla_globals:
+    kolla_internal_vip_address: 10.204.216.232
+    contrail_api_interface_address: 10.204.216.232
+    enable_haproxy: yes 
+  kolla_passwords:
+    keystone_admin_password: contrail123
+
+test_configuration:
+  cfgm0_host_pwd: c0ntrail123
+  cfgm0_host_string: root@10.204.216.232
+  cluster_id: webui_sanity_cluster
+  fabric_gw:
+      sw166: 10.204.216.254
+  image_web_server: 10.204.217.158
+  mail_server:
+      port: 25
+      sender: contrailbuild@juniper.net
+      server: 10.204.216.49
+      to: dl-contrail-sw@juniper.net
+  ui_config: contrail
+  ui_browser: firefox
+  verify_webui: True
+  verify_horizon: False
+  use_project_scoped_token: true
+  web_server:
+      log_path: /home/bhushana/Documents/technical/logs
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity
+      server: 10.204.216.50
+      username: bhushana
+      web_root: Docs/logs

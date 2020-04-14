@@ -1,0 +1,88 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "container_hosts"
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.mgmt_ip }}"
+        ansible_ssh_host: "{{ item.value.mgmt_ip }}"
+        ansible_ssh_user: "{{ item.value.username | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.password | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "bms_hosts"
+      with_dict: "{{ test_configuration.bms }}"
+      when:
+        - test_configuration is defined
+        - test_configuration.bms is defined
+        - item.value.driver_info is undefined
+
+- hosts: container_hosts
+  gather_facts: no
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  tasks:
+    - name: install packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - tcpdump
+        - iperf3
+        - net-tools
+    - name: unregister redhat subscription
+      command: "subscription-manager unregister"
+      when: deployment.type.openshift is defined
+
+- hosts: bms_hosts
+  gather_facts: no
+  become: true
+  become_user: root
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+  tasks:
+    - name: install packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - epel-release
+        - vconfig
+        - python-scapy
+        - python-ipaddress
+        - python-pip
+    - name: disable and re-enable bonding
+      shell: |
+        pip install future==0.18.2
+        modprobe -r bonding || echo ignore
+        modprobe bonding mode=802.3ad lacp_rate=fast
+
+- hosts: container_hosts
+  tasks:
+    - name: check initializing status in contrail components
+      command: contrail-status
+      register: output
+      until: '"initializing" not in output.stdout_lines | join'
+      retries: 10
+      delay: 60
+      when: deployment.orchestrator == 'kubernetes'
+
+- hosts: localhost
+  gather_facts: no
+  environment:
+    CT_MX_GW_TEST: "{{ lookup('env', 'CT_MX_GW_TEST') }}"
+    CT_EMAIL_SUBJECT: "{{ lookup('env', 'CT_EMAIL_SUBJECT') }}"
+    CT_SKU: "{{ deployment.sku }}"
+    EXTRA_RUN_TEST_ARGS: "{{ lookup('env', 'EXTRA_RUN_TEST_ARGS') }}"
+  roles:
+  - run_sanity
+

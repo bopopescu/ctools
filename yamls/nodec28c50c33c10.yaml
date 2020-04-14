@@ -1,0 +1,379 @@
+contrail_configuration:
+  AAA_MODE: no-auth
+  CONTROLLER_NODES: 192.168.1.1
+  CONTROL_NODES: 192.168.1.1
+  KUBERNETES_API_NODES: 192.168.1.1
+  KUBERNETES_API_SERVER: 192.168.1.1
+  VROUTER_GATEWAY: 192.168.1.254
+  ENCAP_PRIORITY: MPLSoUDP,VXLAN,MPLSoGRE
+  LOG_LEVEL: SYS_DEBUG
+  RABBITMQ_NODE_PORT: 5673
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  CONFIG_DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+deployment:
+  deployer: contrail_command
+  topology: onprem_multicloud
+  orchestrator: kubernetes
+  sku: queens
+  type:
+    contrail:
+      branch: 2002
+      registry: "hub.juniper.net/contrail-nightly"
+  version: 27
+
+global_configuration:
+  CONTAINER_REGISTRY: "hub.juniper.net/contrail-nightly"
+  CONTAINER_REGISTRY_USERNAME: JNPR-Customer200
+  CONTAINER_REGISTRY_PASSWORD: FSg0vLW^7oM#GZy8Ju*f
+  REGISTRY_PRIVATE_INSECURE: False
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+
+instances:
+  nodec28:
+    provider: bms
+    ip: 10.204.217.13
+    private_ip: 192.168.1.1
+    roles:
+      contrail_command: null
+      config_database: null
+      config: null
+      control: null
+      analytics_database: null
+      analytics: null
+      analytics_alarm: null
+      analytics_snmp: null
+      webui: null
+      k8s_master: null
+      kubemanager: null
+  nodec50:
+    provider: bms
+    ip: 10.204.217.153
+    private_ip: 192.168.1.2
+    roles:
+      k8s_node:
+      vrouter:
+        PHYSICAL_INTERFACE: enp1s0f1
+#  nodei17:
+#    ip: 10.204.217.129
+#    provider: bms
+#    roles:
+#      contrail_command: null
+  nodec33:
+    ip: 10.204.217.168
+    private_ip: 192.168.2.1
+    provider: bms
+    roles: 
+      gateway: null
+  nodec10:   
+    ip: 10.204.217.176
+    private_ip: 192.168.2.2
+    provider: bms
+    roles:
+      gateway: null
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  mail_server:
+    port: 4000
+    sender: contrail-build@juniper.net
+    server: 10.84.24.64
+    to: dl-contrail-sw@juniper.net
+  use_project_scoped_token: true
+  web_server:
+    log_path: /var/www/html/Docs/logs
+    password: stack@123
+    report_path: /var/www/html/sanity/fb-sanity/FB-master-k8s-centos7-ha-ansible-sanity
+    server: zephyrine.englab.juniper.net
+    username: stack
+    web_root: /Docs/logs
+
+bms_reimage_info:
+  server_manager:
+    ip: 10.204.217.158
+    username: root
+    password: c0ntrail123
+
+control_data:
+    nodec28:
+      ip: 10.204.217.13
+      ctrldata_ip: 192.168.1.1
+      prefix: 24
+      gw: 192.168.1.254
+      device: enp1s0f1
+    nodec50:
+      ip: 10.204.217.153
+      ctrldata_ip: 192.168.1.2
+      prefix: 24
+      gw: 192.168.1.254
+      device: enp1s0f1
+    nodec33:
+      ip: 10.204.217.168
+      ctrldata_ip: 192.168.2.1
+      prefix: 24
+      gw: 192.168.2.254
+      device: enp1s0f1 
+      role: gateway
+    nodec10:
+      ip: 10.204.217.176
+      ctrldata_ip: 192.168.2.2
+      prefix: 24
+      gw: 192.168.2.254
+      device: enp1s0f1
+      role: gateway
+
+static_routes:
+  mc-controller:
+  - gw: 192.168.1.254
+    ip: 172.16.0.0/24
+
+emc:
+  sub_cluster:
+    provider: onprem
+    pvt_cloud: pvt-cloud-2020
+    private_subnet:
+      ctl_subnet: 192.168.1.0/24
+      gw_subnet: 192.168.2.0/24
+    physical_router:
+      name: contrail-qfx5110-7
+      public_ip: 10.204.216.147
+      private_ip: 192.168.2.254
+      username: root
+      password: c0ntrail123
+    roles:
+      tor
+    provision: true
+    interface: irb.12
+    AS: 64501
+    subnets: 192.168.1.0/24,192.168.2.0/24
+    protocols_mode:
+      bgp
+
+    
+
+  organization:
+  project:
+  instances:
+    name: nodec28
+    public_ip: 10.204.217.13
+    private_ip: 192.168.1.1
+    interface: enp1s0f1
+    provision: false
+    username: root
+    password: c0ntrail123
+    roles:
+      controller
+      k8s_master
+    name: nodec50
+    public_ip: 10.204.217.153
+    private_ip: 192.168.1.2
+    interface: enp1s0f1
+    provision: true
+    username: root
+    password: c0ntrail123
+    roles:
+      compute_node
+    gateway: 192.168.1.254
+    name: nodec10
+    public_ip: 10.204.217.176
+    private_ip: 192.168.2.2
+    interface: enp1s0f1
+    provision: true
+    username: root
+    password: c0ntrail123
+    services:
+      bgp_rr
+    roles:
+      gateway
+    private_subnet:
+      192.168.1.0/24
+      192.168.2.0/24
+    gateway: 192.168.2.254
+    name: nodec33
+    public_ip: 10.204.217.168
+    private_ip: 192.168.2.1
+    interface: enp1s0f1
+    provision: true
+    username: root
+    password: c0ntrail123
+    services:
+      bgp_rr
+    roles:
+      gateway
+    private_subnet:
+      192.168.1.0/24
+      192.168.2.0/24
+    gateway: 192.168.2.254
+    name: bng-contrail-qfx51-11-eabf285c-ccd6-40a8-817a-a079664e04ec
+    public_ip: 10.204.216.197
+    private_ip: 192.168.2.254
+    private_subnet:
+      192.168.1.0/24
+      192.168.2.0/24
+    roles:
+      tor
+    provision: true
+    username: root
+    password: c0ntrail123
+    interface:
+      irb.20
+    AS: 64502
+    protocols_mode:
+      bgp
+
+  cloud:
+    image_id: img
+    credential: cloud-credential
+    user: cloud-user
+    access_key: QUtJQTRPSVRMS1MzUE1UNlNCR0o=
+    secret_key: bGg4eDFZTG5nREpZNnU3Sk1HdURtODZhNEZQam9laDd5ZUpSNEVOUA==
+    cloud_name: cloud-1212-cloud
+    organization: Juniper
+    provider: aws
+    tag: cloud-tag
+    regions:
+      ap-south-1:
+        vpc:
+          awsaps1v1:
+            cidr_block: 172.26.1.0/24
+            subnet:
+              name: s1
+              cidr_block: 172.26.1.0/25
+              availability_zone: a
+            security_group: awsaps1v1-sg
+            instances:
+              aws12v1cp1:
+                roles:
+                - compute
+                instance_type: c4.xlarge
+                os: rhel7
+              aws12v1cp2:
+                roles:
+                - compute
+                instance_type: c4.xlarge
+                os: rhel7
+              aws12v1gw1:
+                roles:
+                - gateway
+                instance_type: c4.xlarge
+                os: rhel7
+              aws12v1gw2:
+                roles:
+                - gateway
+                instance_type: c4.xlarge
+                os: rhel7
+              aws12v1n1:
+                roles:
+                - bare_node
+                instance_type: c4.xlarge
+                os: rhel7
+              aws12v1n2:
+                roles:
+                - bare_node
+                instance_type: c4.xlarge
+                os: rhel7
+
+  add_cld:
+    provider: aws
+    access_key: QUtJQTRPSVRMS1MzUE1UNlNCR0o=
+    secret_key: bGg4eDFZTG5nREpZNnU3Sk1HdURtODZhNEZQam9laDd5ZUpSNEVOUA==
+    azure_client_id: YmI5MzAzNWUtNzk2OC00YjkwLWFjMmYtMTMxYWQ4ODMxZWI2
+    azure_tenant_id: YmVhNzhiM2MtNGNkYi00MTMwLTg1NGEtMWQxOTMyMzJlNWY0
+    azure_subscription_id: MGU0MjMzNmYtZDkzMC00MWY5LTk2NjEtNTgyYzI0MzM3ODk3
+    azure_client_secret: cElTeDkzLmZPM1pvRHZ6XXEySEhCLVNUWWpdaDhQQlo=
+    google_account_json: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiY29udHJhaWwtcWEiLAogICJwcml2YXRlX2tleV9pZCI6ICI2YThlNzhkOTEwNzAxMmI1MjEwZGM0MzUyMGNiZGY0NjVjYWRiNzRlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUURaYldwa2l0Wm15UzdNXG5XODJKdXdSMEtReUViaEZkUmJKNXNjOFVFK1FramZmVWtXVy82UWRXTVBad1RrNU8wWkxmYUU3azBLaG5hNlArXG45TW9ubmhIcWpKWlMzUWpaUlk4ZEtZSDRQTFY3dE91ZFpobnh0N05TckVSRWpTU3VXRG5LY1poaXBnOURrSTZuXG4yZ2NXSFBUZnBKMFZMYnQxUUwyVFkvUE8yTkV5dmU5TWVNZm9qWGpYb2lORVpoWU02SU5pL1JsdEpLeW5PUFM0XG5pZVp2b0ZqT1hhRm5rNWtnZWNaMk9FeGVza0l4VU1adjc5cGNoTGJtSEF2Ti80NGc2Q0VnaFRQeUtWRENzczFHXG5wSzBxQ1VNWTlHRmY4K0dJTW50cnFSMmZZWDgzVGlqZ1k0a3h5MWpkU01rdzBzWFF2dTcrcWhWakdsZkVZYml3XG52eU5rblV3TkFnTUJBQUVDZ2dFQURDSHY0dVpnYW1IbGk1Ky95MlMxTGVvd2VaOU90cjZ4NDlxSkxKeWppV3FtXG5ucVR5WVpBV1NiZjN1SEtXS2czRnZWT3J1MWJ0WHNBQjZiTXRLS0xJYXljbktENlBSTmg5ME9uRkI5NFRYbkROXG5DUDV1aWk5dkFUajlvam1pQjF5QzlRbjdyOTJHVW9YWmdBSkpqUEZXdExnUnorRzZhU09Rc0kzT1NBZVBQTjZFXG5BVyt4c3ZiRW81Z2NBL0gwMS9FbENoallScXMrc05HOFIyb3F0UE52ZHRkbWdxM1BNQnkwcGx0YS9iNWFyK0w0XG51eDZucU9pbzZGSHBBNSs3K292Y1BONDhOTERrRXdqVEZXZ0dES2JxMFM0MTRXZnpoOFpZY2ZocE5sb1I2dU5lXG45TEhNN3lBNTRlakRDMmo2dDlwQnI2d21TdFhqcjRSYXVHa3MvS2gzblFLQmdRRDV4bFVTQUpibXFqcXJDaWpBXG5QSjhMZnJISUJiU1lneVJUU2h5M2lwVmhOTlJLemNlZ05ZNnFkSTBnMGFML1kwd29maWcwTGhNQm8vUlV2UTc0XG5GeEV4SUJNbXIyaFJBVkFzMmFDRkdpUnNZMXJJUjJCOVhqMnlnK3Z5OVZ3MWoxQUhzcmlEK2FnMzFIN1pjUzZOXG5yM0pkbDQwcWpQTlFLY2c1RjJ5d0s2aWdpd0tCZ1FEZTJMR1l2U2ltbDhHRlBvTUFzb2xoMHZFTzczeVZnR0psXG5rWWxpd2l2b3owN2NncXhwRVVtUFMvRHdRSFBUSWk5cVdKWStIaTVnMWlkWGVaeUtaZmwyeHFqL3IzWWN6OUFhXG5TTkU3aTZrN3lWYTl1L2xSMTZSRUtHNTRoaGJvMkdvVnNZQVFrSndGN3cxK0RWZkViV1RTT3ZQbDcvaUM2NWNJXG5IdVVDQ2ltQXh3S0JnQ09VMVZtVEsrd0FKQXRwanhTVGpqU2MvOFoyeVp0UVUwUnFNbDBUS09TSUdoWHQ2cG93XG5CdnJSVDZsMU03c2Q4aU55bFZlWm1LdUxKNnRLbzI5RUdmYmRrdHpYOEF4YUc0bklGczNmUTRFTlJrbHhvWlU2XG5iNStXbTI0bzlkSExjS01vR3BEeVo3eE1VU1c0c2VFTk5VV1A2VlErY0FyamFOcDVNOHFFN2FpeEFvR0FjSDc3XG55SnRWTmlSTjhUSEplRVNvemRWckU1c2FUVzV1UGMvbWh4QjJraVIxTHlSWVhRSDVISG05dThzTnJYd0lhNnNrXG56VjczRXJPSlVNTjNudll6cFI1TW1pYTlmWFg3SEFtK2RremV0ZXZCK2k0MmduWlYyb0orb2lFdTE0VElxUUxlXG5IMzZoQk8zVTVkbGVnUzZvUXVpM3oxQUJLRFkrSEQ5Y1pGYzA5R2tDZ1lFQWd3VnBkcDM4NXUzZElVVjZMbTNnXG5wRm5WaWE4VnRkRXVDY0M1VFB2R1Y1UlV6dUxpYUdnTlRlZTBkZjFIeUFNVk04SVdBSW92VGxzM0hFdGYyelhBXG5reUlGaHpOSkxzS3UrTXBhbm9hMDQvMDVkUFhuYlYxZDEyTEh3VE51enV6U1VGQXNEOTFHR2kzZkRoaXBOMFdaXG40Zis3Slo2a0VSd0NNeHl2RnJZSktMcz1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJyaXRhbWdhbmdvcGFkaHlheUBjb250cmFpbC1xYS5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgImNsaWVudF9pZCI6ICIxMDYzNDU3ODM5NDgyOTE2NzkzMzciLAogICJhdXRoX3VyaSI6ICJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aCIsCiAgInRva2VuX3VyaSI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsCiAgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMiLAogICJjbGllbnRfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0YS94NTA5L3JpdGFtZ2FuZ29wYWRoeWF5JTQwY29udHJhaWwtcWEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iCn0K
+    cloud_name: cloud-1212-cloud
+    organization: Juniper
+    tag: cloud-tag
+    azure_provider:
+      regions:
+        SouthIndia:
+          resource_group: contrail-test-south-india
+          vpc:
+            azure192v2:
+              cidr_block: 172.26.2.0/24
+              subnet:
+                name: s2
+                cidr_block: 172.26.2.0/25
+                availability_zone: 1
+              security_group: azure192v2-sg
+              instances:
+                azure192v2cp1:
+                  roles:
+                  - compute
+                  instance_type: Standard_F2
+                  os: rhel7
+                azure192v2cp2:
+                  roles:
+                  - compute
+                  instance_type: Standard_F2
+                  os: rhel7
+                azure192v2gw1:
+                  roles:
+                  - gateway
+                  instance_type: Standard_F2
+                  os: rhel7
+                azure192v2gw2:
+                  roles:
+                  - gateway
+                  instance_type: Standard_F2
+                  os: rhel7
+                azure192v2n1:
+                  roles:
+                  - bare_node
+                  instance_type: Standard_F2
+                  os: rhel7
+                azure192v2n2:
+                  roles:
+                  - bare_node
+                  instance_type: Standard_F2
+                  os: rhel7
+    gcp_provider:
+      project: contrail-qa
+      regions:
+        asia-south1:
+          vpc:
+            gcp192v3:
+              cidr_block: 172.26.3.0/24
+              subnet:
+                name: gs3
+                cidr_block: 172.26.3.0/25
+                availability_zone: a
+              security_group: gcp192v3-sg
+              instances:
+                gcp192v3cp1:
+                  roles:
+                  - compute
+                  instance_type: n1-standard-2
+                  os: rhel7
+                gcp192v3cp2:
+                  roles:
+                  - compute
+                  instance_type: n1-standard-2
+                  os: rhel7
+                gcp192v3gw1:
+                  roles:
+                  - gateway
+                  instance_type: n1-standard-2
+                  os: rhel7
+                gcp192v3gw2:
+                  roles:
+                  - gateway
+                  instance_type: n1-standard-2
+                  os: rhel7
+                gcp192v3n1:
+                  roles:
+                  - bare_node
+                  instance_type: n1-standard-2
+                  os: rhel7
+                gcp192v3n2:
+                  roles:
+                  - bare_node
+                  instance_type: n1-standard-2
+                  os: rhel7

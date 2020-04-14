@@ -1,0 +1,133 @@
+from fabric.api import env
+import os
+
+host1 = 'root@10.84.13.32'
+host2 = 'root@10.84.13.33'
+host3 = 'root@10.84.13.38'
+host4 = 'root@10.84.13.2'
+contrail_vm1 = 'root@10.84.14.242'
+contrail_vm2 = 'root@10.84.14.243'
+
+#If there is only single interface,  MX ip is 10.84.13.200
+ext_routers = [('a5-mx80-2', '10.84.13.200')]
+#For multi-interface setup, mx ip is 192.168.10.200
+
+#ext_routers = [('a5-mx80-2', '192.168.10.200')]
+router_asn = 64512
+public_vn_rtgt = 10000
+public_vn_subnet = "10.84.51.96/27"
+
+# env.orchestrator = 'vcenter'
+
+host_build = 'stack@10.84.24.64'
+
+env.roledefs = {
+    'all': [host1, host2, host3, host4, contrail_vm1, contrail_vm2],
+    'cfgm': [host1, host2, host3],
+    'openstack': [host1],
+    'control': [host1, host3],
+    'compute': [host4, contrail_vm1, contrail_vm2],
+    'vcenter_compute':[host3],
+    'collector': [host1],
+    'webui': [host1],
+    'database': [host1, host2, host3],
+    'build': [host_build],
+}
+env.hostnames = {
+    'all': ['a6s32', 'a6s33', 'a6s38', 'a6s2', 'ContrailVM-a5s42' 'ContrailVM-a5s43']
+}
+
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    contrail_vm1: 'c0ntrail123',
+    contrail_vm2: 'c0ntrail123',
+    host_build: 'c0ntrail123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    contrail_vm1:'esxi-6.0',
+    contrail_vm2:'esxi-6.0',
+}
+
+env.vcenter_servers = {
+   'vcenter5': {
+        'server':'10.87.64.71',
+        'port': '443',
+        'username': 'Administrator@vsphere.local',
+        'password': 'Contrail123!',
+        'auth': 'https',
+        'datacenter': 'a6s32-ESXI-6',
+        'vcenter_compute': '10.84.13.38',
+        'cluster': ['a6s32-esxi-6-cluster1'],
+        'dv_switch': { 'dv_switch_name': 'a6s32_vc_dvs',
+                 },
+        'dv_port_group': { 'dv_portgroup_name': 'a6s32_dvpg',
+                       'number_of_ports': '1800',
+                 },
+   },
+} 
+
+esxi_hosts = {
+    'a5s42' : {
+        'ip' : '10.84.14.142',
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'datastore': "/vmfs/volumes/datastore1",
+        'vcenter_server': 'vcenter5',
+        'cluster': 'a6s32-esxi-6-cluster1',
+        'contrail_vm' : {
+            'name' : 'ContrailVM-a5s42',
+            'mac' : '00:50:56:09:ac:1e',
+            'host' : 'root@10.84.14.242',
+            'mode': "vcenter",
+            'vmdk_download_path': "http://10.84.5.120/cs-shared/contrail-vcenter/vmdk/LATEST/ContrailVM-disk1.vmdk",
+        }
+      },
+
+    'a5s43' : {
+        'ip' : '10.84.14.143',
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'vcenter_server': 'vcenter5',
+        'datastore': "/vmfs/volumes/datastore2",
+        'cluster': 'a6s32-esxi-6-cluster1',
+        'contrail_vm' : {
+            'name' : 'ContrailVM-a5s43',
+            'mac' : '00:50:56:09:ac:2e',
+            'host' : 'root@10.84.14.243',
+            'mode': "vcenter",
+            'vmdk_download_path': "http://10.84.5.120/cs-shared/contrail-vcenter/vmdk/LATEST/ContrailVM-disk1.vmdk",
+        }
+    },
+
+}
+do_parallel=True
+minimum_diskGB=32
+env.test_repo_dir="/home/stack/ubuntu_sanity/contrail-test"
+env.mail_from='shajuvk@juniper.net'
+env.encap_priority="'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.mx_gw_test=True
+env.testbed_location='US'
+env.interface_rename = False 
+env.image_web_server = '10.84.5.120'
+env.log_scenario='Vcenter-Compute MultiNode Single Intf Sanity'
+#env.enable_lbaas = True
+
+env.ntp_server = '10.84.5.100'
+env.test = {
+     'mail_to': 'dl-contrail-sw@juniper.net',
+     'mail_server': '10.84.24.64',
+     'mail_port': '4000',
+     'image_web_server': '10.84.5.120',
+     'log_scenario': 'Vcenter-Compute MultiNode Single Intf Sanity',
+           }
+#enable_ceilometer = True
+#ceilometer_polling_interval = 60

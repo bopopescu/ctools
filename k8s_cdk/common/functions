@@ -1,0 +1,150 @@
+#!/bin/bash
+
+fmy_file="${BASH_SOURCE[0]}"
+fmy_dir="$(dirname $fmy_file)"
+jver="$(juju --version | cut -d . -f 1)"
+
+if [[ $jver != '2' ]] ; then
+  echo "ERROR: Juju version 2 is only supported"
+  exit 127
+fi
+
+source $fmy_dir/functions-juju$jver
+
+function wait_absence_status_for_services() {
+  sleep 10
+  check_str=$1
+  local max_iter=${2:-30}
+  # waiting for services
+  local iter=0
+  while juju-status | grep -P $check_str &>/dev/null
+  do
+    juju-status-tabular &> $WORKSPACE/logs/juju-status-latest
+    echo "Waiting for all service to be active - $iter/$max_iter"
+    if ((iter >= max_iter)); then
+      echo "ERROR: Services didn't up."
+      juju-status-tabular
+      return 1
+    fi
+    if juju-status | grep "current" | grep error ; then
+      echo "ERROR: Some services went to error state"
+      juju-status-tabular
+      return 1
+    fi
+    local merr=`juju-status-json | python -c "import sys; import json; ms = json.load(sys.stdin)['machines']; [sys.stdout.write(str(m) + '\n') for m in ms if (ms[m]['juju-status']['current'] == 'down' and ms[m]['instance-id'] == 'pending')]"`
+    if [ -n "$merr" ] ; then
+      echo "ERROR: Machines went to down state: "$merr
+      juju-status
+      return 1
+    fi
+    sleep 30
+    ((++iter))
+  done
+}
+
+function wait_for_removed() {
+  sleep 10
+  check_str=$1
+  local max_iter=${2:-5}
+  # waiting for services
+  local iter=0
+  while juju-status | grep "$check_str/" &>/dev/null
+  do
+    juju-status-tabular &> $WORKSPACE/logs/juju-status-latest
+    echo "Waiting for all units to be removed - $iter/$max_iter"
+    if ((iter >= max_iter)); then
+      echo "ERROR: Units didn't removed."
+      juju-status-tabular
+      return 1
+    fi
+    if juju-status | grep "current" | grep error ; then
+      echo "ERROR: Some services went to error state"
+      juju-status-tabular
+      return 1
+    fi
+    sleep 30
+    ((++iter))
+  done
+}
+
+function wait_for_machines() {
+  # wait for machines
+  sleep 30
+  for machine in $@ ; do
+    juju-status-tabular &> $WORKSPACE/logs/juju-status-latest
+    echo "Waiting for machine: $machine"
+    local fail=0
+    while ! output=`juju-ssh $machine "uname -a" 2>/dev/null` ; do
+      if ((fail >= 60)); then
+        echo "ERROR: Machine $machine did not up."
+        echo $output
+        return 1
+      fi
+      sleep 10
+      ((++fail))
+      if echo "$machine" | grep -q '/lxd/' ; then
+        # lxd container case
+        local mch=`echo "$machine" | cut -d '/' -f 1`
+        local status=`juju-status-json | python -c "import sys; import json; sys.stdout.write(json.load(sys.stdin)['machines']['$mch']['containers']['$machine']['juju-status']['current'])"`
+        local iid=`juju-status-json | python -c "import sys; import json; sys.stdout.write(json.load(sys.stdin)['machines']['$mch']['containers']['$machine']['instance-id'])"`
+      else
+        local status=`juju-status-json | python -c "import sys; import json; sys.stdout.write(json.load(sys.stdin)['machines']['$machine']['juju-status']['current'])"`
+        local iid=`juju-status-json | python -c "import sys; import json; sys.stdout.write(json.load(sys.stdin)['machines']['$machine']['instance-id'])"`
+      fi
+      if [[ "$status" == "down" && "$iid" == "pending" ]] ; then
+        echo "ERROR: Machine $machine went to 'down' state."
+        juju-status
+        return 1
+      fi
+    done
+    while ! juju-ssh $machine uname -a 2>/dev/null ; do
+      echo "WARNING: Machine $machine isn't accessible"
+      sleep 2
+    done
+  done
+}
+
+function wait_for_all_machines() {
+  wait_for_machines `juju-machines-tabular | tail -n +2 | awk '{print $1}'`
+}
+
+function create_machine() {
+  local constraints="$@"
+
+  local az_opts=""
+  if [ -n "$AZ" ] ; then
+    az_opts="zone=$AZ"
+  fi
+
+  juju-add-machine $az_opts --series=$SERIES --constraints "$constraints" 2>&1 | tail -1 | awk '{print $3}'
+}
+
+function cleanup_environment() {
+  if juju-destroy-environment ; then
+    return 0
+  fi
+
+  juju-destroy-environment || /bin/true
+  for volid in `aws ec2 describe-volumes --filters Name=tag-value,Values="juju-*-machine-*" Name=status,Values=available --query 'Volumes[*].{ID:VolumeId}' --output text` ; do
+    aws ec2 delete-volume --volume-id "$volid"
+    sleep 3
+  done
+}
+
+function post_deploy() {
+  echo "INFO: Waiting for services start: $(date)"
+
+  if ! wait_absence_status_for_services "executing|blocked|waiting" 45 ; then
+    echo "ERROR: Waiting for services end: $(date)"
+    return 1
+  fi
+  echo "INFO: Waiting for services end: $(date)"
+
+  # check for errors
+  if juju-status | grep "current" | grep error ; then
+    echo "ERROR: Some services went to error state"
+    return 1
+  fi
+
+  juju-status-tabular
+}

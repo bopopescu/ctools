@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "config" in value['roles'] %}
+MASTER_IP={{ value['ip'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+echo $(/usr/sbin/ip -d route get $MASTER_IP | egrep -o 'src ([0-9.]*)' | grep -o '[0-9.]*')

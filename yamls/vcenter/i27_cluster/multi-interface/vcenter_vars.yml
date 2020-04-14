@@ -1,0 +1,73 @@
+---
+vcenter_servers:
+  - server1:
+      hostname: 10.204.217.203
+      username: administrator@vsphere.local
+      password: Contrail123!
+      datacentername: "i27_datacenter11"
+      clusternames:
+        - "i27_cluster11"
+        - "i27_cluster12"
+      # Optional: If not specified default vm_dvs switch is created. This is the dvswitch for providing contrail overlay networking support for vcenter guest VMs.
+      dv_switch:
+        dv_switch_name: i27i28_dvs
+        dv_switch_version: 6.5.0 
+      dv_port_group:
+        dv_portgroup_name: i27i28_dvpg
+        number_of_ports: 1800
+      # Optional: Specify the control-data DVswitch and PG
+      dv_switch_control_data:
+        dv_switch_name: "CTRL_DVS_i27"
+        dv_switch_version: 6.5.0 
+      dv_port_group_control_data:
+        dv_portgroup_name: "ctrl_prt_grp_i27"
+        number_of_ports: 14
+        uplink:
+          - 'vmnic1'
+      enable_ha: yes
+      enable_drs: yes
+      #vmdk: http://10.204.217.158/images/vcenter-vmdk/centos-7.5/R5.0.1/centos-7.5-8/ContrailVM.ovf
+      vmdk: http://10.204.217.158/images/vcenter-vmdk/centos-7.7-1/ContrailVM.ovf
+esxihosts:
+  - name: 10.204.217.147
+    username: root
+    password: c0ntrail123
+    datastore: nodei35-ds
+    datacenter: "i27_datacenter11"
+    cluster: "i27_cluster11"
+    contrail_vm:
+      networks: 
+        - mac: 00:77:56:cd:bc:ba
+        - mac: 00:50:56:bb:bb:93
+          sw_type: dvs
+          switch_name: CTRL_DVS_i27
+          pg: ctrl_prt_grp_i27
+    vcenter_server: server1
+  - name: 10.204.217.148
+    username: root
+    password: c0ntrail123
+    datastore: nodei36-ds
+    datacenter: "i27_datacenter11"
+    cluster: "i27_cluster11"
+    contrail_vm:
+      networks: 
+        - mac: 00:77:56:aa:ba:ba
+        - mac: 00:50:56:bb:bb:94
+          sw_type: dvs
+          switch_name: CTRL_DVS_i27
+          pg: ctrl_prt_grp_i27
+    vcenter_server: server1
+  - name: 10.204.217.123
+    username: root
+    password: c0ntrail123
+    datastore: nodei11-ds
+    datacenter: "i27_datacenter11"
+    cluster: "i27_cluster11"
+    contrail_vm:
+      networks: 
+        - mac: 00:50:56:a6:25:04
+        - mac: 00:50:56:bb:bb:7B
+          sw_type: dvs
+          switch_name: CTRL_DVS_i27
+          pg: ctrl_prt_grp_i27
+    vcenter_server: server1

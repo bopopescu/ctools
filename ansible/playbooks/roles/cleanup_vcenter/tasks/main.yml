@@ -1,0 +1,121 @@
+---
+- name: Update default validate_cert in vcenter_servers
+  set_fact:
+    vcs: >-
+      {%- set vc1 = [] -%}
+      {%- for vc in vcenter_servers -%}
+        {%- if vc.values()[0]['validate_certs'] is not defined -%}
+          {%- do vc1.append({vc.keys()[0]: vc.values()[0] |combine({'validate_certs': False})}) -%}
+        {%- else -%}
+          {%- do vc1.append(vc) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{vc1}}
+
+- name: update vcenter_servers var post validate_cert
+  set_fact:
+    vcenter_servers: "{{ vcs if vcs is defined and vcs else vcenter_servers }}"
+
+- name: substitue default VM DVS values for overlay
+  set_fact:
+    vc_servers_dvs: >-
+      {%- set vc1 = [] -%}
+      {%- for vc in vcenter_servers -%}
+        {%- if vc.values()[0]['dv_switch'] is not defined -%}
+          {%- do vc1.append({vc.keys()[0]: vc.values()[0] |combine({'dv_switch': dv_switch})}) -%}
+        {%- else -%}
+          {%- do vc1.append(vc) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{vc1}}
+
+- name: update vcenter_servers var post VM DVS defaults
+  set_fact:
+    vcenter_servers: "{{ vc_servers_dvs }}"
+  when: vc_servers_dvs is defined and vc_servers_dvs
+
+- name: substitue default VM DVS PG values
+  set_fact:
+    vc_servers_pg: >-
+      {%- set vc1 = [] -%}
+      {%- for vc in vcenter_servers -%}
+        {%- if vc.values()[0]['dv_port_group'] is not defined -%}
+          {%- do vc1.append({vc.keys()[0]: vc.values()[0] |combine({'dv_port_group': dv_port_group})}) -%}
+        {%- else -%}
+          {%- do vc1.append(vc) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{vc1}}
+
+- name: set vcenter_servers var post VM DVS PG defaults
+  set_fact:
+    vcenter_servers: "{{ vc_servers_pg }}"
+  when: vc_servers_pg is defined and vc_servers_pg
+
+- name: create vcenter servers list of dicts
+  set_fact:
+    vc_servers: "{{ vc_servers | default ([]) + item.values() }}"
+  with_items: "{{ vcenter_servers }}"
+
+- name: Update default validate_cert in esxihosts
+  set_fact:
+    esxihosts1: >-
+      {%- set ip1 = [] -%}
+      {%- for host in esxihosts -%}
+        {%- if host['validate_certs'] is not defined -%}
+          {%- do ip1.append(host | combine({'validate_certs': False})) -%}
+        {%- else -%}
+          {%- do ip1.append(host) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ip1}}
+
+- name: set esxihosts var post validate_cert
+  set_fact:
+    esxihosts: "{{ esxihosts1 if esxihosts1 is defined and esxihosts1 else esxihosts }}"
+
+- name: substitute default std fabric switch and pg values in esxihosts
+  set_fact:
+    esxihosts_std: >-
+      {%- set ip1 = [] -%}
+      {%- for host in esxihosts -%}
+        {%- if host['std_switch_list'] is not defined -%}
+          {%- do ip1.append(host | combine({'std_switch_list': [{'pg_name': std_pg_name, 'switch_name': std_switch_name}]})) -%}
+        {%- else -%}
+          {%- do ip1.append(host) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ip1}}
+
+- name: substitute vcenter in the esxi host
+  set_fact:
+    esxi_servers: >-
+      {%- set ip1 = [] -%}
+      {%- for host in esxihosts -%}
+        {%- for vcsrv in vcenter_servers -%}
+          {%- if host['vcenter_server'] == vcsrv.keys()[0] -%}
+            {%- do ip1.append(host | combine({'vcenter_server': vcsrv.values()[0]})) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ip1}}
+
+- name: set esxihosts var post std switch defaults
+  set_fact:
+    esxihosts: "{{ esxihosts_std }}"
+  when: esxihosts_std is defined and esxihosts_std
+
+  #For non-eam vm delete
+  #- name: Delete contrail compute vm in esxi host
+  #  include: delete_contrail_vm.yml
+  #  with_items: "{{ esxi_servers }}"
+  #  loop_control:
+  #    loop_var: esxi_host
+
+- name: Delete contrail compute vm in esxi host
+  include: eam_destroy_vm.yml
+  #include: delete_contrail_vm.yml - include for non-eam case 
+  with_items: "{{ esxi_servers }}"
+  loop_control:
+    loop_var: esxi_host
+

@@ -1,0 +1,69 @@
+{
+	"params":{
+		"servers":{
+			"server1":{
+				"name": "5c3s3-node2-vm6",
+				"management_ip": "10.87.74.209",
+				"management_interface": "eth0",
+				"server_uuid": "ce240137-8663-4999-85e4-02a4e533a787",
+				"control_data_interface": {
+					"control_data_interface" : "eth1",
+					"control_data_ip" : "192.168.103.14"
+				},
+				"default_gateway" : "",
+				"roles": ["openstack", "contrail-control", "compute"]
+			},
+			"server2":{
+                                "name": "5c3s3-node3-vm1",
+                                "management_ip": "10.87.74.210",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a878",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "192.168.103.15"
+                                },
+				"default_gateway": "",
+                                "roles": ["openstack", "contrail-control", "compute"]
+                        },
+			"server3":{
+                                "name": "5c3s3-node3-vm2",
+                                "management_ip": "10.87.74.211",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-0000e533a878",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "192.168.103.16"
+                                },
+				"default_gateway" : "",
+                                "roles": ["openstack", "contrail-control", "compute"]
+                        }
+		},
+		"go_server_details": {
+			"server_ip": "10.87.74.208",
+			"server_port": "9091"
+		},
+		"contrail_cluster_details": {
+			"cluster_uuid": "ac2346fe-6dea-4621-9e9c-b2411419293f",
+			"cluster_name" : "contrail_test_cluster",
+			"provision_type" : "ansible",
+			"ntp_server" : "10.84.5.100",
+			"encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE", 
+			"registry_private_insecure" : "true",
+			"container_registry" : "10.84.5.81:5000",
+			"contrail_version" : "ocata-5.0-82",
+			"high_availability" : "true",
+			"orchestrator" : "openstack",
+			"default_gateway" : "192.168.103.254"
+		},
+		"openstack_cluster_details": {
+			"cluster_uuid" : "ac2346fe-6dea-4621-9e9c-b24114199999",
+			"cluster_name" : "openstack_test_cluster",
+			"kolla_globals": {
+				"enable_swift": "no",
+				"enable_ironic": "no"
+			},
+			"openstack_internal_vip": "192.168.103.222",
+			"openstack_external_vip": "10.87.74.222"
+		}
+	}
+}

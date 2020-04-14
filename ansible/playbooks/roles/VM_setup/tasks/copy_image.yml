@@ -1,0 +1,68 @@
+---
+#Preconfig
+- name: setting source
+  vars:
+    src_file:
+  set_fact:
+    src_file: "{{ image_source }}"
+
+- name: setting destination
+  vars:
+    dest_folder:
+  set_fact:
+    dest_folder: "{{ image_dest }}"
+
+- name: setting image name
+  vars:
+    image_name:
+  set_fact:
+    image_name: "{{ disk_file_name }}"
+
+- name: setting random number
+  vars:
+    rand_number:
+  set_fact:
+    rand_number: "{{ 10000 | random(start=1) }}"
+
+- name: setting temp file name
+  vars:
+    temp_file:
+  set_fact:
+    temp_file: "{{ 'tmp_' + rand_number }}"
+
+- name: Creating the destination folder
+  shell: "mkdir -p {{ dest_folder }}"
+
+- name: extract source file name
+  vars:
+    src_file_name:
+  set_fact:
+    src_file_name: "{{ src_file | basename }}"
+
+- name: changing tmp file type
+  vars:
+    tmp_file: "{{ temp_file }}"
+  set_fact:
+    tmp_file: "{{ temp_file + '.gz' }}"
+  when: (src_file_name | splitext)[1] == '.gz'
+
+- name: removing the existing image
+  shell: 'rm -f "{{ image_name }}" "{{ src_file }}"'
+
+- name: getting the image
+  shell: "wget {{ image_source }} -O {{ dest_folder + '/' + tmp_file }}"
+
+- name: unarchive
+  shell: "gunzip -f {{ tmp_file }}"
+  args:
+    chdir: "{{ dest_folder }}"
+  when: (src_file_name | splitext)[1] == '.gz'
+
+- name: change tmp_file vm_name
+  set_fact:
+    tmp_file: "{{ (tmp_file | splitext)[0] }}"
+
+- name: move the tmp_file
+  shell: "mv {{tmp_file}} {{image_name}}"
+  args:
+    chdir: "{{ dest_folder }}"

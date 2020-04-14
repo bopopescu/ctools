@@ -1,0 +1,181 @@
+from fabric.api import env
+import os
+
+i6 = '10.204.217.118'
+i11 = '10.204.217.123'
+i12 = '10.204.217.124'
+
+nodei6_vm1 = '10.204.217.200'
+nodei6_vm2 = '10.204.217.207'
+nodei6_vm3 = '10.204.217.208'
+nodei11_vm4 = '10.204.217.181'
+nodei12_vm5 = '10.204.217.182'
+
+host1 = 'root@10.204.217.200'
+host2 = 'root@10.204.217.207'
+host3 = 'root@10.204.217.208'
+host4 = 'root@10.204.217.181'
+host5 = 'root@10.204.217.182'
+esx1 = 'root@10.204.217.123'
+esx2 = 'root@10.204.217.124'
+
+host_build = 'stack@10.204.216.49'
+
+if os.getenv('HA_TEST',None) == 'True':
+    env.roledefs = {
+        'all': [host1, host2, host3, host4, host5],
+        'cfgm': [host1, host2, host3],
+        'webui': [host1, host2, host3],
+        'control': [host1, host2, host3],
+        'collector': [host1, host2, host3],
+        'database': [host1],
+        'compute': [host4, hos5],
+        'build': [host_build]
+    }
+else:
+    env.roledefs = {
+        'all': [host1, host2, host3, host4, host5],
+        'cfgm': [host1, host2, host3],
+        'webui': [host1,host2, host3],
+        'control': [host1, host2, host3],
+        'collector': [host1,host2, host3],
+        'database': [host1],
+        'compute': [host4, host5],
+        'build': [host_build]
+    }
+
+env.hostnames = {
+    'all': ['vcenter-sanity-vm1', 'vcenter-sanity-vm2', 'vcenter-sanity-vm3', 'nodei11-compute-vm', 'nodei12-compute-vm']
+}
+
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    host5: 'c0ntrail123',
+    esx1: 'c0ntrail123',
+    esx2: 'c0ntrail123',
+    host_build: 'stack@123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    host5:'ubuntu',
+}
+
+reimage_param = os.getenv('REIMAGE_PARAM', 'ubuntu-14.04.2')
+
+vm_node_details = {
+    'default': {
+                'image_dest' : '/mnt/disk1/images/',
+                'ram' : '32768',
+                'vcpus' : '4',
+                'disk_format' : 'qcow2',
+                'image_source' : 'http://10.204.217.158/images/node_vm_images/%s-256G.img.gz' % (reimage_param),
+                },
+    host1 : {   
+            'name' : 'vcenter-sanity-vm1',
+            'server': i6,
+            'network' : [{'bridge' : 'br0', 'mac':'00:50:56:a6:25:01'},
+                {'bridge' : 'br1'}
+                ],
+            },
+    host2 : {   
+            'name' : 'vcenter-sanity-vm2',
+            'server': i6,
+            'network' : [{'bridge' : 'br0', 'mac':'00:50:56:a6:25:02'},
+                {'bridge' : 'br1'}
+                ]
+            },
+    host3 : {   
+            'name' : 'vcenter-sanity-vm3',
+            'server': i6,
+            'network' : [{'bridge' : 'br0', 'mac':'00:50:56:a6:25:03'},
+                {'bridge' : 'br1'}
+                ]
+            }
+        }
+
+env.orchestrator = 'vcenter'
+
+env.vcenter_servers = {
+    'server1':{
+        'server':'10.204.217.246',
+        'port': '443',
+        'username': 'administrator@vsphere.local',
+        'password': 'Contrail123!',
+        'auth': 'https',
+        'datacenters' : {
+            'i6i11i12_datacenter' : {
+                'datacenter_mtu': '1500',
+                'dv_switches': {
+                    'vm_dvs2': {
+                        'dv_switch_version': '6.5.0',
+                        'dv_port_group': { 
+                            'dv_portgroup_name': 'vm_dvs_pg2', 
+                            'number_of_ports': '3', },
+                        'clusters': ['i11_cluster11', 'i12_cluster12'],
+                        },
+                    },
+
+                'dv_switch-fab': { 
+                    'dv_switch_name': 'fab_dvs', 
+                    'dv_port_group_fab': { 'dv_portgroup_name': 'fab-pg', 'number_of_ports': '3', },
+                    },  
+                },
+            },
+        },
+    }
+
+esxi_hosts = {
+    'nodei11' : {
+        'ip' : '10.204.217.123',
+        'vcenter_server':'server1',
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'datastore' : '/vmfs/volumes/i11-ds',
+        'datacenter': 'i6i11i12_datacenter',
+        'cluster': 'i11_cluster11',
+        'contrail_vm' : {
+            'name' : 'nodei11-compute-vm',
+            'mac' : '00:50:56:a6:25:04',
+            'host' : host4,
+            'mode': 'vcenter',
+            'vmdk' : '/cs-shared/images/vcenter-vmdk/ContrailVM-disk1.vmdk',
+        }
+    },
+    'nodei12' : {
+        'vcenter_server':'server1',
+        'ip' : '10.204.217.124',
+        'username' : 'root',
+        'password' : 'c0ntrail123',
+        'datacenter': 'i6i11i12_datacenter',
+        'cluster' : 'i11_cluster11',
+        'datastore' : '/vmfs/volumes/i12-ds',
+        'contrail_vm' : {
+            'name' : 'nodei12-compute-vm',
+            'mac' : '00:50:56:a6:25:05',
+            'host' : host5,
+            'mode': 'vcenter',
+            'vmdk' : '/cs-shared/images/vcenter-vmdk/ContrailVM-disk1.vmdk',
+        }
+    },
+}
+
+minimum_diskGB=32
+env.test_repo_dir='/home/stack/multi_interface_parallel/centos65/icehouse/contrail-test'
+env.mail_from='contrail-build@juniper.net'
+env.mail_to='dl-contrail-sw@juniper.net'
+env.interface_rename = False
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.log_scenario='Vcenter MultiNode Multi Intf Sanity'
+#do_parallel = True
+env.ntp_server = '10.204.217.158'
+env.optional_services = {
+    'cfgm' : ['device-manager'],
+}

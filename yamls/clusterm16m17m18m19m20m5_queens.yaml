@@ -1,0 +1,226 @@
+deployment:
+    deployer: null
+    type:
+        kolla:
+            #branch: contrail/ocata
+            #registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+        contrail:
+            branch: master 
+            registry: 10.204.217.152:5000
+            #registry: opencontrailnightly
+    sku: queens
+    os: centos7
+    version: null
+    orchestrator: openstack
+
+provider_config:
+  bms:
+    domainsuffix: englab.juniper.net
+    ntpserver: 10.204.217.158
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+instances:
+  nodem16:
+      ip: 10.204.216.105
+      provider: bms
+      roles:
+          config_database:
+          config:
+          control:
+          analytics_database:
+          analytics:
+          webui:
+          openstack:
+  nodem17:
+      ip: 10.204.216.106
+      provider: bms
+      roles:
+          config_database:
+          config:
+          control:
+          analytics_database:
+          analytics:
+          webui:
+          openstack:
+  nodem18:
+      ip: 10.204.216.107
+      provider: bms
+      roles:
+          config_database:
+          config:
+          control:
+          analytics_database:
+          analytics:
+          webui:
+          openstack:
+  nodem19:
+      ip: 10.204.216.108
+      provider: bms
+      roles:
+          openstack_compute:
+          vrouter:
+              PHYSICAL_INTERFACE: bond0
+  nodem20:
+      ip: 10.204.216.109
+      provider: bms
+      roles:
+          openstack_compute:
+          vrouter:
+              PHYSICAL_INTERFACE: bond0
+  nodem5:
+      ip: 10.204.216.94
+      provider: bms
+      roles:
+          openstack_compute:
+          vrouter:
+              PHYSICAL_INTERFACE: bond0
+  nodek7-vm2:
+    provider: bms
+    ip: 10.204.216.111
+    roles:
+      contrail_command:
+
+REGISTRY_PRIVATE_INSECURE: True
+CONTAINER_REGISTRY: 10.204.217.152:5000
+
+contrail_configuration:
+  LOG_LEVEL: SYS_DEBUG
+  CONTRAIL_VERSION: null
+  CLOUD_ORCHESTRATOR: openstack 
+  METADATA_PROXY_SECRET: c0ntrail123
+  OPENSTACK_NODES: 10.204.216.105,10.204.216.106,10.204.216.107
+  CONTROLLER_NODES: 10.204.216.105,10.204.216.106,10.204.216.107
+  CONTROL_NODES: 10.10.11.16,10.10.11.17,10.10.11.18
+  AAA_MODE: rbac
+  KEYSTONE_AUTH_ADMIN_PASSWORD: c0ntrail123
+  KEYSTONE_AUTH_URL_VERSION: "/v3"
+  RABBITMQ_NODE_PORT: 5673
+  KEYSTONE_AUTH_HOST: 10.204.216.159
+  IPFABRIC_SERVICE_HOST: 10.204.216.159
+  CONFIG_API_VIP: 10.204.216.105
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  ENCAP_PRIORITY: VXLAN,MPLSoUDP,MPLSoGRE
+  REGISTRY_PRIVATE_INSECURE: true
+  VROUTER_GATEWAY: 10.10.11.101
+  XMPP_SSL_ENABLE: true
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  CONFIG_DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+  vrrp_id: 214
+  internal_vip: 10.204.216.159
+  external_vip: 10.204.216.159
+  contrail_api_interface_address: 10.204.216.105
+  enable_haproxy: "yes"
+  enable_ironic: "no"
+  enable_swift: "no"
+
+
+test_configuration:
+  cfgm0_host_pwd: c0ntrail123
+  cfgm0_host_string: root@10.204.216.105
+  cluster_id: ocata_cluster
+  device_manager:
+      umesh:
+          asn: 64512
+          control_ip: 10.10.11.100
+          mgmt_ip: 10.204.217.191
+          model: mx
+          name: umesh
+          ssh_password: c0ntrail123
+          ssh_username: root
+          vendor: juniper
+  ext_routers:
+      blr-mx2: 10.10.11.101
+  fabric_gw:
+      sw166: 10.204.217.254
+  image_web_server: 10.204.217.158
+  mail_server:
+      port: 25
+      sender: contrailbuild@juniper.net
+      server: 10.47.226.20
+      to: dl-contrail-sw-in@juniper.net
+  physical_routers:
+      blr-mx2:
+          asn: 64512
+          control_ip: 10.10.11.101
+          mgmt_ip: 10.204.216.245
+          model: mx
+          name: blr-mx2
+          ports:
+          ssh_password: c0ntrail123
+          ssh_username: root
+          tunnel_ip: 10.10.11.101
+          type: router
+          vendor: juniper
+          vrf_interface: ge-1/0/5
+          cluster_group: testbed_regression_nodem16
+          bgp_protocol_group: nodem16_17_18
+  public_host: 10.84.5.120
+  public_rt: 33333
+  public_subnet: 10.204.220.200/29
+  public_virtual_network: 10.204.220.200/29
+  use_project_scoped_token: true
+  web_server:
+      log_path: /home/bhushana/Documents/technical/logs
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-queens-centos7-ha-ansible-sanity
+      server: 10.204.216.50
+      username: bhushana
+      web_root: Docs/logs
+  mail_server:
+      server: 10.47.226.20
+      port: 25
+      to: dl-contrail-sw-in@juniper.net
+      sender: contrailbuild@juniper.net
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.6
+  client: /cs-shared/server-manager/client/server-manager
+
+
+control_data:
+    nodem16:
+        ip: 10.204.216.105
+        ctrldata_ip: 10.10.11.16
+        prefix: 24
+        gw: 10.10.11.101
+        device: eno2
+    nodem17:
+        ip: 10.204.216.106
+        ctrldata_ip: 10.10.11.17
+        prefix: 24
+        gw: 10.10.11.101
+        device: eno2
+    nodem18:
+        ip: 10.204.216.107
+        ctrldata_ip: 10.10.11.18
+        prefix: 24
+        gw: 10.10.11.101
+        device: eno2
+    nodem19:
+        ip: 10.204.216.108
+        ctrldata_ip: 10.10.11.19
+        prefix: 24
+        gw: 10.10.11.101
+        device: bond0
+    nodem20:
+        ip: 10.204.216.109
+        ctrldata_ip: 10.10.11.20
+        prefix: 24
+        gw: 10.10.11.101
+        device: bond0
+    nodem5:
+        ip: 10.204.216.94
+        ctrldata_ip: 10.10.11.5
+        prefix: 24
+        gw: 10.10.11.101
+        device: bond0

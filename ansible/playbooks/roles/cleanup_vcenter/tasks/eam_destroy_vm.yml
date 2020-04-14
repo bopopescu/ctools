@@ -1,0 +1,21 @@
+---
+- name: Print role_path
+  debug:
+    msg :  "Role path is {{ role_path }} "
+
+- name: Delete ContrailVM in the esxi host
+  shell: "python ./eam_deploy_vm.py \
+          --host \"{{ esxi_host.vcenter_server.hostname }}\" \
+          --user \"{{ esxi_host.vcenter_server.username }}\" \
+          --password \"{{ esxi_host.vcenter_server.password }}\""
+  args:
+    chdir: "{{ role_path }}/tools"
+#  async: 3600
+#  poll: 0
+#  register: create_vm_results
+#
+#- name: Save task results
+#  set_fact:
+#    vms_created : "{{ vms_created | default ([]) + [create_vm_results] }}"
+- name: wait for vms to delete
+  pause: seconds=30

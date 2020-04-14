@@ -1,0 +1,160 @@
+- name: Create container host group
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Gather host info
+      block:
+        - add_host:
+            name: "{{ item.value.ip }}"
+            ansible_ssh_host: "{{ item.value.ip }}"
+            ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+            ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+            ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+            group: "container_hosts"
+          with_dict: "{{ instances }}"
+
+        - add_host:
+            name: "{{ test_configuration.web_server.server }}"
+            ansible_ssh_host: "{{ test_configuration.web_server.server }}"
+            ansible_ssh_user: "{{ test_configuration.web_server.username | default('root') }}"
+            ansible_ssh_pass: "{{ test_configuration.web_server.password | default('c0ntrail123') }}"
+            ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+            group: "web_server"
+
+        - add_host:
+            name: "{{ item.value.ip }}"
+            ansible_ssh_host: "{{ item.value.ip }}"
+            ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+            ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+            ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+            group: "config_nodes"
+          with_dict: "{{ instances }}"
+          when: "{{ 'config' in item.value.roles }}"
+      when: test_configuration.web_server.report_path is defined
+
+- hosts: config_nodes
+  gather_facts: no
+  tasks:
+    - name: execute get_contrail_version script
+      script: "{{playbook_dir}}/files/get_contrail_version.py -o /tmp/contrail_version"
+      register: output
+
+    - set_fact:
+        report_path: "{{ test_configuration.web_server.report_path }}/daily/unknown-branch/{{ output.stdout_lines[0] }}"
+
+- hosts: container_hosts
+  gather_facts: no
+  tasks:
+    - name: Create tmp log dir
+      file:
+        path: /var/log/to_remove/container_logs
+        state: directory
+
+    - name: List running containers
+      command: 'docker ps -a --format "{% raw %}{{.Names}}{% endraw %}"'
+      become: true
+      register: container_list
+
+    - name: Dump container logs
+      shell: 'docker logs {{ item }} 1> /var/log/to_remove/container_logs/{{ item }}.log 2>&1'
+      become: true
+      ignore_errors: yes
+      with_items: '{{ container_list.stdout_lines }}'
+
+    - name: Tar container logs
+      archive:
+        path: /var/log/to_remove/container_logs/
+        dest: /var/log/to_remove/container_logs.tgz
+        format: gz
+      ignore_errors: yes
+
+    - name: Tar kolla service logs
+      archive:
+        path: /var/lib/docker/volumes/kolla_logs/_data/
+        dest: /var/log/to_remove/kolla_logs.tgz
+        format: gz
+      ignore_errors: yes
+
+    - name: Tar contrail service logs
+      archive:
+        path: /var/log/contrail/
+        dest: /var/log/to_remove/contrail_logs.tgz
+        format: gz
+      ignore_errors: yes
+
+    - name: Tar core files
+      archive:
+        path: /var/crashes
+        dest: /var/log/to_remove/crashes.tgz
+        format: gz
+      ignore_errors: yes
+
+    - name: copy kolla service logs to localhost
+      fetch:
+        src: /var/log/to_remove/kolla_logs.tgz
+        dest: /var/log/to_delete/{{ inventory_hostname }}/kolla_logs/kolla_logs.tgz
+        validate_checksum: no
+        fail_on_missing: no
+        flat: yes
+  
+    - name: copy container logs to localhost
+      fetch:
+        src: /var/log/to_remove/container_logs.tgz
+        dest: /var/log/to_delete/{{ inventory_hostname }}/container_logs/container_logs.tgz
+        validate_checksum: no
+        fail_on_missing: no
+        flat: yes
+
+    - name: copy contrail service logs to localhost
+      fetch:
+        src: /var/log/to_remove/contrail_logs.tgz
+        dest: /var/log/to_delete/{{ inventory_hostname }}/contrail_logs/contrail_logs.tgz
+        validate_checksum: no
+        fail_on_missing: no
+        flat: yes
+
+    - name: copy core files to localhost
+      fetch:
+        src: /var/log/to_remove/crashes.tgz
+        dest: /var/log/to_delete/{{ inventory_hostname }}/crashes/crashes.tgz
+        validate_checksum: no
+        fail_on_missing: no
+        flat: yes
+
+    - name: Remove temp directory
+      file:
+        path: /var/log/to_remove/
+        state: absent
+
+- hosts: web_server
+  gather_facts: no
+  tasks:
+    - set_fact:
+        upload_path: "{{ hostvars[groups['config_nodes'][0]].report_path }}/sanity_logs"
+
+    - name: Create dir for storing cores
+      file:
+          path: "{{ upload_path }}"
+          state: directory
+
+    - name: Copy logs to report path
+      copy:
+          src: /var/log/to_delete/
+          dest: "{{ upload_path }}"
+
+    - name: Extract the archives
+      shell: 'find {{ upload_path }} -type f -iname "*.tgz" -print0 -execdir tar zxf {} \; -delete'
+
+    - name: zip the core files
+      shell: 'timeout 900 find {{ upload_path }} -name "core*" -type f -execdir gzip -f {} \;'
+
+    - name: zip the log files
+      shell: 'timeout 600 find {{ upload_path }} -name "*.log" -type f -execdir gzip -f {} \;'
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+      - name: Delete log and core files
+        file:
+          path: /var/log/to_delete
+          state: absent

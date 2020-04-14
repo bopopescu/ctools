@@ -1,0 +1,34 @@
+- name: set default deployment
+  vars:
+    types:
+      kolla:
+      contrail:
+  set_fact:
+    deployment: "{{ deployment|default({})|combine({'type': types }) }}"
+  when: deployment is undefined or deployment.type is undefined
+
+- name: set contrail version
+  set_fact:
+    commander_version: "{{ lookup('env','COMMANDER_VERSION')}}"
+    commander_node_ip: "{{ lookup('env','COMMANDER_NODE_IP')}}"
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail is defined and deployment.type.contrail.registry is defined
+
+- name: Pull contrail-command-deployer
+  command: >
+    docker pull "{{ contrailregistry }}/contrail-command-deployer:{{ commander_version }}"
+
+- name: 
+  shell: |
+    sed -i 's|latest|'{{commander_version}}'|' /root/command_servers.yml
+    sed -i 's|'\<IP\ Address\>'|'{{commander_node_ip}}'|' /root/command_servers.yml
+    sed -i 's|localhost|'{{commander_node_ip}}'|' /root/command_servers.yml
+  args:
+    executable: /bin/sh
+
+#- name: 
+#  command: >
+#    docker run -t --net host -e orchestrator=openstack -e action=import_cluster -v /root/command_servers.yml:/command_servers.yml -v /root/instances.yml:/instances.yml -d --privileged --name contrail_command_deployer {{contrailregistry}}/contrail-command-deployer:{{commander_version}}

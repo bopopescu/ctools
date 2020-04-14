@@ -1,0 +1,449 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: ci-repo.englab.juniper.net:5000
+        contrail:
+            branch: R5.0
+            registry: ci-repo.englab.juniper.net:5010
+    sku: ocata
+    os: centos7
+    version: __VERSION__
+    orchestrator: openstack
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+instances:
+  5b7s11-vm1:
+    provider: bms 
+    ip: 10.87.119.11
+    roles:
+      openstack:
+      webui:
+  5b7s11-vm2:
+    provider: bms 
+    ip: 10.87.119.12
+    roles:
+      config:
+      config_database:
+  5b7s11-vm3:
+    provider: bms
+    ip: 10.87.119.13
+    roles:
+      control:
+  5b7s11-vm4:
+    provider: bms
+    ip: 10.87.119.14
+    roles:
+      analytics:
+      analytics_database:
+  5b7s12-vm1:
+    provider: bms
+    ip: 10.87.119.15
+    roles:
+      openstack:
+      webui:
+  5b7s12-vm2:
+    provider: bms
+    ip: 10.87.119.16
+    roles:
+      config:
+      config_database:
+  5b7s12-vm3:
+    provider: bms
+    ip: 10.87.119.17
+    roles:
+      control:
+  5b7s12-vm4:
+    provider: bms
+    ip: 10.87.119.18
+    roles:
+      analytics:
+      analytics_database:
+  5b7s13-vm1:
+    provider: bms 
+    ip: 10.87.119.19
+    roles:
+      openstack:
+      webui:
+  5b7s13-vm2:
+    provider: bms
+    ip: 10.87.119.20
+    roles:
+      config:
+      config_database:
+  5b7s13-vm3:
+    provider: bms
+    ip: 10.87.119.21
+    roles:
+      control:
+  5b7s13-vm4:
+    provider: bms
+    ip: 10.87.119.22
+    roles:
+      analytics:
+      analytics_database:
+  5b7s14:
+    provider: bms
+    ip: 10.87.119.4
+    roles:
+      openstack_compute:
+      vrouter:
+  5b7s15:
+    provider: bms
+    ip: 10.87.119.5
+    roles:
+      openstack_compute:
+      vrouter:
+  5b7s16:
+    provider: bms
+    ip: 10.87.119.6
+    roles:
+      openstack_compute:
+      vrouter:
+  5b7s17:
+    provider: bms
+    ip: 10.87.119.7
+    roles:
+      openstack_compute:
+      vrouter:
+
+global_configuration:
+  REGISTRY_PRIVATE_INSECURE: True
+
+contrail_configuration:
+  CONTROLLER_NODES: 10.87.119.11,10.87.119.15,10.87.119.19
+  CONTROL_NODES: 192.16.7.3,192.16.7.7,192.16.7.11
+  CONFIGDB_NODES: 10.87.119.12,10.87.119.16,10.87.119.20
+  ANALYTICSDB_NODES: 10.87.119.14,10.87.119.18,10.87.119.22
+  ANALYTICS_NODES: 10.87.119.14,10.87.119.18,10.87.119.22
+  CONFIG_NODES: 10.87.119.12,10.87.119.16,10.87.119.20
+  WEBUI_NODES: 10.87.119.11,10.87.119.15,10.87.119.19
+  CLOUD_ORCHESTRATOR: openstack
+  RABBITMQ_NODE_PORT: 5673
+  VROUTER_GATEWAY: 192.16.7.254
+
+orchestrator_configuraion:
+  interval_vip: 192.16.7.222
+  external_vip: 10.87.119.28
+  keystone:
+    version: v3
+    password: c0ntrail123
+  vrrp_id: 207
+
+test_configuration:
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    web_server:
+        server:
+        username:
+        password:
+        report_path:
+        log_path:
+        web_root:
+    mail_server:
+        server:
+        port:
+        to:
+        sender:
+
+server_manager:
+  ip: 10.87.66.242
+  username: root
+  password: c0ntrail123
+  image: centos-7.5
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/images/soumilk/vm_images/centos-7.5_3.10.0-862.3.2.qcow2.gz 
+  hypervisors:
+    kvm_a5b7s11:
+      username: root
+      ip: 10.87.119.1
+      password: c0ntrail123
+      vm_config:
+        host1:
+          name: 5b7s11-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s11
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:00:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host2:
+          name: 5b7s11-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s11
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:00:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host3:
+          name: 5b7s11-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s11
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:00:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host4:
+          name: 5b7s11-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s11
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:00:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+    kvm_a5b7s12:
+      username: root
+      ip: 10.87.119.2
+      password: c0ntrail123
+      vm_config:
+        host5:
+          name: 5b7s12-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:01:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host6:
+          name: 5b7s12-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:01:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host7:
+          name: 5b7s12-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:01:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host8:
+          name: 5b7s12-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:01:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+
+    kvm_a5b7s13:
+      username: root
+      ip: 10.87.119.3
+      password: c0ntrail123
+      vm_config:
+        host9:
+          name: 5b7s13-vm1
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s13
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:02:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host10:
+          name: 5b7s13-vm2
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s13
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:02:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host11:
+          name: 5b7s13-vm3
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:02:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        host12:
+          name: 5b7s13-vm4
+          ram: 32768
+          vcpus: 4
+          server: kvm_a5b7s12
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '62:53:55:01:02:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+control_data:
+    host1:
+      ip: 10.87.119.11
+      ctrldata_ip: 192.16.7.1
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host2:
+      ip: 10.87.119.12
+      ctrldata_ip: 192.16.7.2
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host3:
+      ip: 10.87.119.13
+      ctrldata_ip: 192.16.7.3
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host4:
+      ip: 10.87.119.14
+      ctrldata_ip: 192.16.7.4
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host5:
+      ip: 10.87.119.15
+      ctrldata_ip: 192.16.7.5
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host6:
+      ip: 10.87.119.16
+      ctrldata_ip: 192.16.7.6
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host7:
+      ip: 10.87.119.17
+      ctrldata_ip: 192.16.7.7
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host8:
+      ip: 10.87.119.18
+      ctrldata_ip: 192.16.7.8
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host9:
+      ip: 10.87.119.19
+      ctrldata_ip: 192.16.7.9
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host10:
+      ip: 10.87.119.20
+      ctrldata_ip: 192.16.7.10
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host11:
+      ip: 10.87.119.21
+      ctrldata_ip: 192.16.7.11
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host12:
+      ip: 10.87.119.22
+      ctrldata_ip: 192.16.7.12
+      prefix: 24
+      gw: 192.16.7.100
+      device: eth1
+    host13:
+      ip: 10.87.119.4
+      ctrldata_ip: 192.16.7.13
+      prefix: 24
+      gw: 192.16.7.100
+      device: ens2f0
+    host14:
+      ip: 10.87.119.5
+      ctrldata_ip: 192.16.7.14
+      prefix: 24
+      gw: 192.16.7.100
+      device: ens2f0
+    host15:
+      ip: 10.87.119.6
+      ctrldata_ip: 192.16.7.15
+      prefix: 24
+      gw: 192.16.7.100
+      device: bond0
+    host16:
+      ip: 10.87.119.7
+      ctrldata_ip: 192.16.7.16
+      prefix: 24
+      gw: 192.16.7.100
+      device: ens2f0

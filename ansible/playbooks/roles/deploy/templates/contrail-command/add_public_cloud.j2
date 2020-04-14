@@ -1,0 +1,243 @@
+resources:
+{% for key,value in emc.iteritems() %}
+{% if 'add_cld' in key and "azure_provider" in value %}
+ - data:
+     uuid: "{{ value['cloud_name'] | to_uuid }}"
+     provisioning_state: NOSTATE
+     provisioning_action: UPDATE_CLOUD
+     parent_cluster_uuid: "{{ contrail_cluster_uuid.stdout }}"
+     azure_modified: true
+   kind: cloud
+   operation: UPDATE
+ - data:
+     uuid: "{{ 'azure_provider' | to_uuid }}"
+     parent_uuid: "{{ value['cloud_name'] | to_uuid }}"
+     parent_type: cloud
+     name: "{{ 'azure_provider' + '-' + ('azure_provider' | to_uuid) }}"
+     type: azure
+     display_name: "{{ 'azure_provider' }}"
+   kind: cloud_provider
+   operation: CREATE
+{% for rkey,rvalue in value['azure_provider']['regions'].iteritems() %}
+ - data:
+     uuid: "{{ rkey | to_uuid }}"
+     parent_uuid: "{{ 'azure_provider' | to_uuid }}"
+     parent_type: cloud-provider
+     name: "{{ rkey + '-' + (rkey | to_uuid) }}"
+     resource_group: "{{ rvalue['resource_group'] }}"
+     display_name: "{{ rkey }}"
+   kind: cloud_region
+   operation: CREATE
+{% for vkey,vvalue in rvalue['vpc'].iteritems() %}
+ - data:
+     uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     name: "{{ vkey + '-' + 'tag' }}"
+     fq_name:
+     - "{{ vkey + '-' + 'tag' }}"
+     display_name: "{{ vkey + '-' + 'tag' }}"
+     tag_type_name: label
+     tag_value: "{{ value['provider'] | to_uuid }}"
+   kind: tag
+   operation: CREATE
+ - data:
+     uuid: "{{ vkey | to_uuid }}"
+     name: "{{ vkey + '-' + (vkey | to_uuid) }}"
+     parent_uuid: "{{ rkey | to_uuid }}"
+     parent_type: cloud-region
+     tag_refs:
+     - uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     display_name: "{{ vkey }}"
+     cidr_block: "{{ vvalue['cidr_block'] }}"
+   kind: virtual_cloud
+   operation: CREATE
+ - data:
+     uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     display_name: "{{ vvalue['security_group'] }}"
+     name: "{{ vvalue['security_group'] + '-' + (vvalue['security_group'] | to_uuid) }}"
+     parent_uuid: "{{ vkey | to_uuid }}"
+     parent_type: virtual-cloud
+   kind: cloud_security_group
+   operation: CREATE
+ - data:
+     uuid: "{{ (vvalue['security_group'] + '-in') | to_uuid }}"
+     name: "{{ vvalue['security_group'] + '-in' + '-' + ((vvalue['security_group'] + '-in') | to_uuid) }}"
+     parent_uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     parent_type: cloud-security-group
+     display_name: "{{ vvalue['security_group'] + '-in' }}"
+     direction: ingress
+     cidr_block: 0.0.0.0/0
+     protocol: ANY
+   kind: cloud_security_group_rule
+   operation: CREATE
+ - data:
+     uuid: "{{ (vvalue['security_group'] + '-out') | to_uuid }}"
+     name: "{{ vvalue['security_group'] + '-out' + '-' + ((vvalue['security_group'] + '-out') | to_uuid) }}"
+     parent_uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     parent_type: cloud-security-group
+     display_name: "{{ vvalue['security_group'] + '-out' }}"
+     direction: egress
+     cidr_block: 0.0.0.0/0
+     protocol: ANY
+   kind: cloud_security_group_rule
+   operation: CREATE
+ - data:
+     uuid: "{{ vvalue['subnet']['name'] | to_uuid }}"
+     parent_uuid: "{{ vkey | to_uuid }}"
+     parent_type: virtual-cloud
+     display_name: "{{ vvalue['subnet']['name'] }}"
+     name: "{{ vvalue['subnet']['name'] + '-' + (vvalue['subnet']['name'] | to_uuid) }}"
+     fq_name:
+     - "{{ vkey + '-' + (vkey | to_uuid) }}"
+     - "{{ vvalue['subnet']['name'] | to_uuid }}"
+     cidr_block: "{{ vvalue['subnet']['cidr_block'] }}"
+     availability_zone: "{{ vvalue['subnet']['availability_zone'] }}"
+   kind: cloud_private_subnet
+   operation: CREATE
+{% for ikey,ivalue in vvalue['instances'].iteritems() %}
+ - data:
+     uuid: "{{ ikey | to_uuid }}"
+     name: "{{ ikey + '-' + (ikey | to_uuid) }}"
+     hostname: "{{ ikey }}"
+     parent_type: global-system-config
+     tag_refs:
+     - uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     cloud_security_group_refs:
+     - uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     cloud_private_subnet_refs:
+     - uuid: "{{ vvalue['subnet']['name'] | to_uuid }}"
+     fq_name:
+     - default-global-system-config
+     - "{{ ikey + '-' + (ikey | to_uuid) }}"
+     display_name: "{{ ikey }}"
+     cloud_info:
+       name: "{{ ikey }}"
+       roles: {{ ivalue['roles'] | to_json }}
+       instance_type: "{{ ivalue['instance_type'] }}"
+       operating_system: "{{ ivalue['os'] }}"
+   kind: node
+   operation: CREATE
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% if 'add_cld' in key and "gcp_provider" in value %}
+ - data:
+     uuid: "{{ value['cloud_name'] | to_uuid }}"
+     provisioning_state: NOSTATE
+     provisioning_action: UPDATE_CLOUD
+     parent_cluster_uuid: "{{ contrail_cluster_uuid.stdout }}"
+     gcp_modified: true
+   kind: cloud
+   operation: UPDATE
+ - data:
+     uuid: "{{ 'gcp_provider' | to_uuid }}"
+     project: "{{ value['gcp_provider']['project'] }}"
+     parent_uuid: "{{ value['cloud_name'] | to_uuid }}"
+     parent_type: cloud
+     name: "{{ 'gcp_provider' + '-' + ('gcp_provider' | to_uuid) }}"
+     type: gcp
+     display_name: "{{ 'gcp_provider' }}"
+   kind: cloud_provider
+   operation: CREATE
+{% for rkey,rvalue in value['gcp_provider']['regions'].iteritems() %}
+ - data:
+     uuid: "{{ rkey | to_uuid }}"
+     parent_uuid: "{{ 'gcp_provider' | to_uuid }}"
+     parent_type: cloud-provider
+     name: "{{ rkey + '-' + (rkey | to_uuid) }}"
+     display_name: "{{ rkey }}"
+   kind: cloud_region
+   operation: CREATE
+{% for vkey,vvalue in rvalue['vpc'].iteritems() %}
+ - data:
+     uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     name: "{{ vkey + '-' + 'tag' }}"
+     fq_name:
+     - "{{ vkey + '-' + 'tag' }}"
+     display_name: "{{ vkey + '-' + 'tag' }}"
+     tag_type_name: label
+     tag_value: "{{ value['provider'] | to_uuid }}"
+   kind: tag
+   operation: CREATE
+ - data:
+     uuid: "{{ vkey | to_uuid }}"
+     name: "{{ vkey + '-' + (vkey | to_uuid) }}"
+     parent_uuid: "{{ rkey | to_uuid }}"
+     parent_type: cloud-region
+     tag_refs:
+     - uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     display_name: "{{ vkey }}"
+     cidr_block: "{{ vvalue['cidr_block'] }}"
+   kind: virtual_cloud
+   operation: CREATE
+ - data:
+     uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     display_name: "{{ vvalue['security_group'] }}"
+     name: "{{ vvalue['security_group'] + '-' + (vvalue['security_group'] | to_uuid) }}"
+     parent_uuid: "{{ vkey | to_uuid }}"
+     parent_type: virtual-cloud
+   kind: cloud_security_group
+   operation: CREATE
+ - data:
+     uuid: "{{ (vvalue['security_group'] + '-in') | to_uuid }}"
+     name: "{{ vvalue['security_group'] + '-in' + '-' + ((vvalue['security_group'] + '-in') | to_uuid) }}"
+     parent_uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     parent_type: cloud-security-group
+     display_name: "{{ vvalue['security_group'] + '-in' }}"
+     direction: ingress
+     cidr_block: 0.0.0.0/0
+     protocol: ANY
+   kind: cloud_security_group_rule
+   operation: CREATE
+ - data:
+     uuid: "{{ (vvalue['security_group'] + '-out') | to_uuid }}"
+     name: "{{ vvalue['security_group'] + '-out' + '-' + ((vvalue['security_group'] + '-out') | to_uuid) }}"
+     parent_uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     parent_type: cloud-security-group
+     display_name: "{{ vvalue['security_group'] + '-out' }}"
+     direction: egress
+     cidr_block: 0.0.0.0/0
+     protocol: ANY
+   kind: cloud_security_group_rule
+   operation: CREATE
+ - data:
+     uuid: "{{ vvalue['subnet']['name'] | to_uuid }}"
+     parent_uuid: "{{ vkey | to_uuid }}"
+     parent_type: virtual-cloud
+     display_name: "{{ vvalue['subnet']['name'] }}"
+     name: "{{ vvalue['subnet']['name'] + '-' + (vvalue['subnet']['name'] | to_uuid) }}"
+     fq_name:
+     - "{{ vkey + '-' + (vkey | to_uuid) }}"
+     - "{{ vvalue['subnet']['name'] | to_uuid }}"
+     cidr_block: "{{ vvalue['subnet']['cidr_block'] }}"
+     availability_zone: "{{ vvalue['subnet']['availability_zone'] }}"
+   kind: cloud_private_subnet
+   operation: CREATE
+{% for ikey,ivalue in vvalue['instances'].iteritems() %}
+ - data:
+     uuid: "{{ ikey | to_uuid }}"
+     name: "{{ ikey + '-' + (ikey | to_uuid) }}"
+     hostname: "{{ ikey }}"
+     parent_type: global-system-config
+     tag_refs:
+     - uuid: "{{ (vkey + '-' + 'tag') | to_uuid }}"
+     cloud_security_group_refs:
+     - uuid: "{{ vvalue['security_group'] | to_uuid }}"
+     cloud_private_subnet_refs:
+     - uuid: "{{ vvalue['subnet']['name'] | to_uuid }}"
+     fq_name:
+     - default-global-system-config
+     - "{{ ikey + '-' + (ikey | to_uuid) }}"
+     display_name: "{{ ikey }}"
+     cloud_info:
+       name: "{{ ikey }}"
+       roles: {{ ivalue['roles'] | to_json }}
+       instance_type: "{{ ivalue['instance_type'] }}"
+       operating_system: "{{ ivalue['os'] }}"
+   kind: node
+   operation: CREATE
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endfor %}

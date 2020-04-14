@@ -1,0 +1,17 @@
+localhost ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+
+[instances]
+localhost
+
+[contrail_test_input]
+10.204.217.158
+
+[dc1]
+nodek4-compute-vm ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodek5-compute-vm ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodek6-compute-vm ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodec4 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodec5 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodec6 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+#nodea23 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123
+nodea26 ansible_ssh_user=root ansible_ssh_pass=c0ntrail123

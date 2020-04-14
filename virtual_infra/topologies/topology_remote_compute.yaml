@@ -1,0 +1,108 @@
+api_server_ip: 10.87.67.94
+fip_pool_fqname: default-domain:admin:public:default
+tenant_name: msenthil-test-template-1
+image: centos-7.4
+
+networks:
+    management:
+        cidr: 10.0.0.0/24
+    ctrl1:
+        cidr: 10.10.0.0/24
+        gateway: 0.0.0.0
+    ctrl2:
+        cidr: 10.20.0.0/24
+        gateway: 0.0.0.0
+    ctrl3:
+        cidr: 10.30.0.0/24
+        gateway: 0.0.0.0
+    mx1-mx2:
+        cidr: 10.40.0.0/29
+        gateway: 0.0.0.0
+    mx1-mx3:
+        cidr: 10.50.0.0/29
+        gateway: 0.0.0.0
+    mx2-mx3:
+        cidr: 10.60.0.0/29
+        gateway: 0.0.0.0
+    mx1-cosim:
+        cidr: 128.0.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+    mx2-cosim:
+        cidr: 128.0.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+    mx3-cosim:
+        cidr: 128.0.0.0/24
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+        enable_dhcp: False
+
+instances:
+  - name: openstack
+    role: openstack
+    networks:
+        - management
+        - ctrl1
+    count: 1
+
+  - name: controller
+    role: controller
+    networks:
+        - management
+        - ctrl1
+    count: 3
+
+  - name: compute
+    role: compute
+    networks:
+        - management
+        - ctrl1
+    count: 2
+
+  - name: control_pop1
+    role: control
+    networks:
+        - management
+        - ctrl1
+    count: 3
+
+  - name: control_pop2
+    role: control
+    networks:
+        - management
+        - ctrl1
+    count: 3
+
+  - name: compute_pop1
+    role: compute
+    networks:
+        - management
+        - ctrl2
+    count: 2
+
+  - name: compute_pop2
+    role: compute
+    networks:
+        - management
+        - ctrl3
+    count: 2
+
+  - name: vmx1-re
+    role: vmx-re
+    image: vmx-re
+    networks:
+        - management
+        - mx1-cosim
+
+  - name: vmx1-fpc
+    role: vmx-fpc
+    image: vmx-fpc
+    networks:
+        - management
+        - mx1-cosim
+        - ctrl1
+        - mx1-mx2
+        - mx1-mx3

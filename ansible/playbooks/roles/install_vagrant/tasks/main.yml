@@ -1,0 +1,90 @@
+---
+
+- name: Copy sources file
+  copy:
+    force: yes
+    src: "{{playbook_dir}}/files/ubuntu16_sources.list"
+    dest: /etc/apt/sources.list
+
+- name: Perform "apt-get update"
+  apt:
+    update_cache: yes
+
+- name: Install initial packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - vim
+    - cpu-checker
+    - qemu-kvm
+    - libvirt-bin
+
+- name: Delete any existing images and files
+  file:
+    state: absent
+    path: /root/vagrant/
+  ignore_errors: yes
+
+- name: Create vagrant directory
+  file:
+    path: /root/vagrant/
+    state: directory
+
+- name: Build Download URLs
+  set_fact:
+    url_link1: "{{ vm_info.default.vagrant_images }}{{ vm_info.default.vagrant_plugin }}" 
+    url_link2: "{{ vm_info.default.vagrant_images }}{{ vm_info.default.vagrant_box }}"  
+
+- name: Download vagrant plugin
+  get_url:
+    url: "{{ url_link1 }}"
+    dest: /root/vagrant/
+
+- name: Download Centos box
+  get_url:
+    url: "{{ url_link2  }}" 
+    dest: /root/vagrant/
+
+- name: Install vagrant
+  shell: dpkg -i "{{ vm_info.default.vagrant_plugin }}"
+  args:
+      chdir: /root/vagrant/
+
+- name: Build Dependencies
+  apt:
+    name: "{{ item }}"
+    state: build-dep
+  with_items:
+    - vagrant
+    - ruby-libvirt
+
+- name: Install packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - qemu
+    - ebtables
+    - dnsmasq
+    - libxslt-dev
+    - libxml2-dev
+    - libvirt-dev
+    - zlib1g-dev
+    - ruby-dev
+    - rsync
+
+- name: Install vagrant plugin
+  shell: vagrant plugin install vagrant-libvirt
+  args:
+      chdir: /root/vagrant/
+
+- name: Add Centos box
+  shell: "{{ item }}"
+  with_items:
+    - vagrant box add --force --name "{{ vm_info.default.vagrant_box_name }}" "{{ vm_info.default.vagrant_box }}"
+    - vagrant box list
+    - vagrant init "{{ vm_info.default.vagrant_box_name }}"
+  args:
+      chdir: /root/vagrant/
+

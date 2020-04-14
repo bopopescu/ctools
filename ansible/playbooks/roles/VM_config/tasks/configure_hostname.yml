@@ -1,0 +1,17 @@
+- name: creating hostname
+  copy:
+    content: "{{ host_hostname }}"
+    dest: "/etc/hostname"
+    mode: u=rwx,g=rw,o=rw
+
+- name: populating hosts data
+  set_fact:
+    host_file_content: "127.0.0.1       localhost\n127.0.1.1       \
+            {{ host_hostname + '.englab.juniper.net' }}    {{ host_hostname }} \n\n"
+
+- name: creating hosts file
+  copy:
+    content: "{{ host_file_content }}"
+    dest: "/etc/hosts"
+    backup: yes
+    mode: u=rwx,g=rw,o=rw

@@ -1,0 +1,79 @@
+---
+
+#Preconfig: gathering the config info
+- name: extracting default info
+  vars:
+    disk_format:
+    image_dest:
+    image_source:
+  set_fact:
+    disk_format: "{{ vm_info.default.disk_format }}"
+    image_source: "{{ vm_info.default.image_source }}"
+    image_dest: "{{ vm_info.default.image_dest }}"
+
+- name: extracting hypervisors config
+  vars:
+    hypervisors_info: {}
+  set_fact:
+    hypervisors_info: "{{ vm_info.hypervisors }}"
+
+- name: update image source if defined
+  set_fact:
+    image_source: "{{ item.value.image_source }}"
+  when: inventory_hostname == item.value.ip and item.value.image_source is defined
+  with_dict: "{{ hypervisors_info }}"
+
+- name: extracting vm config
+  vars:
+    vm_dict: {}
+  set_fact:
+    vm_dict: "{{ vm_dict|combine({item.key:item.value.vm_config}) }}"
+  when: inventory_hostname == item.value.ip
+  with_dict: "{{ hypervisors_info }}"
+
+- name: extracting node info
+  vars:
+    host_dict: {}
+  set_fact:
+    host_dict: "{{ item.value }}"
+  with_dict: "{{ vm_dict }}"
+
+- name: extracting network info
+  vars:
+    network_dict: {}
+  set_fact:
+    netwrok_dict: "{{ network_dict|combine({item.value.server:item.value.network}) }}"
+  with_dict: "{{ host_dict }}"
+
+- name: VMs setup for every host
+  loop_control:
+    loop_var: iter
+  include_tasks: setup.yml
+  with_items: "{{ host_dict }}"
+
+
+  #create the hostname file
+#  - name: hostname file
+#    copy:
+#        content: |
+#          {% for host in hostvars %}
+#          {%   set vars = hostvars[host|string] %}
+#          {{ vars.ansible_hostname }}
+#          {% endfor %}
+#        dest: /etc/hostname
+#        backup: yes
+#      run_once: yes
+#      delegate_to: localhost
+  #create the hosts file
+#  - name: hostname file
+#    copy:
+#        content: |
+#          {% for host in hostvars %}
+#          {%   set vars = hostvars[host|string] %}
+#          {{ vars.ansible_hostname }}
+#          {% endfor %}
+#        dest: /etc/hostname
+#        backup: yes
+#      run_once: yes
+#      delegate_to: localhost
+  #create the ctrl-data interface

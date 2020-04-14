@@ -1,0 +1,47 @@
+deployment:
+  type:
+    helm:
+      branch: master
+      registry: svl-artifcatory.juniper.net/contrail-nightly
+  version:
+  sku: ocata
+  os: ubuntu
+  deployer: helm
+  orchestrator: openstack
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+contrail_configuration:
+  AAA_MODE: rbac
+  RABBITMQ_NODE_PORT: 5673
+  LOG_LEVEL: SYS_DEBUG
+  BGP_PORT: 1179
+  AGENT_MODE: kernel
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: password
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  auth_url: http://keystone.openstack.svc.cluster.local:80/v3
+  auth_port: 80
+  use_project_scoped_token: True
+  web_server:
+    server: zephyrine.englab.juniper.net
+    username: stack
+    password: stack@123
+    report_path:
+    log_path: /var/www/html/Docs/logs
+    web_root: /Docs/logs
+  mail_server:
+    server: 10.84.24.64
+    port: 4000
+    to: dl-contrail-sw@juniper.net
+    sender: contrail-build@juniper.net

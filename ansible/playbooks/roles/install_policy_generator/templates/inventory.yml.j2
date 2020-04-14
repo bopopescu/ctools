@@ -1,0 +1,40 @@
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+
+  vars:
+    PATH_POLICY_GENERATION_CONFIG: '/etc/contrail/securityapps/'
+    # Policy generator API port
+    rest_api_port: {{ pg_port }}
+    # Policy generator API server ip address
+    rest_api_ip: {{ pg_ip }}
+    # Policy generator logs and log level
+    log_file: '/var/log/contrail/policy-generation-server.log'
+    log_console_level: logging.DEBUG
+
+    # Registry inventory     
+    CONTAINER_REGISTRY: {{ pg_registry }}
+    CONTRAIL_VERSION: {{ pg_version }}
+    ansible_user: 'root'
+
+    # Config API server
+    api_server_listen_port: {{ config_port }}
+    api_server_ip: {{ config_ip }}
+
+    # Analytics IP & Port 8081 for remote host, 8181 for localhost
+    analytics_ip: {{ analytics_ip }}
+    admin_port: {{ analytics_port }}
+
+    # Keystone credentials with user
+    admin_password: {{ admin_password }}
+    admin_tenant_name: {{ admin_tenant }}
+    admin_user: {{ admin_user }}
+    auth_host: {{ auth_host }}
+    auth_port: {{ auth_port }}
+    auth_protocol: {{ auth_protocol }}
+    auth_version: {{ auth_version }}
+    auth_type: password
+    user_domain_name: Default
+    project_domain_name: Default
+    region_name: RegionOne

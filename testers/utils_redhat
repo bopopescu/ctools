@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+source $TOOLS_WS/testers/utils
+multi_node=0
+
+function setup_sanity_base_simple {
+    jenkins_triggered=${JENKINS_TRIGGERED:-0}
+
+    # run sanity in parallel/serial branch, default serial
+    if [ "${sanitytype}" = "" ]; then
+        sanitytype="serial"
+    fi
+
+    # OS_TEST_PATH is used for test discovery by testr
+    OTHER_OPTS=""
+    if [ ! -z $OS_TEST_PATH ] ; then
+        OTHER_OPTS="$OTHER_OPTS export CT_OS_TEST_PATH=$OS_TEST_PATH ; "
+    fi
+
+    #PARAMS_FILE=$CFGM_TEST_CODE_PATH/scripts/sanity_params.ini
+    #TEST_CONFIG_FILE=$CFGM_TEST_CODE_PATH/sanity_params.ini
+    if [[ "$TEST_RUN_CMD" == *"control_node_scaling"* ]]; then
+        copy_bgp_stress_test_binary # This is not going to work in container, this will need to happen while building the container
+    fi
+    sanity_cmd="bash -x /usr/local/bin/testrunner.sh run -k /home/stack/.ssh/id_rsa -t ${HOME}/contrail-test-runs/${SCRIPT_TIMESTAMP}/testbed.py ${TEST_RUN}-${TEST_SKU}:${PACKAGE_VERSION}"
+    if [ $PARALLEL_RUN -eq 1 ]; then
+         EXTRA_RUN_TEST_ARGS="$EXTRA_RUN_TEST_ARGS -t "
+    fi
+    pythonpath=""
+
+    if [[ "$TEST_RUN_CMD" != *"-d"* ]]; then
+        EXTRA_RUN_TEST_ARGS="$EXTRA_RUN_TEST_ARGS --test-failure-threshold $(failure_threshold_limit) "
+    fi
+    other_test_params=`set_other_test_params`
+
+    exec_cmds -s ${TEST_HOST_STRING} -p ${TEST_HOST_PASSWORD} -c "export CT_SCRIPT_TS=\"${SCRIPT_TIMESTAMP}\";
+                                                         export TEST_RUN_CMD=\"${TEST_RUN_CMD}\";
+                                                         export EXTRA_RUN_TEST_ARGS=\"${EXTRA_RUN_TEST_ARGS}\";
+                                                         export CT_JENKINS_TRIGGERED=${jenkins_triggered};
+                                                         export CT_BUILD_ID=${BUILDID};
+                                                         export CT_PARAMS_FILE=${PARAMS_FILE};
+                                                         export CT_TEST_TYPE=${TEST_TYPE};
+                                                         export CT_EMAIL_SUBJECT_PREFIX=\"${EMAIL_SUBJECT_PREFIX}\";
+                                                         export CT_EMAIL_SUBJECT=\"${EMAIL_SUBJECT}\";
+                                                         export CT_MX_GW_TEST=${MX_GW_TEST};
+                                                         export CT_IMAGE_WEB_SERVER=${IMAGE_WEB_SERVER};
+                                                         export CT_BRANCH=$BRANCH;
+                                                         $OTHER_OPTS
+                                                         $other_test_params
+                                                         $pythonpath
+                                                         ${sanity_cmd};"; rv_test_run=$?
+    if [ $rv_test_run -ne 0 ] && [ $rv_test_run -ne 100 ]; then
+        if [ $rv_test_run -gt 100 ]; then
+            die "Task to run sanity failed"
+        else
+            debug_and_die "Test failures exceed the threshold of $limit percent (Failures: ${rv_test_run}%"
+        fi
+    fi
+}
+
+function setup_testnode {
+    if [[ $DISTRO =~ ^(centos|redhat) ]]; then
+        PACKAGE_INSTALL_CMD="
+        tee /etc/yum.repos.d/docker.repo <<-'EOF'
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/\$releasever/
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+EOF
+
+        sudo yum install -y docker-engine-1.8.3 ;\
+        sudo service docker start
+        "
+    elif [[ $DISTRO =~ 'ubuntu' ]]; then
+        PACKAGE_INSTALL_CMD="
+        DEBIAN_FRONTEND=noninteractive ; \
+        apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
+        echo 'deb https://apt.dockerproject.org/repo ubuntu-trusty main'  > /etc/apt/sources.list.d/docker.list && \
+        echo 'deb http://cz.archive.ubuntu.com/ubuntu trusty main'  > /etc/apt/sources.list.d/ubuntu-archive.list && \
+        apt-get -y update; apt-get install -y --force-yes docker-engine
+        "
+    else
+        echo "Unknown Distro - $DISTRO"
+        exit 1
+    fi
+    if [[ $CB_SANITY -eq 1 ]]; then
+        TEST_CONTAINER_IMAGE_DIR="/cs-build/CB-${BRANCH}-ubuntu16-${SKU}/builds/lastSuccessfulBuild/archive/packages/"
+    else
+        TEST_CONTAINER_IMAGE_DIR="/github-build/${BRANCH}/${BUILDID}/ubuntu-16-04/${TEST_SKU}/artifacts/"
+    fi
+    PKG_FILE=`ls ${TEST_CONTAINER_IMAGE_DIR}/contrail-install-packages_*.tgz` 
+    pkg_file_name=`basename $PKG_FILE`
+    export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-install-packages[-_]\([0-9\.\-]*\)-.*/\1/'`
+    container_image_path=${TEST_CONTAINER_IMAGE:-"${TEST_CONTAINER_IMAGE_DIR}/docker-image-${TEST_RUN}-${TEST_SKU}-${PACKAGE_VERSION}.tar.gz"}
+    #container_image_path=$TEST_DOCKER_PATH
+    container_image_file=`basename $container_image_path`
+    if [[ ! -f $container_image_path ]]; then
+        echo "ERROR!! Container image $container_image_path doesnt exist"
+        exit 1
+    fi
+    sshpass -p $TEST_HOST_PASSWORD scp $SSHOPT $container_image_path $TEST_HOST_STRING:/tmp/
+    exec_cmds -s $TEST_HOST_STRING -p $TEST_HOST_PASSWORD -c "(
+        docker  -v &> /dev/null ; rv=\$?
+        if [ \$rv -ne 0 ]; then
+            $PACKAGE_INSTALL_CMD
+        fi
+        s=$(docker images -q ${TEST_RUN}-${TEST_SKU}:${PACKAGE_VERSION} | grep -c [a-z])
+        sudo curl -o /usr/local/bin/testrunner.sh https://raw.githubusercontent.com/Juniper/contrail-test-ci/master/testrunner.sh
+        sudo chmod +x /usr/local/bin/testrunner.sh
+        if [ \$s -eq 0 ]; then
+            sudo /usr/local/bin/testrunner.sh load  /tmp/${container_image_file}
+        fi
+        sudo mkdir -p ${HOME}/contrail-test-runs/${SCRIPT_TIMESTAMP}
+    )"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l stack $UNDERCLOUD_IP "(
+        sed 's/x.x.x.x/$UNDERCLOUD_IP/' $HOME/testbed.py
+        sudo cp $HOME/testbed.py $HOME/contrail-test-runs/$SCRIPT_TIMESTAMP/testbed.py
+    )"
+    sshpass -p $TEST_HOST_PASSWORD scp ${SSHOPT}$TEST_HOST_STRING:${HOME}/contrail-test-runs/${SCRIPT_TIMESTAMP}/testbed.py ${TOOLS_WS}/contrail-fabric-utils/fabfile/testbeds/testbed.py
+}
+
+function install_wget_on_controller() {
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l stack $UNDERCLOUD_IP "(
+        source stackrc
+        nova list | grep overcloud-controller-0 | grep -oE \"\b([0-9]{1,3}\.){3}[0-9]{1,3}\b\" > openstack_ip
+    )"
+    sshpass -p $TEST_HOST_PASSWORD scp ${SSHOPT}$TEST_HOST_STRING:${HOME}/openstack_ip ${TOOLS_WS}/openstack_ip
+    OPENSTACK_IP=`cat ${TOOLS_WS}/openstack_ip`
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l stack $UNDERCLOUD_IP "(
+        sshpass ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l heat-admin $OPENSTACK_IP \"sudo yum install wget -y\"
+    )"
+}
+
+function run_ansible_playbook() {
+    if [ $SKIP_BRINGUP -ne 0 ]
+    then
+        return 0
+    fi
+    sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/tools/run_ansible.sh root@$HYPERVISOR_IP:/root/contrail-ooo-deployer/run_ansible.sh
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l stack $UNDERCLOUD_IP "(
+        source /home/stack/stackrc
+        heat stack-delete overcloud 
+    )"
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $HYPERVISOR_IP "(
+	cd /root/contrail-ooo-deployer/ 
+        ./run_ansible.sh 
+    )"
+}
+
+function update_all_yml() {
+    if [[ $CB_SANITY -eq 1 ]]; then
+        cp ${TOOLS_WS}/templates/all_cb.yml.$AVAILABLE_TESTBEDS ${TOOLS_WS}/all.yml
+    else
+        cp ${TOOLS_WS}/templates/all.yml.$AVAILABLE_TESTBEDS ${TOOLS_WS}/all.yml
+    fi
+    sed -i 's/contrail_version/'${BRANCH}'/g' ${TOOLS_WS}/all.yml
+    sed -i 's/contrail_exact_version/'${EXACT_BRANCH}'/g' ${TOOLS_WS}/all.yml
+    sed -i 's/build_id/'${BUILDID}'/g' ${TOOLS_WS}/all.yml
+    sed -i 's/sku/'${SKU}'/g' ${TOOLS_WS}/all.yml
+    sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/all.yml root@$HYPERVISOR_IP:/root/contrail-ooo-deployer/inventory/group_vars/all.yml
+}
+
+function create_testbed_py() {
+    sshpass -p "c0ntrail123" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/tools/testbed_generator_rhosp.py stack@$UNDERCLOUD_IP:/home/stack/
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l stack $UNDERCLOUD_IP "(
+        cd /home/stack/
+        source stackrc
+        python testbed_generator_rhosp.py --overcloudrc overcloudrc
+    )"
+}
+
+function run_redhat_task() {
+    echo "Running tests on $1.."
+    export HYPERVISOR_IP=$HYPERVISOR_IP
+    if [ ${TEST_SETUP} == "SINGLENODE" ]
+    then
+        multi_node=0
+    elif [ ${TEST_SETUP} == "MULTINODE" ]
+    then
+        multi_node=1
+    elif [ ${TEST_SETUP} == "MULTIINTERFACE" ]
+    then
+        multi_node=1
+    else
+        echo "TEST_SETUP is not defined, abort the process"
+        exit 1
+    fi
+    update_all_yml           #TBD 
+    run_ansible_playbook || debug_and_die "Failed to run ansible"
+#    get_undercloud_ip || debug_and_die "Failed to get undercloud IP"
+    export UNDERCLOUD_IP=$UNDERCLOUD_IP
+#    create_redhat_stack || die "Failed to deploy cluster"
+    create_testbed_py || die "Failed to create required testbed details" #Shaju's function
+    create_testbed || die "Failed to create required testbed details" 
+   
+    if [[ $TEST_RUN_INFRA == 'docker' ]]; then
+        search_package
+        pkg_file_name=`basename $PKG_FILE`
+        export PACKAGE_VERSION=`echo ${pkg_file_name} | sed 's/contrail-install-packages[-_]\([0-9\.\-]*\)-.*/\1/'`
+        if [[ -z $TEST_HOST_STRING ]]; then
+            export TEST_HOST_STRING="root@"$UNDERCLOUD_IP
+            export TEST_HOST_PASSWORD=$UNDERCLOUD_PASSWORD
+        fi
+        export API_SERVER_HOST_STRING=$TEST_HOST_STRING
+        export TEST_HOST_IP=`echo $TEST_HOST_STRING | cut -d @ -f2`
+        export TEST_HOST_USER=`echo $TEST_HOST_STRING | cut -d @ -f1`
+        #Copy testbed_file generated by build_infra.sh
+        setup_testnode || debug_and_die "test node setup failed"
+        install_wget_on_controller 
+        if [ $SKIP_SANITY -eq 0 ]; then
+            setup_sanity_base_simple
+        else
+           echo "Skipping sanity please check SKIP_SANITY value"
+        fi
+        other_test_params=`set_other_test_params`
+        run_tempest || die "Run_Tempest step failed"
+    else
+        add_sourcelist || die "source.list copy failed on all target nodes"
+        install_third_party_pkgs || die "installing GDB/ant failed"
+        install_dep_pkgs_for_test
+        run_sanity || debug_and_die "Run_sanity step failed"
+    fi
+
+    #run_tempest || die "Run_Tempest step failed"
+    collect_tech_support || die "Task to collect logs/cores failed"
+    #delete_stacks || die "Failed to delete stacks"
+    echo "Ending test on "${AVAILABLE_TESTBEDS}
+    #Set the TBFILE_NAME to the one passed through jenkins job
+    export RUN_SUCCESSFUL=1
+    TBFILE_NAME=${AVAILABLE_TESTBEDS}
+    tb_lock_file=${LOCK_FILE_DIR}/${TBFILE_NAME}
+}
+
+
+function cleanup() {
+    #Set the TBFILE_NAME to the one passed through jenkins job
+    TBFILE_NAME=${AVAILABLE_TESTBEDS}
+    tb_lock_file=${LOCK_FILE_DIR}/${TBFILE_NAME}
+    if [ $LOCK_TESTBED_ON_FAILURE -eq 0 ] && [ $RUN_SUCCESSFUL -eq 1 ]; then
+        delete_stacks || die "Failed to delete stacks"
+    else
+        #Store stack info in testbed lock file
+        cat ${TOOLS_WS}/info.txt >> ${tb_lock_file} 
+    fi
+    unlock_testbed $TBFILE_NAME || die "Failed to unlock testbed $TBFILE_NAME"
+}

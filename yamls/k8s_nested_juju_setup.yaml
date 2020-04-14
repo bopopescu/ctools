@@ -1,0 +1,179 @@
+deployment:
+    type:
+      kolla:
+      contrail:
+        branch: master
+        registry: 10.204.217.152:5010
+        #registry: 10.204.217.152:5010
+    sku: queens
+    os: centos7
+    version: queens-1909-4
+    orchestrator: openstack
+    slave_orchestrator: kubernetes
+    deployer:
+    
+global_configuration:
+   REGISTRY_PRIVATE_INSECURE: True
+   CONTAINER_REGISTRY: 10.204.217.152:5010
+   
+provider_config:
+  bms:
+    domainsuffix: englab.juniper.net
+    ntpserver: 10.204.217.158
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+
+instances:
+  nodec35:
+    ip: 10.204.216.160
+    provider: bms
+    roles:
+        openstack_compute: null
+        vrouter:
+            PHYSICAL_INTERFACE: enp1s0f0
+            VROUTER_GATEWAY: 10.204.216.254
+  nodea30:
+    ip: 10.204.216.26
+    provider: bms
+    roles:
+        analytics: null
+        analytics_database: null
+        config: null
+        config_database: null
+        control: null
+        webui: null
+  nodeg19:
+    ip: 10.204.217.59
+    provider: bms
+    roles:
+        openstack_compute: null
+        vrouter:
+            PHYSICAL_INTERFACE: enp1s0f0
+            VROUTER_GATEWAY: 10.204.217.254
+  nodea11:
+    ip: 10.204.216.7
+    provider: bms
+    roles:
+        analytics: null
+        analytics_database: null
+        config: null
+        config_database: null
+        control: null
+        webui: null
+  nodea7:
+    ip: 10.204.216.45
+    provider: bms
+    roles:
+        analytics: null
+        analytics_database: null
+        config: null
+        config_database: null
+        control: null
+        openstack: null
+        webui: null
+  nodeh4:
+    ip: 10.204.217.108
+    provider: bms
+    roles:
+        openstack_compute: null
+        vrouter:
+            PHYSICAL_INTERFACE: enp3s0f0
+            VROUTER_GATEWAY: 10.204.217.254
+
+contrail_configuration:
+  CONTRAIL_VERSION: master-845
+  CLOUD_ORCHESTRATOR: openstack 
+  OPENSTACK_NODES: 10.204.216.45
+  CONTROLLER_NODES: 10.204.216.45,10.204.216.7,10.204.216.26
+  AUTH_MODE: keystone
+  KEYSTONE_AUTH_ADMIN_PASSWORD: contrail123
+  KEYSTONE_AUTH_URL_VERSION: "/v3"
+  RABBITMQ_NODE_PORT: 5673
+  OPENSTACK_VERSION: queens
+  KEYSTONE_AUTH_HOST: 10.204.216.45
+  CLOUD_ORCHESTRATOR: openstack
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: '2'
+  CONTAINER_REGISTRY: 10.204.217.152:5010
+  CONTROL_NODES: 10.204.216.45,10.204.216.7,10.204.216.26
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: '2'
+  KEYSTONE_AUTH_ADMIN_PASSWORD: contrail123
+  LOG_LEVEL: SYS_DEBUG
+  OPENSTACK_VERSION: queens
+  RABBITMQ_NODE_PORT: 5673
+  REGISTRY_PRIVATE_INSECURE: true
+  VROUTER_GATEWAY: 10.204.217.254
+
+orchestrator_configuration:
+  nova_virt_driver: kvm
+  keystone:
+    version: v3
+    username: admin
+    password: contrail123
+  vrrp_id: 222
+  contrail_api_interface_address: 10.204.216.45
+  enable_haproxy: "yes"
+  enable_ironic: "no"
+  enable_swift: "no"
+  enable_heat: "yes"
+  
+kolla_config:
+  kolla_globals:
+    enable_haproxy: no
+    enable_ironic: no
+    enable_swift: no
+    nova_compute_virt_type: kvm
+  kolla_passwords:
+    keystone_admin_password: contrail123
+
+test_configuration:
+    cfgm0_host_string: root@10.204.216.45
+    cfgm0_host_pwd: c0ntrail123
+    config_api_ip: 10.204.216.45
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    router_asn: 64512
+    public_rt: 600
+    public_virtual_network: public
+    public_subnet: 10.204.219.128/29
+    fip_pool_name: publicpool
+    ext_routers:
+        hooper: 10.204.217.240
+    k8s_nested:
+      deployer: juju
+      image:
+          location: http://10.204.216.50/cs-shared/images/node_vm_images/ubuntu-18.04-server-cloudimg-amd64.qcow2
+      clusters:
+        - name: sp
+          juju_client: juju_client
+          controller: controller
+          master: spm
+          slave1: sps1
+          slave2: sps2
+          network:
+            name: spnet
+            prefix: 10.0.0.0/24
+            fabric_snat: True
+          fip_pool: "{'domain':'default-domain', 'project':'admin', 'network':'public', 'name':'publicpool'}"
+    mail_server:
+        server: 10.47.226.20
+        port: 25
+        to: dl-contrail-sw-in@juniper.net
+        sender: contrailbuild@juniper.net
+    web_server:
+        server: 10.204.216.50
+        username: bhushana
+        password: c0ntrail!23
+        report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-k8s-centos7-nestedha-ansible-sanity
+        log_path: /home/bhushana/Documents/technical/logs
+        web_root: Docs/logs
+
+server_manager:
+  cluster_id: k8s_nested_1
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.6
+  client: /cs-shared/server-manager/client/server-manager
+
+

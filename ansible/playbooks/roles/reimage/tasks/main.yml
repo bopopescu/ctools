@@ -1,0 +1,32 @@
+- name:
+  set_fact:
+    os_image: "{{ lookup('env', 'OS_IMAGE')|default(server_manager.image, true) }}"
+
+- name:
+  set_fact:
+    client: "{{ server_manager.client|default('server-manager', true)}}"
+
+- name: set cluster_id from server manager section
+  set_fact:
+    cluster_id: "{{ server_manager.cluster_id }}"
+  when: server_manager.cluster_id is defined
+
+- name: set cluster_id from test_configuration (for backward compatibility)
+  set_fact:
+    cluster_id: "{{ test_configuration.cluster_id }}"
+  when: cluster_id is undefined and test_configuration.cluster_id is defined
+
+- name: Re-image with cluster_id using server manager
+  shell: "{{ client }} reimage -F --cluster_id {{cluster_id}} {{ os_image }}"
+  when: cluster_id is defined
+
+- name: Re-image with server_id using server manager if no cluster_id
+  shell: "{{ client }} reimage -F --server_id {{item.key}} {{ os_image }}"
+  when: item.value.provider == 'bms' and cluster_id is not defined and bond_info is not defined
+  with_dict: "{{ instances }}"
+
+- name: Re-image with server_id using server manager with different images
+  shell: "{{ client }} reimage -F --server_id {{ item.value.name }} {{ item.value.image }}"
+  when: bond_info is defined
+  with_dict:
+    - "{{ bond_info }}"

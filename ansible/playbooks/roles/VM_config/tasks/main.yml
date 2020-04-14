@@ -1,0 +1,33 @@
+- name: setting hostname
+  vars:
+    host_hostname:
+  set_fact:
+    host_hostname: "{{ item.key }}"
+  when: inventory_hostname == item.value.ip
+  with_dict: "{{ instances }}"
+
+- name: setting control data config
+  vars:
+    ctrl_data_ip:
+    prefix:
+    device:
+  set_fact:
+    ctrl_data_ip: "{{ item.value.ctrldata_ip }}"
+    prefix: "{{ item.value.prefix }}"
+    device: "{{ item.value.device }}"
+  when: inventory_hostname == item.value.ip
+  with_dict: "{{ control_data }}"
+
+- name: configuring hostname
+  include_tasks: configure_hostname.yml
+
+- name: configuring control data interface
+  include_tasks: ctrldataintf_config.yml
+
+- name: rebooting the vm
+  shell: 'sleep 5 && shutdown -r now'
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  when: intf_macaddress is defined

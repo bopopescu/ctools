@@ -1,0 +1,26 @@
+[contrail-controllers]
+10.204.217.194 ctrl_data_ip=192.168.1.5
+10.204.218.100 ctrl_data_ip=192.168.1.8
+10.204.218.101 ctrl_data_ip=192.168.1.9
+
+[contrail-analyticsdb]
+10.204.217.194 ctrl_data_ip=192.168.1.5
+10.204.218.100 ctrl_data_ip=192.168.1.8
+10.204.218.101 ctrl_data_ip=192.168.1.9
+
+[contrail-analytics]
+10.204.217.194 ctrl_data_ip=192.168.1.5
+10.204.218.100 ctrl_data_ip=192.168.1.8
+10.204.218.101 ctrl_data_ip=192.168.1.9
+
+[contrail-kubernetes]
+10.204.217.194 ctrl_data_ip=192.168.1.5
+10.204.218.100 ctrl_data_ip=192.168.1.8
+10.204.218.101 ctrl_data_ip=192.168.1.9
+
+[contrail-compute]
+10.204.217.197 ctrl_data_ip=192.168.1.6
+10.204.217.198 ctrl_data_ip=192.168.1.7
+
+[contrail-lb]
+10.204.218.102 ctrl_data_ip=192.168.1.10

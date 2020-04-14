@@ -1,0 +1,20 @@
+parameters:
+  ipam_name: "publicipam"
+  fip_pool_name: "publicpool"
+
+  publicvn_name: "public"
+  publicvn_prefix: "10.204.221.16"
+  publicvn_prefix_len: "28"
+  publicvn_asn: "64512"
+  publicvn_rt: "12345"
+
+  flavor_name: "k8flr"
+  flavor_ram: 16384
+  flavor_vcpus: 4
+  flavor_disk: 40
+
+  image_name: "k8img"
+  image_container: "ovf"
+  image_disk: "qcow2"
+  image_location:
+    "http://10.204.216.50/cs-shared/images/node_vm_images/kube-7.7.qcow2"

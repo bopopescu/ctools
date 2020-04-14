@@ -1,0 +1,484 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+DEPLOYER_SERVER_HOST_STRING=${DEPLOYER_SERVER_HOST_STRING:-"null"}
+CONTRAIL_REGISTRY=${CONTRAIL_REGISTRY:-"bng-artifactory.juniper.net/contrail-nightly"}
+REGISTRY_PRIVATE_INSECURE=${REGISTRY_PRIVATE_INSECURE:-"True"}
+multi_node=0
+
+function build_version_string() {
+
+    #Needs refinement based on mainline, latest and other future tags.
+    echo "Running build_version_string"
+    VERSION=`echo $BRANCH | cut -d 'R' -f 2`.${BUILDID}
+    if [[ $BUILDID == "dev" ]]; then
+        VERSION=${BUILDID}
+    fi
+    
+    VERSION=\"$VERSION\"
+    echo $VERSION
+    export VERSION=$VERSION
+    
+}
+
+function copy_and_edit_yaml_file() {
+    echo "Running copy_and_edit_yaml_file"
+
+
+    if [ $VCENTER_ONLY_TESTBED -eq 1 ]; then
+    	VERSION=`echo $BRANCH | cut -d 'R' -f 2`.${BUILDID}
+        export VERSION=$VERSION
+        cp -f ${TOOLS_WS}/yamls/${YAML}/all.yml ${TOOLS_WS}/ansible/inventory/group_vars/
+        cp -f ${TOOLS_WS}/yamls/${YAML}/contrail_test_input.yml ${TOOLS_WS}/ansible/inventory/group_vars/
+        cp -f ${TOOLS_WS}/yamls/${YAML}/instances.yaml ${TOOLS_WS}/ansible/inventory/group_vars/
+        cp -f ${TOOLS_WS}/yamls/${YAML}/vcenter_vars.yml ${TOOLS_WS}/ansible/inventory/group_vars/
+        #For multi-interface vcenter, assuming that the hosts will be taken from git
+        #With hosts, host_vars must be present
+        if [ -e ${TOOLS_WS}/yamls/${YAML}/hosts ]
+        then
+            mv -f ${TOOLS_WS}/yamls/${YAML}/hosts ${TOOLS_WS}/ansible/inventory/
+            mv -f ${TOOLS_WS}/yamls/${YAML}/host_vars ${TOOLS_WS}/ansible/inventory/
+        fi
+        sed -i 's/version: null/version: '$VERSION'/g' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+        sed -i 's/CONTRAIL_VERSION: .*/CONTRAIL_VERSION: '${VERSION}'/g' ${TOOLS_WS}/ansible/inventory/group_vars/contrail_test_input.yml
+        sed -i 's/CONTRAIL_VERSION: .*/CONTRAIL_VERSION: '${VERSION}'/g' ${TOOLS_WS}/ansible/inventory/group_vars/instances.yaml
+
+    else
+        cp -f ${TOOLS_WS}/yamls/${YAML} ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+        sed -i 's/version: null/version: '${VERSION}'/g' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	echo $CLOUD_ORCHESTRATOR
+        if [ $SKU == "queens"  -o  $SKU == "ocata"  -o  $SKU == "rocky" ] && [[ $CLOUD_ORCHESTRATOR != "kubernetes" ]]; then
+            VERSION=`echo $BRANCH | cut -d 'R' -f 2`.${BUILDID}
+	    echo $VERSION		
+            QT='"'		
+            VERSION="$QT$VERSION$QT"	
+            echo $VERSION	
+            export VERSION=$VERSION
+        fi
+        if [[ $BUILDID == "dev" ]]; then
+            VERSION=${BUILDID}
+        fi
+        echo $VERSION
+        sed -i 's/CONTRAIL_VERSION: .*/CONTRAIL_VERSION: '${VERSION}'/g' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	sed -i 's/deployer: .*/deployer: '$DEPLOYER'/g' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	sed -i 's%registry:.*%registry: '$CONTRAIL_REGISTRY'%' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+        sed -i 's%CONTAINER_REGISTRY:.*%CONTAINER_REGISTRY: '$CONTRAIL_REGISTRY'%' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	if [ $REGISTRY_PRIVATE_INSECURE == "False" ]; then
+	    sed -i 's/CONTRAIL_VERSION: null/CONTRAIL_VERSION: '${VERSION}'-${SKU}/g' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	    sed -i 's/registry:.*/registry: '$CONTRAIL_REGISTRY'\/contrail-nightly/' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	    sed -i 's/CONTAINER_REGISTRY:.*/CONTAINER_REGISTRY: '$CONTRAIL_REGISTRY'\/contrail-nightly/' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	    sed -i 's/REGISTRY_PRIVATE_INSECURE:.*/REGISTRY_PRIVATE_INSECURE: '$REGISTRY_PRIVATE_INSECURE'/' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	    sed -i 's/CONTAINER_REGISTRY_PASSWORD:.*/CONTAINER_REGISTRY_PASSWORD: '$CONTAINER_REGISTRY_PASSWORD'/' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	    sed -i 's/CONTAINER_REGISTRY_USERNAME:.*/CONTAINER_REGISTRY_USERNAME: '$CONTAINER_REGISTRY_USERNAME'/' ${TOOLS_WS}/ansible/inventory/group_vars/all.yml
+	fi
+    fi
+
+    if [ $SKU == "queens"  -o  $SKU == "ocata"  -o  $SKU == "rocky" ]; then
+        VERSION=`echo $BRANCH | cut -d 'R' -f 2`.${BUILDID}
+        VERSION=$SKU-$VERSION
+    fi
+    if [[ $BUILDID == "dev" ]]; then
+        VERSION=${BUILDID}
+        VERSION=$SKU-$VERSION
+    fi
+    echo $VERSION
+}
+
+
+function attach_log_core() {
+
+    if [ $SKIP_SANITY -ne 0 ]
+    then
+        return 0
+    fi
+
+    echo "Collecting logs and core after sanity runs"
+    echo $TOOLS_WS
+    echo $SKU
+
+    if [ $SKU == "queens"  -o  $SKU == "ocata"  -o  $SKU == "rocky" ] && [[ $CLOUD_ORCHESTRATOR != "kubernetes" ]] ; then
+        echo "Collecting logs and core ."
+        API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+        echo $API_SERVER_IP
+        sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+            set -e
+            echo "Collecting logs and core after sanity runs...."
+            cd /root/contrail-tools/ansible; ansible-playbook playbooks/collectlogs.yml
+            echo "Waiting for 3 minutes "
+            sleep 180
+        ) "
+    fi
+    return 0
+}
+
+
+
+function reimage_setup_ansible() {
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        if [ $INITIALIZE_DEPLOYER_VM -eq 1 ]
+	then 
+	    sleep 200
+	fi
+        return 0
+    fi
+    echo "Running reimage_setup_ansible"
+    if [ $VIRTUAL_TESTBED -eq 1 ]
+    then
+        echo "Creating Virtual Machines to be used as nodes" 
+        cd ${TOOLS_WS}/ansible; ansible-playbook -i inventory/ playbooks/configure_vm.yml
+        echo "Waiting for 6 minutes for VMs to boot "
+        sleep 360
+        echo "Configuring Hohstname and Control data interfaces"
+        ansible-playbook -i inventory/ playbooks/configure_ctrldata.yml
+        sleep 120
+        return 0
+    fi
+    cd ${TOOLS_WS}/ansible; ansible-playbook -i inventory/ playbooks/reimage.yml
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "reimage in progress please wait ..."
+        sleep 10
+
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 150
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+}
+
+function copy_contrail_tools_to_target() {
+    echo "Running copy_contrail_tools_to_target"
+    if [ $VCENTER_ONLY_TESTBED -eq 1 ]; then
+        API_SERVER_HOST_STRING=`grep -rn "cfgm0_host_string:" ${TOOLS_WS}/ansible/inventory/group_vars/contrail_test_input.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+        API_SERVER_HOST_PWD=`grep -rn "cfgm0_host_pwd:" ${TOOLS_WS}/ansible/inventory/group_vars/contrail_test_input.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+
+    else
+        API_SERVER_HOST_STRING=`grep -rn "cfgm0_host_string:" ${TOOLS_WS}/ansible/inventory/group_vars/all.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+        API_SERVER_HOST_PWD=`grep -rn "cfgm0_host_pwd:" ${TOOLS_WS}/ansible/inventory/group_vars/all.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+    fi
+    export API_SERVER_HOST_STRING=$API_SERVER_HOST_STRING
+    export API_SERVER_HOST_PWD=$API_SERVER_HOST_PWD
+
+    echo $API_SERVER_HOST_STRING
+    echo $API_SERVER_HOST_PWD
+
+    sshpass -p ${API_SERVER_HOST_PWD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${TOOLS_WS} ${API_SERVER_HOST_STRING}:/root/contrail-tools
+    if [ $DEPLOYER_SERVER_HOST_STRING != "null" ]
+    then 
+       sshpass -p ${API_SERVER_HOST_PWD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${TOOLS_WS} ${DEPLOYER_SERVER_HOST_STRING}:/root/contrail-tools
+    fi
+}
+
+function pull_and_copy_policy_generator_to_target() {
+    ENABLE_POLICY_GENERATOR=${ENABLE_POLICY_GENERATOR:-0}
+    if [ $ENABLE_POLICY_GENERATOR -eq 0 ]
+    then
+        return 0
+    fi
+    echo "Running pull_and_copy_policy_generator_to_target"
+
+    git clone git@github.com:Juniper/contrail-security-apps.git ${TOOLS_WS}/../contrail-security-apps
+    if [ $? -ne 0 ]; then
+        echo "Failed to pull policy-generator"
+        return 1
+    fi
+    # TODO remove
+    echo $API_SERVER_HOST_STRING
+    echo $API_SERVER_HOST_PWD
+
+    sshpass -p ${API_SERVER_HOST_PWD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${TOOLS_WS}/../contrail-security-apps ${API_SERVER_HOST_STRING}:/root/contrail-security-apps
+    if [ $DEPLOYER_SERVER_HOST_STRING != "null" ]
+    then 
+       sshpass -p ${API_SERVER_HOST_PWD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${TOOLS_WS}/../contrail-security-apps ${DEPLOYER_SERVER_HOST_STRING}:/root/contrail-security-apps
+    fi
+}
+
+function install_prelim_pkgs_on_target() {
+    if [ $SKIP_PKG_INSTALL -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Install: install_prelim_pkgs_on_target"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Install required packages on cfgm0"
+        yum install -y epel-release git ansible-2.4.2.0 screen net-tools
+	yum install -y python-pip
+        if [ $VCENTER_ONLY_TESTBED -eq 1 ]; then
+	    yum remove -y ansible;pip install ansible==2.5 #Vcenter provisioning does not work with ansible-2.4-bug1772388 
+            pip install pyvmomi;pip install pysphere; pip install requests
+        else
+	    pip install requests
+	fi
+
+        if [ $? == 0 ]
+        then
+            echo "Installed required packages on cfgm0 successfully."
+        else
+            echo "Failed to install required packages on cfgm0."
+            exit 1
+        fi
+    ) "
+
+    if [ $DEPLOYER_SERVER_HOST_STRING = "null" ]
+    then 
+       return 0
+    fi
+
+    DEPLOYER_SERVER_IP=`echo $DEPLOYER_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${DEPLOYER_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $DEPLOYER_SERVER_IP " (
+        set -e
+        echo "Install required packages on commander server node"
+        yum install -y epel-release git ansible-2.4.2.0 screen net-tools
+	yum install -y python-pip
+        if [ $VCENTER_ONLY_TESTBED -eq 1 ]; then
+	    yum remove -y ansible;yum install -y ansible #Vcenter provisioning does not work with ansible-2.4-bug1772388 
+            pip install pyvmomi;pip install pysphere; pip install requests
+        else
+	    pip install requests
+	fi
+
+        if [ $? == 0 ]
+        then
+            echo "Installed required packages on Commander Server Node successfully."
+        else
+            echo "Failed to install required packages on Commander Server Node."
+            exit 1
+        fi
+    ) "
+   
+}
+
+function provision_setup_ansible() {
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running provision_setup_ansible"
+
+    if [ $DEPLOYER_SERVER_HOST_STRING != "null" ]
+    then
+       PROVISION_SERVER_IP=`echo $DEPLOYER_SERVER_HOST_STRING | cut -d'@' -f 2`
+       PROVISION_SERVER_HOST_PWD=$DEPLOYER_SERVER_HOST_PWD
+    else
+       PROVISION_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+       PROVISION_SERVER_HOST_PWD=$API_SERVER_HOST_PWD
+    fi
+    sshpass -p ${PROVISION_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $PROVISION_SERVER_IP " (
+        set -e
+        echo "Provisioning the contrail setup"
+        cd /root/contrail-tools/ansible/
+        time ansible-playbook -i inventory/ playbooks/deploy.yml
+
+        #Need some code to verify deployment/provisioning status.
+        if [ $? == 0 ]
+        then
+            echo "Provisioned the setup successfully."
+        else
+            echo "Failed to provision the setup."
+            exit 1
+        fi
+    ) "
+}
+
+function run_sanity_ansible() {
+    if [ $SKIP_SANITY -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running run_sanity_ansible"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Setting values of envirnoment variables"
+        export CT_MX_GW_TEST=\"${MX_GW_TEST}\"
+        export CT_EMAIL_SUBJECT=\"${EMAIL_SUBJECT}\"
+        export FEATURES=\"${FEATURES}\"
+	export EXTRA_RUN_TEST_ARGS=\"${EXTRA_RUN_TEST_ARGS}\"
+        echo "Running Sanity on the setup"
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -v -i inventory/ playbooks/run_sanity.yml
+    ) "
+}
+
+function run_tempest_ansible() {
+    if [ $SKIP_TEMPEST -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running run_tempest_ansible"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Setting values of envirnoment variables"
+        export CT_MX_GW_TEST=\"${MX_GW_TEST}\"
+        export CT_EMAIL_SUBJECT=\"${EMAIL_SUBJECT}\"
+        export TEMPEST_REPO=\"${TEMPEST_REPO}\"
+        echo "Running Tempest Sanity on the setup"
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -v -i inventory/ playbooks/run_tempest.yml
+    ) "
+}
+
+#Copy vmdk image onto the node
+function copy_vmdk() {
+    
+    vmdk_path="/cs-shared-test/images/vcenter-vmdk/centos-7.5/R5.0.1/ContrailVMCentOS75-ovf.tar"
+
+    API_SERVER_HOST_STRING=`grep -rn "cfgm0_host_string:" ${TOOLS_WS}/ansible/inventory/group_vars/contrail_test_input.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+    API_SERVER_HOST_PWD=`grep -rn "cfgm0_host_pwd:" ${TOOLS_WS}/ansible/inventory/group_vars/contrail_test_input.yml | cut -d ':' -f 3 | cut -d' ' -f 2`
+    export API_SERVER_HOST_STRING=$API_SERVER_HOST_STRING
+    export API_SERVER_HOST_PWD=$API_SERVER_HOST_PWD
+
+    echo $API_SERVER_HOST_STRING
+    echo $API_SERVER_HOST_PWD
+
+    sshpass -p ${API_SERVER_HOST_PWD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ${vmdk_path} ${API_SERVER_HOST_STRING}:/root/
+
+    if [ $? == 0 ]
+    then 
+        echo "Copying of vmdk is successfull"
+    else 
+        echo "Copying of vmdk failed!"
+        exit 1
+    fi
+
+}
+
+function provision_nested_setup() {
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    K8NESTED=${K8NESTED:-0}
+    if [ $K8NESTED -eq 0 ]
+    then
+        return 0
+    fi
+    echo "Running provision_nested_setup"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Sourcing envirnoment variables"
+        source /etc/kolla/kolla-toolbox/admin-openrc.sh
+        export BUILDID=\"${BUILDID}\"
+        export BRANCH=\"${BRANCH}\"
+        export K8_NESTED_CLEANUP_ON_FAIL=\"${K8_NESTED_CLEANUP_ON_FAIL}\"
+
+        echo "Provisioning nested setup"
+        cd /root/contrail-tools/testers/k8s_nested/
+        python main.py /root/contrail-tools/ansible/inventory/group_vars/all.yml
+        cp contrail_test_input.yaml /root/contrail-tools/ansible/inventory/group_vars/contrail_test_input.yml
+    ) "
+}
+
+function configure_static_routes(){
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Configuring static routes and static configurations"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -v -i inventory/ playbooks/configure_static_routes.yml
+    ) "
+
+}
+
+function configure_static_configs(){
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Configuring static routes and static configurations"
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -v -i inventory/ playbooks/configure_static_config.yml
+    ) "
+
+}
+
+function install_contrail_commander() {
+   if [ $SKIP_CONTRAIL_COMMAND_INSTALL -ne 0 ]
+   then
+     return 0
+   fi
+   echo "Installing Contrail commander and importing cluster"
+   sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Setting values of envirnoment variables"
+        export CT_MX_GW_TEST=\"${MX_GW_TEST}\"
+        export CT_EMAIL_SUBJECT=\"${EMAIL_SUBJECT}\"
+        export OS_PASSWORD=\"${OS_PASSWORD}\"
+
+        echo "Running Sanity on the setup"
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -i inventory/ playbooks/contrail_command_import_cluster.yml
+    ) "
+
+}
+
+function run_sanity_task() {
+    echo "Running tests on $1.."
+
+    build_version_string || die "version string couldn't be built"
+    copy_and_edit_yaml_file || die "failed to copy and edit yaml file"
+    reimage_setup_ansible || die "failed to reimage setup"
+    copy_contrail_tools_to_target || die "failed to copy contrail-tools to target"
+    pull_and_copy_policy_generator_to_target || die "failed to copy policy-generator to target"
+    #if [ $VCENTER_ONLY_TESTBED -eq 1 ]; then
+    #    copy_vmdk
+    #fi 
+    install_prelim_pkgs_on_target || die "failed to install pre reqs on target"
+    configure_static_routes || die "failed to configure static routes"
+    provision_setup_ansible || die "failed to provision setup"
+    provision_nested_setup || die "failed to provision nested setup"
+    run_sanity_ansible || die "failed to run sanity"
+    run_tempest_ansible || die "failed to run tempest sanity"
+    attach_log_core
+
+}
+
+function generate_core_email() {
+
+    if [ $SKIP_CORE_EMAIL -eq 1 ]
+    then
+       return 0
+    fi
+
+    API_SERVER_IP=`echo $API_SERVER_HOST_STRING | cut -d'@' -f 2`
+    sshpass -p ${API_SERVER_HOST_PWD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $API_SERVER_IP " (
+        set -e
+        echo "Setting values of envirnoment variables"
+        export core_email_list=\"${core_email_list}\"
+
+        cd /root/contrail-tools/ansible/
+        ansible-playbook -v -i inventory/ playbooks/generate_core_email.yml
+
+    ) "
+
+}

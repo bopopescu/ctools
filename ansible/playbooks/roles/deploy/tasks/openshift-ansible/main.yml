@@ -1,0 +1,170 @@
+
+- name: get master nodes
+  vars:
+    master_nodes: []
+  set_fact:
+     master_nodes: "{{ master_nodes + [ item.value.ip ] }}"
+  when:
+    - item.value.roles.k8s_master is defined
+  with_dict: "{{ instances }}"
+
+- debug:
+    msg: "{{ master_nodes }}"
+
+- name: Generate SSH keys
+  shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+  args:
+    creates: /root/.ssh/id_rsa
+
+- name: Copy SSH key to all nodes
+  command: sshpass -p c0ntrail123 ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ item.value.ip }}
+  with_dict: "{{ instances }}"
+
+- name: Copy SSH key to ansible node
+  command: sshpass -p c0ntrail123 ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ ansible_default_ipv4.address }}
+
+- name: set openshift ansible repo version if undefined
+  set_fact:
+    openshift_branch:  "{{ deployment.type.openshift.branch }}"
+  when: deployment.type.openshift.branch is defined
+
+- name: set openshiftregistry if defined
+  set_fact:
+    openshiftregistry: "{{ deployment.type.openshift.registry }}"
+  when: deployment.type.openshift.registry is defined
+
+- name: set openshift release
+  set_fact:
+    openshiftrelease: "{{ 'v' + deployment.type.openshift.branch.split('-')[1] }}"
+  when: deployment.type.openshift.branch is defined
+
+- name: split openshift registry name
+  set_fact:
+     tmp_registry: "{{ openshiftregistry.split('/')[0] }}"
+
+- name: split openshift registry name
+  set_fact:
+     tmp_namespace: "{{ openshiftregistry.split('/')[1] }}"
+
+- name: set default device if PHYSICAL_INTERFACE is defined
+  set_fact:
+    default_device: "{{ contrail_configuration.PHYSICAL_INTERFACE }}"
+  when: contrail_configuration.PHYSICAL_INTERFACE is defined
+
+- name: find physical interface if PHYSICAL_INTERFACE is undefined
+  shell: "ip route get {{ contrail_configuration.VROUTER_GATEWAY }} | awk '{ print $3; exit }'"
+  register: result
+  when:
+    - contrail_configuration.PHYSICAL_INTERFACE is undefined
+
+- name: set default device if PHYSICAL_INTERFACE is undefined
+  set_fact:
+    default_device: "{{ result.stdout }}"
+  when:
+    - contrail_configuration.PHYSICAL_INTERFACE is undefined
+
+- name: create temp directory for contrail
+  tempfile:
+     state: directory
+     suffix: _openshift
+  register: tmpdir
+
+- name: set openshift provision dir
+  set_fact:
+      openshift_provision_dir: "{{ tmpdir.path }}/openshift-ansible"
+
+- debug:
+    msg: "Cloning openshift ansible repo at {{ openshift_provision_dir }}"
+
+- name: clone openshift ansible repo
+  git:
+    repo: 'https://github.com/Juniper/openshift-ansible.git'
+    accept_hostkey: yes
+    update: yes
+    dest: "{{ openshift_provision_dir }}"
+    version: "{{ openshift_branch }}"
+  retries: 3
+
+- name: Update ose-install inventory file
+  template:
+    src: openshift-ansible/ose-install-3.7.j2
+    dest: "{{ openshift_provision_dir }}/inventory/byo/ose-install"
+  when: "{{ '3.7' in openshift_branch }}"
+
+- name: Run ose-prerequisites playbook
+  command: "ansible-playbook -i inventory/byo/ose-install inventory/byo/ose-prerequisites.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.7' in openshift_branch }}"
+
+- name: Run openshift_facts playbook
+  command: "ansible-playbook -i inventory/byo/ose-install playbooks/byo/openshift_facts.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.7' in openshift_branch }}"
+
+- name: Run config playbook
+  command: "ansible-playbook -i inventory/byo/ose-install playbooks/byo/config.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.7' in openshift_branch }}"
+
+- name: Update ose-install inventory file
+  template:
+    src: openshift-ansible/ose-install-3.9.j2
+    dest: "{{ openshift_provision_dir }}/inventory/ose-install"
+  when: "{{ '3.9' in openshift_branch }}"
+
+- name: Run ose-prerequisites playbook
+  command: "ansible-playbook -i inventory/ose-install playbooks/prerequisites.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.9' in openshift_branch }}"
+
+- name: Run playbook to deploy cluster
+  command: "ansible-playbook -i inventory/ose-install playbooks/deploy_cluster.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.9' in openshift_branch }}"
+
+- name: Update ose-install inventory file
+  template:
+    src: openshift-ansible/ose-install-3.11.j2
+    dest: "{{ openshift_provision_dir }}/inventory/ose-install"
+  when: "{{ '3.11' in openshift_branch }}"
+
+- name: Update SSH timeout from 10 to 20
+  template:
+    src: openshift-ansible/ansible.cfg.j2
+    dest: "{{ openshift_provision_dir }}/ansible.cfg"
+  when: "{{ '3.11' in openshift_branch }}"
+
+- name: set ansible_debug 1
+  shell: "export ANSIBLE_DEBUG=1"
+  when: "{{ '3.11' in openshift_branch }}"
+
+- name: Run ose-prerequisites playbook
+  command: "ansible-playbook -i inventory/ose-install playbooks/prerequisites.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.11' in openshift_branch }}"
+  retries: 3
+  delay: 30
+  register: result
+  until: result.rc == 0
+
+- name: Run playbook to deploy cluster
+  command: "ansible-playbook -i inventory/ose-install playbooks/deploy_cluster.yml -vv"
+  args:
+    chdir: "{{ openshift_provision_dir }}"
+  when: "{{ '3.11' in openshift_branch }}"
+
+- name: Insert rule to Allow all IPv4 traffic coming
+  iptables:
+    action: insert
+    chain: INPUT
+    jump: ACCEPT
+    rule_num: 4
+  when: item.value.roles.k8s_node is defined
+  with_dict: "{{ vars['hostvars']['localhost']['instances'] }}"
+

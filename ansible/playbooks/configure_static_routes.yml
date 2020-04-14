@@ -1,0 +1,43 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        hostname: "{{ item.key }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "static_route_nodes"
+      when: "{{ static_routes is defined and item.key in static_routes }}"
+      with_dict: "{{ instances }}"
+
+- hosts: static_route_nodes
+  gather_facts: no
+  become: true
+  become_user: root
+  tasks:
+    - name: find physical interfaces
+      shell: "ip route get {{ item.gw }} | awk '{ print $3; exit }'"
+      register: devices
+      with_items: "{{ static_routes[inventory_hostname] }}"
+
+    - name: Populate device_mappings
+      set_fact:
+        device_mappings: "{{ device_mappings|default({}) | combine( {item.item.gw: item.stdout} ) }}"
+      with_items: "{{ devices.results }}"
+
+    - lineinfile:
+        path: "/etc/sysconfig/network-scripts/route-{{ device_mappings[item.gw] }}"
+        line: "{{ item.ip }} via {{ item.gw }} dev {{ device_mappings[item.gw] }}"
+        create: yes
+        state: present
+      with_items: "{{ static_routes[inventory_hostname] }}"
+
+    - name: Restart network service
+      service:
+        name: network
+        state: restarted
+      ignore_errors: yes  
+
+

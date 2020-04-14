@@ -1,0 +1,38 @@
+heat_template_version: "2015-04-30"
+
+description: >
+  HOT template for creating project & add admin user for
+  kubernetes nested deployment
+
+outputs:
+  project:
+   description: ID of project
+   value: { get_attr: ['project', 'show', 'id'] }
+
+parameters:
+   name:
+    type: string
+    description: Name of the project
+
+resources:
+  project:
+    type: OS::Keystone::Project
+    properties:
+      name: { get_param: name }
+
+  add_admin:
+    type: OS::Keystone::UserRoleAssignment
+    depends_on: [ project ]
+    properties:
+      user: admin
+      roles:
+        - role: heat_stack_owner
+          project: { get_resource: project }
+        - role: admin
+          project: { get_resource: project }
+          
+  nova_user_quota:
+    type: OS::Nova::Quota
+    properties:
+      project: {get_resource: project}
+      ram: 81920

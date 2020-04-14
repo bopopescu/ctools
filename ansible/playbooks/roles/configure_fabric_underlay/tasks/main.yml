@@ -1,0 +1,61 @@
+- name: build interfaces fact
+  set_fact:
+    interfaces: "{{ interfaces|default([]) + [ {'name': item.local_port, 'ip': item.local_ip, 'mac': item.local_mac}]}}"
+  with_items:
+    - "{{ peers }}"
+
+- name: set my dict fact
+  set_fact:
+    my_info: "{{ test_configuration.physical_routers[inventory_hostname] }}"
+
+- name: set ctrl-data mac address fact
+  set_fact:
+    control_mac: "{{ my_info.control_mac }}"
+      
+- name: set ctrl-data interface fact
+  set_fact:
+    control_ip: "{{ my_info.control_ip }}"
+      
+- debug:
+   msg: "{{ my_info, inventory_hostname, item }}"
+  when: peers is defined
+  with_items:
+     - "{{ peers }}"
+
+- name: set local asn fact
+  set_fact:
+    local_as: "{{ leaf_asn if ('leaf' == my_info.role) else spine_asn }}"
+
+- name: set peer asn fact
+  set_fact:
+    peer_as: "{{ spine_asn if ('leaf' == my_info.role) else leaf_asn }}"
+
+- name: set loopback ip fact
+  set_fact:
+    loopback_ip: "{{ my_info.tunnel_ip }}"
+
+- name: create loopbacks list fact
+  set_fact:
+    loopbacks: "{{ loopbacks|default([]) + [ {'ip': test_configuration.physical_routers[item.peer_name].tunnel_ip, 'peer_ip': item.peer_ip}]}}"
+  with_items:
+    - "{{ peers }}"
+
+- name: wait for ssh to physical devices
+  wait_for:
+    host: "{{ ansible_ssh_host }}"
+    port: 22
+    timeout: 600
+  delegate_to: localhost
+
+- name: Build configuration
+  template: src=vqfx.conf.j2 dest=/tmp/{{ inventory_hostname }}.conf
+- name: Merge config to device
+  juniper_junos_config:
+    load: 'merge'
+    src: "/tmp/{{ inventory_hostname }}.conf"
+    host: "{{ ansible_ssh_host }}"
+    port: 22
+    user: "{{ ansible_user }}"
+    passwd: "{{ ansible_ssh_pass }}"
+    format: text
+    logfile: /tmp/changes.log

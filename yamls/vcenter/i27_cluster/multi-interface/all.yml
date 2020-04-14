@@ -1,0 +1,19 @@
+deployment:
+    type:
+        vcenter:
+            branch: contrail/ocata
+            registry: svl-artifactory.juniper.net/contrail-nightly
+        contrail:
+            branch: master
+            registry: svl-artifactory.juniper.net/contrail-nightly
+    sku: queens
+    os: centos7
+    version: null
+    orchestrator: vcenter
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.7
+  client: /cs-shared/server-manager/client/server-manager

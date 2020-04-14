@@ -1,0 +1,60 @@
+networks:
+    management:
+        cidr: 10.0.0.0/24
+    ctrl1:
+        cidr: 10.10.0.0/24
+        gateway: null
+
+allowed_address_pairs:
+    internal_vip: 10.10.0.100
+    external_vip: 10.0.0.100
+
+instances:
+  - name: openstack
+    type: openstack
+    roles:
+        openstack:
+    ports:
+        - network: management
+          aap: external_vip
+        - network: ctrl1
+          aap: internal_vip
+    count: 1
+  - name: controller
+    type: controller
+    roles:
+        control:
+        webui:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 1
+  - name: analytics
+    type: analytics
+    roles:
+        analytics:
+        analytics_database:
+        analytics_alarm:
+        analytics_snmp:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 1
+  - name: config
+    type: config
+    roles:
+        config_database:
+        config:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 1
+  - name: compute
+    type: compute
+    roles:
+        vrouter:
+        openstack_compute:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3

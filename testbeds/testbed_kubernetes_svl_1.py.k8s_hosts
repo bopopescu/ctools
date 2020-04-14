@@ -1,0 +1,7 @@
+[kubernetes-master]
+10.87.121.34
+
+[kubernetes-slaves]
+10.87.121.35
+10.87.121.36
+

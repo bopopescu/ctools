@@ -1,0 +1,4 @@
+*.pyc
+*.pyo
+.*sw*
+ansible/inventory/group_vars/all.yml

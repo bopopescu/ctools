@@ -1,0 +1,267 @@
+[OSEv3:vars]
+ 
+###########################################################################
+### OpenShift Basic Vars
+###########################################################################
+openshift_deployment_type=openshift-enterprise
+deployment_type=openshift-enterprise
+containerized=false
+openshift_disable_check=docker_image_availability,memory_availability,package_availability,disk_availability,package_version,docker_storage
+ 
+# Default node selectors
+openshift_hosted_infra_selector="node-role.kubernetes.io/infra=true"
+
+oreg_auth_user=contrail.systems
+oreg_auth_password=Embe1mpls_007
+
+###########################################################################
+### OpenShift Master Vars
+###########################################################################
+ 
+openshift_master_api_port=8443
+openshift_master_console_port=8443
+openshift_master_cluster_method=native
+ 
+# Set this line to enable NFS
+openshift_enable_unsupported_configurations=True
+
+
+###########################################################################
+### OpenShift Network Vars
+###########################################################################
+ 
+openshift_use_openshift_sdn=false
+os_sdn_network_plugin_name='cni'
+openshift_use_contrail=true
+
+###########################################################################
+### OpenShift Authentication Vars
+###########################################################################
+ 
+# htpasswd Authentication
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+ 
+###########################################################################
+### OpenShift Router and Registry Vars
+###########################################################################
+ 
+openshift_hosted_router_replicas=1
+openshift_hosted_registry_replicas=1
+ 
+openshift_hosted_registry_storage_kind=nfs
+openshift_hosted_registry_storage_access_modes=['ReadWriteMany']
+openshift_hosted_registry_storage_nfs_directory=/export
+openshift_hosted_registry_storage_nfs_options='*(rw,root_squash)'
+openshift_hosted_registry_storage_volume_name=registry
+openshift_hosted_registry_storage_volume_size=10Gi
+openshift_hosted_registry_pullthrough=true
+openshift_hosted_registry_acceptschema2=true
+openshift_hosted_registry_enforcequota=true
+openshift_hosted_router_selector="node-role.kubernetes.io/infra=true"
+openshift_hosted_registry_selector="node-role.kubernetes.io/infra=true"
+
+###########################################################################
+### OpenShift Service Catalog Vars
+###########################################################################
+ 
+openshift_enable_service_catalog=True
+ 
+template_service_broker_install=True
+openshift_template_service_broker_namespaces=['openshift']
+ 
+ansible_service_broker_install=True
+ 
+openshift_hosted_etcd_storage_kind=nfs
+openshift_hosted_etcd_storage_nfs_options="*(rw,root_squash,sync,no_wdelay)"
+openshift_hosted_etcd_storage_nfs_directory=/export
+openshift_hosted_etcd_storage_labels={'storage': 'etcd-asb'}
+openshift_hosted_etcd_storage_volume_name=etcd-asb
+openshift_hosted_etcd_storage_access_modes=['ReadWriteOnce']
+openshift_hosted_etcd_storage_volume_size=2G
+
+
+
+
+
+###########################################################################
+### OpenShift Metrics and Logging Vars
+###########################################################################
+# Enable cluster metrics
+openshift_metrics_install_metrics=True
+ 
+openshift_metrics_storage_kind=nfs
+openshift_metrics_storage_access_modes=['ReadWriteOnce']
+openshift_metrics_storage_nfs_directory=/export
+openshift_metrics_storage_nfs_options='*(rw,root_squash)'
+openshift_metrics_storage_volume_name=metrics
+openshift_metrics_storage_volume_size=2Gi
+openshift_metrics_storage_labels={'storage': 'metrics'}
+ 
+openshift_metrics_cassandra_nodeselector={"node-role.kubernetes.io/infra":"true"}
+openshift_metrics_hawkular_nodeselector={"node-role.kubernetes.io/infra":"true"}
+openshift_metrics_heapster_nodeselector={"node-role.kubernetes.io/infra":"true"}
+ 
+# Enable cluster logging. (( 
+####openshift_logging_install_logging=True
+openshift_logging_install_logging=False
+#openshift_logging_storage_kind=nfs
+#openshift_logging_storage_access_modes=['ReadWriteOnce']
+#openshift_logging_storage_nfs_directory=/export
+#openshift_logging_storage_nfs_options='*(rw,root_squash)'
+#openshift_logging_storage_volume_name=logging
+#openshift_logging_storage_volume_size=5Gi
+#openshift_logging_storage_labels={'storage': 'logging'}
+#openshift_logging_es_cluster_size=1
+#openshift_logging_es_nodeselector={"node-role.kubernetes.io/infra":"true"}
+#openshift_logging_kibana_nodeselector={"node-role.kubernetes.io/infra":"true"}
+#openshift_logging_curator_nodeselector={"node-role.kubernetes.io/infra":"true"}
+
+###########################################################################
+### OpenShift Prometheus Vars
+###########################################################################
+ 
+## Add Prometheus Metrics:
+openshift_hosted_prometheus_deploy=True
+openshift_prometheus_node_selector={"node-role.kubernetes.io/infra":"true"}
+openshift_prometheus_namespace=openshift-metrics
+ 
+# Prometheus
+openshift_prometheus_storage_kind=nfs
+openshift_prometheus_storage_access_modes=['ReadWriteOnce']
+openshift_prometheus_storage_nfs_directory=/export
+openshift_prometheus_storage_nfs_options='*(rw,root_squash)'
+openshift_prometheus_storage_volume_name=prometheus
+openshift_prometheus_storage_volume_size=1Gi
+openshift_prometheus_storage_labels={'storage': 'prometheus'}
+openshift_prometheus_storage_type='pvc'
+ 
+# For prometheus-alertmanager
+openshift_prometheus_alertmanager_storage_kind=nfs
+openshift_prometheus_alertmanager_storage_access_modes=['ReadWriteOnce']
+openshift_prometheus_alertmanager_storage_nfs_directory=/export
+openshift_prometheus_alertmanager_storage_nfs_options='*(rw,root_squash)'
+openshift_prometheus_alertmanager_storage_volume_name=prometheus-alertmanager
+openshift_prometheus_alertmanager_storage_volume_size=1Gi
+openshift_prometheus_alertmanager_storage_labels={'storage': 'prometheus-alertmanager'}
+openshift_prometheus_alertmanager_storage_type='pvc'
+ 
+# For prometheus-alertbuffer
+openshift_prometheus_alertbuffer_storage_kind=nfs
+openshift_prometheus_alertbuffer_storage_access_modes=['ReadWriteOnce']
+openshift_prometheus_alertbuffer_storage_nfs_directory=/export
+openshift_prometheus_alertbuffer_storage_nfs_options='*(rw,root_squash)'
+openshift_prometheus_alertbuffer_storage_volume_name=prometheus-alertbuffer
+openshift_prometheus_alertbuffer_storage_volume_size=1Gi
+openshift_prometheus_alertbuffer_storage_labels={'storage': 'prometheus-alertbuffer'}
+openshift_prometheus_alertbuffer_storage_type='pvc'
+
+
+#########################################################################
+### Openshift HA
+#########################################################################
+
+# Openshift HA
+{% if master_nodes | length >= 1 %}
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "load_balancer" in value['roles'] %}
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+openshift_master_cluster_public_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+
+#########################################################################
+### Contrail Variables
+########################################################################
+ 
+service_subnets="172.30.0.0/16"
+pod_subnets="10.128.0.0/14"
+ 
+
+# Below are Contrail variables. Comment them out if you don't want to install Contrail through ansible-playbook
+openshift_use_contrail=true
+contrail_version=5.1
+contrail_container_tag={{ version + '-rhel' if os == 'redhat' else version }}
+contrail_registry={{ tmp_registry + '/' + tmp_namespace }}
+openshift_docker_insecure_registries={{ tmp_registry + '/' + tmp_namespace }}
+contrail_nodes=[{{ master_nodes|join(',') }}]
+
+{% if contrail_configuration is defined %}
+vrouter_physical_interface={{ default_device | default("eth0") }}
+{% endif %}
+
+#contrail_vip={{ master_nodes[0] }}
+
+###########################################################################
+### OpenShift Hosts
+###########################################################################
+[OSEv3:children]
+masters
+etcd
+nodes
+lb
+nfs
+openshift_ca
+
+[masters]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[etcd]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[lb]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "load_balancer" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[nodes]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "config" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }} openshift_node_group_name='node-config-infra'
+{% elif "k8s_master" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }} openshift_node_group_name='node-config-master'
+{% elif "load_balancer" in value['roles'] %}
+{% else %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }} openshift_node_group_name='node-config-compute'
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[nfs]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "load_balancer" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[openshift_ca]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}

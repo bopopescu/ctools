@@ -1,0 +1,367 @@
+{
+    "cluster": [
+        {
+            "id": "clusterc19c20c21a35i16i18",
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "ha": {
+                            "contrail_external_vip": "10.204.216.31",
+                            "contrail_internal_vip": "192.168.10.4"
+                        }
+                    },
+                    "contrail_4": {
+                        "controller_config": {
+                            "bgp_asn": "64512",
+                            "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                            "external_routers_list": {
+                                "blr-mx2": "192.168.10.254"
+                            }
+                        },
+                        "enable_lbaas": true,
+                        "global_config": {
+                            "xmpp_auth_enable": true,
+                            "xmpp_dns_auth_enable": true
+                        },
+                        "kernel_upgrade": false
+                    },
+                    "openstack": {
+                        "ha": {
+                            "external_vip": "10.204.217.214",
+                            "external_virtual_router_id": "112",
+                            "internal_vip": "192.168.10.9",
+                            "internal_virtual_router_id": "111"
+                            },
+                        "keystone": {
+                            "admin_password": "contrail123"
+                        },
+                        "openstack_manage_amqp": true
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "enp1s0f1"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodec19",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.4/24",
+                        "mac_address": "00:25:90:c3:af:aa",
+                        "name": "enp1s0f0"
+                    },
+                    {
+                        "ip_address": "192.168.10.2/24",
+                        "name": "enp1s0f1"
+                    }
+                ],
+                "management_interface": "enp1s0f0",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-analyticsdb",
+                "openstack",
+                "contrail-controller",
+                "contrail-analytics"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "enp1s0f1"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodec20",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.5/24",
+                        "mac_address": "00:25:90:c3:08:6a",
+                        "name": "enp1s0f0"
+                    },
+                    {
+                        "ip_address": "192.168.10.3/24",
+                        "name": "enp1s0f1"
+                    }
+                ],
+                "management_interface": "enp1s0f0",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-analyticsdb",
+                "openstack",
+                "contrail-controller",
+                "contrail-analytics"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "enp1s0f1"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodec21",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.6/24",
+                        "mac_address": "00:25:90:c3:3f:12",
+                        "name": "enp1s0f0"
+                    },
+                    {
+                        "ip_address": "192.168.10.1/24",
+                        "name": "enp1s0f1"
+                    }
+                ],
+                "management_interface": "enp1s0f0",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-analyticsdb",
+                "openstack",
+                "contrail-controller",
+                "contrail-analytics"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "enp2s0f3"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodea4",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.216.254",
+                        "ip_address": "10.204.216.120/24",
+                        "mac_address": "00:25:90:a5:3b:12",
+                        "name": "enp5s0"
+                    },
+                    {
+                        "ip_address": "192.168.10.7/24",
+                        "name": "enp2s0f3"
+                    }
+                ],
+                "management_interface": "enp5s0",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "bond0"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodei18",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.130/24",
+                        "mac_address": "00:25:90:e7:7e:fc",
+                        "name": "eno1"
+                    },
+                    {
+                        "mac_address": "00:25:90:e4:08:8e",
+                        "name": "enp4s0f0"
+                    },
+                    {
+                        "mac_address": "00:25:90:e4:08:8e",
+                        "name": "enp4s0f1"
+                    },
+                    {
+                        "bond_options": {
+                            "mode": "balance-xor"
+                        },
+                        "ip_address": "192.168.10.6/24",
+                        "member_interfaces": [
+                            "enp4s0f0",
+                            "enp4s0f1"
+                        ],
+                        "name": "bond0",
+                        "type": "bond"
+                    }
+                ],
+                "management_interface": "eno1",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "bond0"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodei16",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.217.254",
+                        "ip_address": "10.204.217.128/24",
+                        "mac_address": "00:25:90:e7:80:30",
+                        "name": "eno1"
+                    },
+                    {
+                        "mac_address": "00:25:90:c5:10:92",
+                        "name": "enp4s0f0"
+                    },
+                    {
+                        "mac_address": "00:25:90:c5:10:92",
+                        "name": "enp4s0f1"
+                    },
+                    {
+                        "bond_options": {
+                            "mode": "802.3ad"
+                        },
+                        "ip_address": "192.168.10.5/24",
+                        "member_interfaces": [
+                            "enp4s0f0",
+                            "enp4s0f1"
+                        ],
+                        "name": "bond0",
+                        "type": "bond"
+                    }
+                ],
+                "management_interface": "eno1",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ]
+        },
+        {
+            "cluster_id": "clusterc19c20c21a35i16i18",
+            "contrail": {
+                "control_data_interface": "eno1"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodea35",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.216.254",
+                        "ip_address": "10.204.216.31/24",
+                        "mac_address": "00:25:90:aa:a9:44",
+                        "name": "enp2s0"
+                    },
+                    {
+                        "ip_address": "192.168.10.4/24",
+                        "name": "eno1"
+                    }
+                ],
+                "management_interface": "enp2s0",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false
+                    },
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "kernel_upgrade": false,
+                        "vgw": {}
+                    }
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-lb"
+            ]
+        }
+    ]
+}

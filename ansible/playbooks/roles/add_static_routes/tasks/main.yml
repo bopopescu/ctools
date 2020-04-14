@@ -1,0 +1,11 @@
+- name: setting device type
+  vars:
+    device:
+  set_fact:
+    device: "{{ item.value.device }}"
+  when: inventory_hostname == item.value.ip
+  with_dict: "{{ control_data }}"
+
+- name: add static routes in controllers 
+  shell: "ip route add {{item.value.tunnel_ip}} via {{contrail_configuration.VROUTER_GATEWAY}} dev {{device}}"
+  with_dict: "{{ test_configuration.physical_routers | default({}) }}"

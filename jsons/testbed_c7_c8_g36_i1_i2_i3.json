@@ -1,0 +1,286 @@
+{
+    "cluster" : [
+        {  
+            "id": "clusterc7c8g36i1i2i3",
+            "parameters" : {
+                "domain": "englab.juniper.net",
+                "subnet_mask": "255.255.255.0",
+                "provision": {
+                    "contrail_4": {
+                        "enable_lbaas": true,
+                        "global_config": {
+                            "xmpp_auth_enable": true,
+                            "xmpp_dns_auth_enable": true
+                        },
+                        "controller_config": { 
+                            "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                            "external_routers_list": {
+                                "hooper": "192.168.192.253"
+                            },
+			    "bgp_asn": "64512"
+                        },
+                        "api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "aaa_mode": "rbac",
+                            "cloud_admin_role": "admin",
+                            "global_read_only_role": ""
+                        },
+                        "analytics_api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "log": "/var/log/contrail/contrail-analytics-api.log",
+                            "aaa_mode": "rbac"
+                        }
+                    },
+                    "contrail": {
+                        "ha": {
+                            "contrail_internal_vip": "192.168.192.4",
+                            "contrail_external_vip": "10.204.217.76"
+                        }  
+                    },
+                    "openstack":{
+                        "multi_tenancy": true,
+                        "enable_ceilometer": true,
+                        "ceilometer": {
+                            "polling_interval": 60
+                        },
+                        "openstack_manage_amqp": true,
+			"keystone": {
+                            "admin_password": "contrail123",
+			    "admin_token": "admin"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodec7",
+            "contrail": {
+                "control_data_interface": "p1p2"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:c3:09:0a",
+                        "ip_address": "10.204.216.64/24",
+                        "default_gateway": "10.204.216.254"
+                    },
+                    {
+                        "name": "p1p2",
+                        "mac_address": "00:25:90:c3:09:0b",
+                        "ip_address": "192.168.192.6/24"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analytics",
+                     "contrail-analyticsdb",
+                     "openstack"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodec8",
+            "contrail": {
+                "control_data_interface": "p1p2"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p1p1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:c3:af:9c",
+                        "ip_address": "10.204.216.65/24",
+                        "default_gateway": "10.204.216.254"
+                    },
+                    {
+                        "name": "p1p2",
+                        "mac_address": "00:25:90:c3:af:9d",
+                        "ip_address": "192.168.192.5/24"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analytics",
+                     "contrail-analyticsdb"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "contrail": {
+                "control_data_interface": "p1p2"
+            },
+            "domain": "englab.juniper.net",
+            "id": "nodec57",
+            "ip_address": "10.204.216.153",
+            "ipmi_address": "10.207.25.151",
+            "network": {
+                "interfaces": [
+                    {
+                        "ip_address": "192.168.192.7/24",
+                        "mac_address": "00:25:90:c5:58:6f",
+                        "name": "p1p2"
+                    },
+                    {
+                        "default_gateway": "10.204.216.254",
+                        "dhcp": false,
+                        "ip_address": "10.204.216.153/24",
+                        "mac_address": "00:25:90:c5:58:6e",
+                        "name": "p1p1"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analytics",
+                     "contrail-analyticsdb"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodeg36",
+            "contrail": {
+                "control_data_interface": "p1p2"
+            },
+            "network" : {
+                "interfaces": [
+                {
+                        "name": "p1p1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:c5:5b:a0",
+                        "ip_address": "10.204.217.76/24",
+                        "default_gateway": "10.204.217.254"
+                    },
+                    {
+                        "name": "p1p2",
+                        "mac_address": "00:25:90:c5:5b:a1",
+                        "ip_address": "192.168.192.4/24"
+                    }
+                ],
+                "management_interface": "p1p1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+		     "contrail-lb"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodei1",
+            "contrail": {
+                "control_data_interface": "p6p2"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "em1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:e7:7e:8c",
+                        "ip_address": "10.204.216.150/24",
+                        "default_gateway": "10.204.216.254"
+                    },
+                    {
+                        "name": "p6p2",
+                        "mac_address": "00:25:90:e7:7e:8d",
+                        "ip_address": "192.168.192.1/24",
+                        "vlan": "128"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+		     "contrail-compute"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodei2",
+            "contrail": {
+                "control_data_interface": "p6p2"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "em1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:e7:82:04",
+                        "ip_address": "10.204.217.114/24",
+                        "default_gateway": "10.204.217.254"
+                    },
+                    {
+                        "name": "p6p2",
+                        "mac_address": "00:25:90:e7:82:05",
+                        "ip_address": "192.168.192.2/24",
+                        "vlan": "128"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-compute"
+                     ]
+        },
+        {
+            "cluster_id": "clusterc7c8g36i1i2i3",
+            "domain": "englab.juniper.net",
+            "id": "nodei3",
+            "contrail": {
+                "control_data_interface": "p6p2"
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "em1",
+                        "dhcp": false,
+                        "mac_address": "00:25:90:e7:7e:c8",
+                        "ip_address": "10.204.217.115/24",
+                        "default_gateway": "10.204.217.254"
+                    },
+                    {
+                        "name": "p6p2",
+                        "mac_address": "00:25:90:e7:7e:c9",
+                        "ip_address": "192.168.192.3/24",
+                        "vlan": "128"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-compute"
+                     ]
+        }
+    ]
+}

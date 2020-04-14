@@ -1,0 +1,66 @@
+{
+    "cluster" : [
+        {
+            "id": "cluster1",
+            "parameters" : {
+                "domain": "englab.juniper.net",                                                
+                "gateway": "10.87.169.254",
+                "subnet_mask": "255.255.255.128",
+                "provision": {
+                    "contrail_4": {
+                    },
+                    "contrail": {
+                    },
+                    "openstack":{
+                        "openstack_manage_amqp": true
+                    }
+                }
+            }
+        }
+    ],
+    "image": [
+        {
+            "category": "package",
+            "id": "contrail-installer",
+            "path": "/root/contrail-cloud-docker_4.0.1.0-23-mitaka_trusty.tgz",
+            "type": "contrail-ubuntu-package",
+            "version": "mainline"
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "cluster1",
+            "domain": "englab.juniper.net",
+            "id": "5b8s38",
+            "parameters" : {
+                "partition": "/dev/sda",
+                "provision": {
+                    "contrail_4": {
+                    }
+                }
+            },
+            "contrail": {
+            },
+            "network" : {
+                "interfaces": [
+                    {
+                        "name": "p514p2",
+                        "dhcp": true,
+                        "mac_address": "90:e2:ba:ca:e0:71",
+                        "ip_address": "10.87.66.153"
+                    }
+                ],
+                "management_interface": "p514p2",
+                "provisioning": "kickstart"
+            },
+            "password": "c0ntrail123",
+            "ipmi_address": "",
+            "roles": [
+                     "contrail-controller",
+                     "contrail-analytics",
+                     "contrail-analyticsdb",
+                     "openstack",
+                     "contrail-compute" ]
+        }
+    ]
+}

@@ -1,0 +1,186 @@
+resources:
+{% for key,value in emc.iteritems() %}
+{% if 'sub_cluster' in key and value['provider'] == 'onprem' %}
+ - data:
+     uuid: "{{ (value['pvt_cloud'] + '-user') | to_uuid }}"
+     name: "{{ value['pvt_cloud'] + '-user' }}"
+     credential_refs:
+     - uuid: "{{ bms_credential_uuid.stdout }}"
+     fq_name:
+     - "{{ value['pvt_cloud'] + '-user' }}"
+     display_name: "{{ value['pvt_cloud'] + '-user' }}"
+   kind: cloud_user
+   operation: CREATE
+ - data:
+     uuid: "{{ value['pvt_cloud'] | to_uuid }}"
+     provisioning_state: NOSTATE
+     provisioning_action: ADD_CLOUD
+     name: "{{ value['pvt_cloud'] }}"
+     cloud_user_refs:
+     - uuid: "{{ (value['pvt_cloud'] + '-user') | to_uuid }}"
+     fq_name:
+     - "{{ value['pvt_cloud'] }}"
+     - "{{ value['pvt_cloud'] }}"
+     display_name: "{{ value['pvt_cloud'] }}"
+   kind: cloud
+   operation: CREATE
+ - data:
+     uuid: "{{ value['provider'] | to_uuid }}"
+     parent_type: cloud
+     parent_uuid: "{{ value['pvt_cloud'] | to_uuid }}"
+     type: private
+     name: "{{ value['provider'] }}"
+     display_name: "{{ value['provider'] }}"
+   kind: cloud_provider
+   operation: CREATE
+ - data:
+     uuid: "{{ (value['pvt_cloud'] + '-tag') | to_uuid }}"
+     name: "{{ value['pvt_cloud'] + '-tag' }}"
+     fq_name:
+     - "{{ value['pvt_cloud'] + '-tag' }}"
+     display_name: "{{ value['pvt_cloud'] + '-tag' }}"
+     tag_type_name: label
+     tag_value: "{{ value['provider'] | to_uuid }}"
+   kind: tag
+   operation: CREATE
+ - data:
+     uuid: "{{ (value['pvt_cloud'] + '-region') | to_uuid }}"
+     parent_uuid: "{{ value['provider'] | to_uuid }}"
+     parent_type: cloud-provider
+     name: "{{ (value['pvt_cloud'] + '-region') | to_uuid }}"
+   kind: cloud_region
+   operation: CREATE
+ - data:
+     uuid: "{{ (value['pvt_cloud'] + '-virtual-cloud') | to_uuid }}"
+     parent_uuid: "{{ (value['pvt_cloud'] + '-region') | to_uuid }}"
+     parent_type: cloud-region
+     tag_refs:
+     - uuid: "{{ (value['pvt_cloud'] + '-tag') | to_uuid }}"
+     name: "{{ (value['pvt_cloud'] + '-virtual-cloud') | to_uuid }}"
+   kind: virtual_cloud
+   operation: CREATE
+ - data:
+     uuid: "{{ value['private_subnet']['ctl_subnet'] | to_uuid }}"
+     parent_uuid: "{{ (value['pvt_cloud'] + '-virtual-cloud') | to_uuid }}"
+     parent_type: virtual-cloud
+     name: "{{ value['private_subnet']['ctl_subnet'] | to_uuid }}"
+     cidr_block: "{{ value['private_subnet']['ctl_subnet'] }}"
+   kind: cloud_private_subnet
+   operation: CREATE
+ - data:
+     uuid: "{{ value['private_subnet']['gw_subnet'] | to_uuid }}"
+     parent_uuid: "{{ (value['pvt_cloud'] + '-virtual-cloud') | to_uuid }}"
+     parent_type: virtual-cloud
+     name: "{{ value['private_subnet']['gw_subnet'] | to_uuid }}"
+     cidr_block: "{{ value['private_subnet']['gw_subnet'] }}"
+   kind: cloud_private_subnet
+   operation: CREATE
+ - data:
+     uuid: "{{ value['physical_router']['name'] | to_uuid }}"
+     name: "{{ value['physical_router']['name'] }}"
+     parent_type: global-system-config
+     fq_name:
+     - default-global-system-config
+     - "{{ value['physical_router']['name'] }}"
+     physical_router_product_name: "{{ value['physical_router']['name'] }}"
+     physical_router_management_ip: "{{ value['physical_router']['public_ip'] }}"
+     physical_router_dataplane_ip: "{{ value['physical_router']['private_ip'] }}"
+     physical_router_user_credentials:
+       username: "{{ value['physical_router']['username'] }}"
+       password: "{{ value['physical_router']['password'] }}"
+     display_name: "{{ value['physical_router']['name'] }}"
+     annotations:
+       key_value_pair:
+       - key: autonomous_system
+         value: "{{ value['AS'] }}"
+       - key: interface
+         value: "{{ value['interface'] }}"
+       - key: private_subnet
+         value: "{{ value['subnets'] }}"
+     tag_refs:
+     - uuid: "{{ (value['pvt_cloud'] + '-tag') | to_uuid }}"
+   kind: physical_router
+   operation: CREATE
+{% for gateway in public_cloud_gw_list.stdout_lines %}
+ - data:
+     parent_type: contrail-cluster
+     name: "{{ (gateway + 'contrail_multicloud_gw_node') | to_uuid }}"
+     parent_uuid: "{{ contrail_cluster_uuid.stdout }}"
+     uuid: "{{ (gateway + 'contrail_multicloud_gw_node') | to_uuid }}"
+     node_refs:
+     - uuid: "{{ node_dict[gateway] }}"
+   kind: contrail_multicloud_gw_node
+   operation: CREATE
+{% endfor %}
+{% for ikey,ivalue in control_data.iteritems() %}
+{% if 'role' in ivalue and ivalue['role'] == 'gateway' %}
+ - data:
+     uuid: "{{ node_dict[ikey] }}"
+     cloud_private_subnet_refs:
+     - uuid: "{{ value['private_subnet']['ctl_subnet'] | to_uuid }}"
+     - uuid: "{{ value['private_subnet']['gw_subnet'] | to_uuid }}"
+     tag_refs:
+     - uuid: "{{ (value['pvt_cloud'] + '-tag') | to_uuid }}"
+   kind: node
+   operation: UPDATE
+ - data:
+     parent_type: contrail-cluster
+     name: "{{ (ikey + 'contrail_multicloud_gw_node') | to_uuid }}"
+     parent_uuid: "{{ contrail_cluster_uuid.stdout }}"
+     uuid: "{{ (ikey + 'contrail_multicloud_gw_node') | to_uuid }}"
+     default_gateway: "{{ ivalue['gw'] }}"
+     services:
+     - bgp_rr
+     node_refs:
+     - uuid: "{{ node_dict[ikey] }}"
+   kind: contrail_multicloud_gw_node
+   operation: CREATE
+{% endif %}
+{% endfor %}
+ - data:
+     provisioning_state: NOSTATE
+     provisioning_action: UPDATE_CLOUD
+     uuid: "{{ value['pvt_cloud'] | to_uuid }}"
+   kind: cloud
+   operation: UPDATE
+{% endif %}
+{% endfor %}
+{% for key,value in emc.iteritems() %}
+{% if 'cloud' in key and value['provider'] == 'aws' %}
+ - data:
+     provisioning_state: NOSTATE
+     provisioning_action: UPDATE_CLOUD
+     uuid: "{{ value['cloud_name'] | to_uuid }}"
+     is_multicloud_provisioning: true
+     gcp_modified: true
+     azure_modified: true
+     aws_modified: true
+   kind: cloud
+   operation: UPDATE
+ - data:
+     uuid: "{{ contrail_cluster_uuid.stdout }}"
+     mc_gw_info:
+     - bfd_multiplier: 5
+       vpn_network: 100.64.0.0/16
+       bfd_interval: 200ms
+       bfd_interval_multihop: 500ms
+       onprem_pvt_subnets:
+{% for pkey,pvalue in emc.iteritems() %}
+{% if 'sub_cluster' in pkey and pvalue['provider'] == 'onprem' %}
+       - "{{ pvalue['private_subnet']['ctl_subnet'] }}"
+       - "{{ pvalue['private_subnet']['gw_subnet'] }}"
+       bfd_multiplier_multihop: 5
+       AS: 65000
+       openvpn_port: 443
+       vpn_lo_network: 100.65.0.0/16
+     cloud_refs:
+     - uuid: "{{ pvalue['pvt_cloud'] | to_uuid }}"
+{% endif %}
+{% endfor %}
+     - uuid: "{{ value['cloud_name'] | to_uuid }}"
+     provisioning_state: NOSTATE
+     provisioning_action: ADD_CLOUD
+   kind: contrail_cluster
+   operation: UPDATE
+{% endif %}
+{% endfor %}

@@ -1,0 +1,90 @@
+{
+	"inp_params": {
+		"description":{
+			"msg" : "Singel Node cluster with one interface CentOS"
+		},
+		"params":{
+			"no_of_servers" : 2,
+			"no_of_networks" : 1,
+			"network_stack_name" : "test_network_final",
+			"server_stack_name" : "test_server_final",
+			"project_uuid" : "project_uuid_val"	
+		},
+		"networks":{
+			"final_test_network_1":{
+				"name": "final_test_network_1",
+				"ip_block_with_mask" : "10.0.0.0/24",
+				"default_gateway" : "10.0.0.1",
+				"role" : "management"
+			}
+		},
+		"floating_ip_network":{
+                        "param":{
+                                "floating_ip_network_uuid" : "df9327c8-4cb1-41f9-a9f5-0df22a220b7d",
+                                "name" : "floatingIpPool_final_script_test"
+                        }
+                },
+		"cluster":{
+			"cluster_1":{
+				"servers":{
+					"server1":{
+						"name":"server1" , 
+						"ip_address" : { "final_test_network_1":"10.0.0.4"},
+						"flavor" : "m1.xxlarge",
+						"image" : "image_val",
+						"floating_ip" : "true",
+						"server_manager" : "flase",
+						"roles" : ["control", "config", "openstack", "webui", "database", "collector", "compute"]
+					},
+					"servermanager":{
+                                		"name":"servermanager" ,
+                                		"ip_address" : { "final_test_network_1":"10.0.0.9"},
+                                		"flavor" : "m1.xxlarge",
+                                		"image" : "image_val",
+                                		"floating_ip" : "true",
+                                		"roles" : ["sm"],
+						"server_manager" : "true"
+                        		}
+				},
+				"cluster_json_params": {
+					"server_password" : "c0ntrail123",
+					"management_interface": "eth0",
+					"control_data_iterface": "eth1",
+                        		"cluster_id": "test-cluster",
+                        		"parameters": {
+                                		"domain": "englab.juniper.net",
+                                		"provision":{
+                                        		"contrail": {
+                                                		"minimum_disk_database": 32,
+                                                		"kernel_upgrade": "true"
+                                        		},
+                                        		"openstack":{
+                                        		}
+                                		}
+                        		}
+                		},
+				"testbed_py_params": {
+					"env_password": "c0ntrail123",
+					"env_ostypes" : "centos",
+					"openstack_admin_password" : "c0ntrail123",
+					"minimum_diskGB" : 32,
+					"env.test_repo_dir": "/home/stack/multi_interface_parallel/ubuntu/icehouse/contrail-test",
+					"env.mail_from": "contrail-build@juniper.net",
+					"env.mail_to" : "dl-contrail-sw@juniper.net",
+					"env.mail_server": "10.84.24.64",
+					"env.mail_port" : "4000",
+					"multi_tenancy": "True",
+					"env.interface_rename": "False",
+					"env.encap_priority" : "'VXLAN','MPLSoUDP','MPLSoGRE'",
+					"env.enable_lbaas" : "True",
+					"enable_ceilometer" : "True",
+					"env.image_web_server": "10.84.5.120",
+					"env.ntp_server" : "10.84.5.100",
+					"env.testbed_location": "US",
+					"ceilometer_polling_interval": 60,
+					"do_parallel": "True"
+				}	
+			}
+		}
+	}
+}

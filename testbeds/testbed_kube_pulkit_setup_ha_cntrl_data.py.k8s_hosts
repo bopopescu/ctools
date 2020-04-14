@@ -1,0 +1,24 @@
+[kubernetes-master]
+10.204.217.108
+
+[kubernetes-slaves]
+10.204.217.52
+10.204.217.71
+10.204.217.98
+10.204.217.100
+
+[all]
+10.204.217.108
+10.204.217.52
+10.204.217.71
+10.204.217.98
+10.204.217.100
+;10.204.217.101
+
+[control-data-nodes]
+10.204.217.108 interface="enp3s0f1" address="77.77.1.10" netmask="255.255.255.0" bootproto="static"
+10.204.217.52 interface="enp1s0f1" address="77.77.1.20" netmask="255.255.255.0" bootproto="static"
+10.204.217.71 interface="enp1s0f1" address="77.77.1.30" netmask="255.255.255.0" bootproto="static"
+10.204.217.98 interface="enp2s0f1" address="77.77.1.11" netmask="255.255.255.0" bootproto="static"
+10.204.217.100 interface="bond0" address="77.77.1.21" netmask="255.255.255.0" bootproto="static" bond_mode="802.3ad" bond_slaves='["enp2s0f0","enp2s0f1"]'
+;10.204.217.101 interface="enp2s0f1" address="77.77.1.31" netmask="255.255.255.0" bootproto="static"

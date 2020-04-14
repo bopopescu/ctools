@@ -1,0 +1,219 @@
+{
+    "cluster": [
+        {
+            "id": "i6_i11_i12_vcenter_cluster", 
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                    },
+                    "contrail_4": {
+                        "cloud_orchestrator": "vcenter", 
+                        "vcenter_servers": [
+                            {
+                                "server1": {
+                                    "datacenters": {
+                                        "i6i11i12_datacenter": {
+                                            "datacenter_mtu": "1500",
+                                            "dv_switch_control_data": {
+                                                "dv_port_group_control_data": {
+                                                    "dv_portgroup_name": "",
+                                                    "number_of_ports": "",
+                                                    "uplink": ""
+                                                },
+                                                "dv_switch_name": ""
+                                            },
+                                            "dv_switch_mgmt": {
+                                                "dv_port_group_mgmt": {
+                                                    "dv_portgroup_name": "",
+                                                    "number_of_ports": "",
+                                                    "uplink": ""
+                                                },
+                                                "dv_switch_name": ""
+                                            },
+                                            "dv_switches": [
+                                                {
+                                                    "clusternames": [
+                                                        "i11_cluster11",
+                                                        "i12_cluster12"
+                                                    ],
+                                                    "dv_port_group": {
+                                                        "dv_portgroup_name": "vm_dvs_pg",
+                                                        "number_of_ports": "3"
+                                                    },
+                                                    "dv_switch_name": "vm_dvs"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "hostname": "10.204.217.246", 
+                                    "password": "Contrail123!", 
+                                    "username": "administrator@vsphere.local", 
+                                    "validate_certs": false
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "i6_i11_i12_vcenter_cluster",
+            "domain": "contrail.juniper.net",
+            "host_name": "vcenter-sanity-vm1",
+            "id": "vcenter-sanity-vm1",
+            "network": {
+                "interfaces": [
+                    {
+                        "dhcp": true,
+                        "ip_address": "10.204.217.200",
+                        "mac_address": "00:50:56:a6:25:01",
+                        "default_gateway": "10.204.217.254",
+                        "name": "eth0"
+                    }
+                ],
+                "management_interface": "eth0"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-controller",
+                "contrail-analytics",
+                "contrail-analyticsdb",
+                "contrail-vcenter-plugin"
+            ]
+        },
+        {   
+            "cluster_id": "i6_i11_i12_vcenter_cluster",
+            "domain": "contrail.juniper.net",
+            "host_name": "vcenter-sanity-vm2",
+            "id": "vcenter-sanity-vm2",
+            "network": {
+                "interfaces": [
+                    {   
+                        "dhcp": true,
+                        "ip_address": "10.204.217.207",
+                        "mac_address": "00:50:56:a6:25:02",
+                        "default_gateway": "10.204.217.254",
+                        "name": "eth0"
+                    }
+                ],
+                "management_interface": "eth0"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-controller",
+                "contrail-analyticsdb",
+                "contrail-analytics",
+                "contrail-vcenter-plugin"
+            ]
+        },
+        {   
+            "cluster_id": "i6_i11_i12_vcenter_cluster",
+            "domain": "contrail.juniper.net",
+            "host_name": "vcenter-sanity-vm3",
+            "id": "vcenter-sanity-vm3",
+            "network": {
+                "interfaces": [
+                    {   
+                        "dhcp": true,
+                        "ip_address": "10.204.217.208",
+                        "mac_address": "00:50:56:a6:25:03",
+                        "default_gateway": "10.204.217.254",
+                        "name": "eth0"
+                    }
+                ],
+                "management_interface": "eth0"
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-controller",
+                "contrail-analyticsdb",
+                "contrail-analytics",
+                "contrail-vcenter-plugin"
+            ]
+        },
+        {   
+            "cluster_id": "i6_i11_i12_vcenter_cluster",
+            "domain": "contrail.juniper.net",
+            "host_name": "nodei11-compute-vm",
+            "id": "nodei11-compute-vm",
+            "ip_address": "10.204.217.181",
+            "network": {
+                "interfaces": [
+                    {   
+                        "dhcp": true,
+                        "ip_address": "10.204.217.181",
+                        "mac_address": "00:50:56:a6:25:04",
+                        "default_gateway": "10.204.217.254",
+                        "name": "eth0"
+                    }
+                ],
+                "management_interface": "eth0"
+            },
+            "parameters": {
+                "esxi_parameters": {
+                    "cluster": "i11_cluster11",
+                    "contrail_vm": {
+                        "mode": "vcenter",
+                        "vmdk": "/root/vmdk/vmdk.tar",
+                        "mgmt_switch":"vSwitch0",
+                        "mgmt_pg": "contrail-fab-pg"
+                    },
+                    "datacenter": "i6i11i12_datacenter",
+                    "datastore": "i11-ds",
+                    "name": "10.204.217.123",
+                    "password": "c0ntrail123",
+                    "username": "root",
+                    "validate_certs": false,
+                    "vcenter_server": "server1"
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ]
+        },
+        {   
+            "cluster_id": "i6_i11_i12_vcenter_cluster",
+            "domain": "contrail.juniper.net",
+            "host_name": "nodei12-compute-vm",
+            "id": "nodei12-compute-vm",
+            "ip_address": "10.204.217.182",
+            "network": {
+                "interfaces": [
+                    {   
+                        "dhcp": true,
+                        "ip_address": "10.204.217.182",
+                        "mac_address": "00:50:56:a6:25:05",
+                        "default_gateway": "10.204.217.254",
+                        "name": "eth0"
+                    }
+                ],
+                "management_interface": "eth0"
+            },
+            "parameters": {
+                "esxi_parameters": {
+                    "cluster": "i11_cluster11",
+                    "contrail_vm": {
+                        "mode": "vcenter",
+                        "vmdk": "/root/vmdk/vmdk.tar",
+                        "mgmt_switch":"vSwitch0",
+                        "mgmt_pg": "contrail-fab-pg"
+                    },
+                    "datacenter": "i6i11i12_datacenter",
+                    "datastore": "i12-ds",
+                    "name": "10.204.217.124",
+                    "password": "c0ntrail123",
+                    "username": "root",
+                    "validate_certs": false,
+                    "vcenter_server": "server1"
+                }
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute"
+            ]
+        }
+    ]
+}

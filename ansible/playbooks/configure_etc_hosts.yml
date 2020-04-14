@@ -1,0 +1,51 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        hostname: "{{ item.key }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: to_update_nodes
+      with_dict: "{{ instances }}"
+      when:
+      - contrail_configuration.CONTROL_NODES is defined
+      - item.value.roles.control is defined or item.value.roles.vrouter is defined
+
+- hosts: to_update_nodes
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: get control ip
+      set_fact:
+        control_ip: "{{ (contrail_configuration.CONTROL_NODES.split(','))[0] }}"
+
+    - name: find physical interface
+      shell: "ip route get {{ control_ip }} | awk '{ print $3 }'"
+      register: device
+
+    - name: get self ip
+      vars:
+        config_nodes: "{{ contrail_configuration.CONFIG_NODES|default(contrail_configuration.CONTROLLER_NODES) }}"
+      set_fact:
+        self_ip: "{{ (config_nodes.split(',')|intersect(ansible_all_ipv4_addresses)) }}"
+
+    - name: set hostname to WA helm deployment issues
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ self_ip[0] }} {{ hostvars[inventory_hostname]['ansible_hostname'] }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+      when: deployment.type.helm is defined and self_ip is defined and (self_ip|length>0)
+
+    - name: set /etc/hosts for control data interface
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[inventory_hostname]['ansible_' + item].ipv4.address }} {{ hostvars[inventory_hostname]['ansible_hostname'] }}.private {{ hostvars[inventory_hostname]['ansible_hostname'] }}.private"
+      when:
+      - item not in ['lo', 'docker0']
+      - "{{ 'ansible_' + item in hostvars[inventory_hostname] }}"
+      - hostvars[inventory_hostname]['ansible_' + item].ipv4 is defined
+      - hostvars[inventory_hostname]['ansible_' + item].ipv4.address is defined
+      - "{{ item == device.stdout or control_ip in hostvars[inventory_hostname]['ansible_' + item].ipv4.address }}"
+      with_items: "{{ ansible_interfaces }}"

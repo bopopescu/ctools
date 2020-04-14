@@ -1,0 +1,49 @@
+networks:
+    management:
+        cidr: 10.0.0.0/24
+
+instances:
+  - name: kube-master
+    type: kube-master
+    flavor: controller_flavor 
+    roles:
+        k8s_master:
+    ports:
+        - network: management
+    count: 3
+    user_data: extras/rh_subscription.conf
+  - name: controller
+    type: controller
+    roles:
+        kubemanager:
+        config_database:
+        config:
+        control:
+        analytics:
+        analytics_database:
+        webui:
+        analytics_alarm:
+        analytics_snmp:
+    ports:
+        - network: management
+    user_data: extras/rh_subscription.conf
+    count: 3
+  - name: load-balancer
+    type: load-balancer
+    flavor: controller_flavor
+    roles:
+        load_balancer:
+    ports:
+        - network: management
+    count: 1
+    user_data: extras/rh_subscription.conf
+  - name: compute
+    type: compute
+    flavor: controller_flavor
+    roles:
+        vrouter:
+        k8s_nodes:
+    ports:
+        - network: management
+    count: 2
+    user_data: extras/rh_subscription.conf

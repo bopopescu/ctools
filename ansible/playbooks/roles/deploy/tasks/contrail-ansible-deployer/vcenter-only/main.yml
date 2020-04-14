@@ -1,0 +1,16 @@
+
+- name: Copy instances.yaml to config
+  copy:
+    src: "{{ inventory_dir }}/group_vars/instances.yaml"
+    dest: "{{ contrail_provision_dir }}/config/instances.yaml"
+
+- name: Copy vcenter_vars.yaml to config
+  copy:
+    src: "{{ inventory_dir }}/group_vars/vcenter_vars.yml"
+    dest: "{{ contrail_provision_dir }}/playbooks/roles/vcenter/vars/vcenter_vars.yml"
+
+- name: Configure vcenter
+  include: provision.yml 
+
+- name: wait for contrail_vms to settle
+  pause: seconds=180  

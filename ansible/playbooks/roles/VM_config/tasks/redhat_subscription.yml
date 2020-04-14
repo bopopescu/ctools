@@ -1,0 +1,19 @@
+
+- name: enable redhat subscription for gateway VMs
+  redhat_subscription:
+    state: present
+    username: 'contrail.systems'
+    password: 'Embe1mpls_007'
+    pool_ids: '8a85f99368b9397d01690f03af335fdf'
+    auto_attach: false
+  when: (ansible_distribution == "RedHat" or ansible_distribution == "Red Hat Enterprise Linux")
+
+- name: enable RHSM repositories for gateway VMs
+  command: "subscription-manager repos --enable={{ item }}"
+  become: true
+  with_items:
+     - 'rhel-7-server-rpms'
+     - 'rhel-7-server-rh-common-rpms'
+     - 'rhel-ha-for-rhel-7-server-rpms'
+     - 'rhel-7-server-extras-rpms'
+  when: (ansible_distribution == "RedHat" or ansible_distribution == "Red Hat Enterprise Linux") 

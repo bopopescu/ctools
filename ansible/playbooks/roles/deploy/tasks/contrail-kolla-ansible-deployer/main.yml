@@ -1,0 +1,80 @@
+---
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail.registry is defined
+
+- name: set cluster
+  set_fact:
+     cluster_name: "{{lookup('env','CLUSTER_NAME')}}"
+
+- name: set contrail-kolla-ansible-version if defined
+  set_fact:
+     contrail_kolla_ansible_version: "{{ contrail_configuration.CONTRAIL_VERSION }}"
+
+- name: install packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    - rsync
+- name: Add repository
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: install packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - docker-ce-18.03.1.ce
+- name: sysctl start docker
+  shell: systemctl start docker
+
+- name: Set insecure registry
+  include: roles/install_packages/tasks/insecure_registry.yaml
+
+- name: Deployer docker name
+  set_fact:
+      deployer_docker_name: "contrail_kolla_ansible_deployer_{{cluster_name}}"
+
+- name: Pull contrail-kolla-ansible-deployer
+  command: >
+    docker pull "{{ contrailregistry }}/contrail-kolla-ansible-deployer:{{ contrail_kolla_ansible_version }}"
+
+- name: run contrail-ansible-kolla-deployer
+  shell:
+     docker run -it --network host -d --name contrail_kolla_ansible_deployer_{{cluster_name}} {{ contrailregistry }}/contrail-kolla-ansible-deployer:{{ contrail_kolla_ansible_version }}
+  args:
+    executable: /bin/bash
+    
+- name: run configure_instances.yml
+  shell: |
+      docker cp /root/contrail-tools-{{cluster_name}}/ansible/inventory/group_vars/all.yml {{deployer_docker_name}}:/root/contrail-ansible-deployer/config/instances.yaml
+      docker exec {{deployer_docker_name}} bash -l -c "cd /root/contrail-ansible-deployer;ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/configure_instances.yml"
+  register: command_output
+  args:
+     executable: /bin/bash
+
+- debug: msg="{{command_output.stdout}}"
+
+- name: run install_openstack.yml
+  shell: |
+      docker exec {{deployer_docker_name}} bash -l -c "cd /root/contrail-ansible-deployer;ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_openstack.yml"
+  register: command_output
+  args:
+     executable: /bin/bash
+
+- debug: msg="{{command_output.stdout}}"
+
+- name: run install_contrail.yml
+  shell: |
+      docker exec {{deployer_docker_name}} bash -l -c "cd /root/contrail-ansible-deployer;ansible-playbook -i inventory/ -e orchestrator=openstack playbooks/install_contrail.yml"
+  register: command_output
+  args:
+     executable: /bin/bash
+
+- debug: msg="{{command_output.stdout}}"

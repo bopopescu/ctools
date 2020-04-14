@@ -1,0 +1,72 @@
+---
+
+- name: set orchestrator configs if not defined
+  set_fact:
+    orchestrator_configuration: "{{ orchestrator_configuration|default({})|combine({'keystone': {}}) }}"
+  when: orchestrator_configuration is undefined or orchestrator_configuration.keystone is undefined
+
+- name: set auth ip if OPENSTACK_NODES is defined
+  set_fact:
+      auth_ip: "{{ contrail_configuration.OPENSTACK_NODES.split(',')[0] }}"
+  when: contrail_configuration is defined and contrail_configuration.OPENSTACK_NODES is defined
+
+- name: set auth ip if internal_vip is defined
+  set_fact:
+     auth_ip: "{{ orchestrator_configuration.internal_vip }}"
+  when: orchestrator_configuration.internal_vip is defined
+
+- name: set auth ip if roles defined
+  set_fact:
+      auth_ip: "{{ item.value.ip }}"
+  when: >
+       item.value.roles.openstack is defined and auth_ip is undefined
+  with_dict: "{{ instances }}"
+
+- name: set auth ip if undefined
+  set_fact:
+     auth_ip: "{{ instances[instances.keys()[0]].ip }}"
+  when: auth_ip is undefined
+
+- name: set keystone version if defined
+  set_fact:
+     keystone_version: "{{ orchestrator_configuration.keystone.version }}"
+  when: orchestrator_configuration.keystone is defined and orchestrator_configuration.keystone.version is defined
+
+- name: set kolla ansible external_vip_address if defined
+  set_fact:
+    kolla_external_vip: "{{ orchestrator_configuration.external_vip }}"
+  when:  orchestrator_configuration.external_vip is defined
+
+- name: set contrail_configuration if undefined
+  set_fact:
+    contrail_configuration: {}
+  when: contrail_configuration is undefined
+
+- name: set contrail_api ip if vip is defined
+  set_fact:
+    contrail_api_ip: "{{ contrail_configuration.CONFIG_API_VIP }}"
+  when: contrail_configuration.CONFIG_API_VIP is defined
+
+- name: set contrail_api ip if CONFIG_NODES is defined
+  set_fact:
+    contrail_api_ip: "{{ contrail_configuration.CONFIG_NODES.split(',')[0] }}"
+  when: >
+      contrail_api_ip is undefined and contrail_configuration.CONFIG_NODES is defined
+
+- name: set contrail_api ip if CONTROLLER_NODES is defined
+  set_fact:
+    contrail_api_ip: "{{ contrail_configuration.CONTROLLER_NODES.split(',')[0] }}"
+  when: >
+      contrail_api_ip is undefined and contrail_configuration.CONTROLLER_NODES is defined
+
+- name: calculate contrail_api ip from mgmt ip
+  set_fact:
+    contrail_api_ip: "{{ item.value.ip }}"
+  when: >
+      item.value.roles.config is defined and contrail_api_ip is undefined
+  with_dict: "{{ instances }}"
+
+- name: set kolla_registry if defined
+  set_fact:
+    kolla_registry: "{{ deployment.type.kolla.registry }}"
+  when: deployment.type.kolla is defined and deployment.type.kolla.registry is defined

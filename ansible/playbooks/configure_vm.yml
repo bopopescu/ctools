@@ -1,0 +1,29 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "hypervisor_hosts"
+      with_dict: "{{ vm_info.hypervisors }}"
+      when: vm_info is defined and vm_info.hypervisors is defined
+
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "container_hosts"
+      with_dict: "{{ instances }}"
+
+- hosts: hypervisor_hosts
+  gather_facts: yes
+  become: true
+  become_user: root
+  roles:
+    - VM_setup
+

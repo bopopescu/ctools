@@ -1,0 +1,40 @@
+---
+command_servers:
+    server1:
+        ip: {{ command_server_ip }}
+        connection: ssh
+        ssh_user: root
+        ssh_pass: c0ntrail123
+        sudo_pass: c0ntrail123
+        ntpserver: 10.84.5.100
+
+        registry_insecure: true
+        container_registry: {{ contrailregistry }}
+        container_name: contrail-command
+        container_tag: "{{ version }}"
+        #container_registry_username: username@juniper.net
+        #container_registry_password: passwordforregistry
+        config_dir: /etc/contrail
+
+        # contrail command container configurations given here go to /etc/contrail/contrail.yml
+        contrail_config:
+            # Database configuration. 
+            database:
+                type: postgres
+                dialect: postgres
+                user: root
+                password: contrail123
+
+            # Keystone configuration
+            keystone:
+                assignment:
+                    data:
+                      users:
+                        admin:
+                          id: admin
+                          password: {{ admin_password }}
+            insecure: true
+
+            client:
+              password: {{ admin_password }}
+

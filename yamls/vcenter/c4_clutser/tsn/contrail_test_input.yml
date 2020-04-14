@@ -1,0 +1,163 @@
+deployment:
+    orchestrator: vcenter
+
+provider_config:
+  bms:
+      domainsuffix: local
+      ntpserver: 10.204.217.158
+      ssh_pwd: c0ntrail123
+      ssh_user: root
+
+instances:
+  bms1:
+    provider: bms
+    ip: 10.204.216.61
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms2:
+    provider: bms
+    ip: 10.204.216.62
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms3:
+    provider: bms
+    ip: 10.204.216.63
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms4:
+    provider: bms
+    esxi_host: nodek4.englab.juniper.net 
+    ip: 10.204.216.181
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: bond0
+  bms5:
+    provider: bms
+    esxi_host: 10.204.216.225 
+    ip: 10.204.216.182
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: ens192
+  bms6:
+    provider: bms
+    esxi_host: 10.204.216.226 
+    ip: 10.204.216.183
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: bond0
+global_configuration:
+  CONTAINER_REGISTRY: 10.84.5.81:5010
+  #CONTAINER_REGISTRY: 10.204.217.152:5000
+  REGISTRY_PRIVATE_INSECURE: True
+
+contrail_configuration:
+  CLOUD_ORCHESTRATOR: vcenter 
+  CONTAINER_REGISTRY: 10.84.5.81:5010
+  #CONTAINER_REGISTRY: 10.204.217.152:5000
+  CONTRAIL_VERSION: null
+  CONTROLLER_NODES: 10.204.216.61,10.204.216.62,10.204.216.63
+  CONTROL_NODES: 192.168.0.241,192.168.0.242,192.168.0.243
+  VROUTER_GATEWAY: 192.168.0.2
+  RABBITMQ_NODE_PORT: 5673
+  VCENTER_SERVER: 10.204.217.246
+  VCENTER_USERNAME: administrator@vsphere.local
+  VCENTER_PASSWORD: Contrail123!
+  VCENTER_DATACENTER: c4_datacenter11
+  VCENTER_DVSWITCH: c4k4_dvs
+
+test_configuration:
+  cfgm0_host_pwd: c0ntrail123
+  cfgm0_host_string: root@10.204.216.61
+  cluster_id: cluster_vcenter_c4_c6_k4_k6
+  stack_user: administrator@vsphere.local
+  stack_password: Contrail123!
+  stack_tenant: vCenter
+  stack_domain: 
+  ext_routers:
+      hooper: 172.16.0.77
+  image_web_server: 10.204.217.158
+  mail_server:
+      port: 25
+      sender: contrailbuild@juniper.net
+      server: 10.204.216.49
+      to: dl-contrail-sw@juniper.net
+  public_host: 10.204.216.50
+  public_rt: 2227
+  public_subnet: 10.204.221.240/28
+  public_virtual_network: public_network
+  router_asn: 64512
+  web_server:
+      log_path: /home/bhushana/Documents/technical/logs
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity
+      server: 10.204.216.50
+      username: bhushana
+      web_root: Docs/logs
+
+control_data:
+    nodec4:
+        ip: 10.204.216.61
+        ctrldata_ip: 192.168.0.241
+        prefix: 24
+        gw: 192.168.0.2
+        device: enp1s0f1
+    nodec5:
+        ip: 10.204.216.62
+        ctrldata_ip: 192.168.0.242
+        prefix: 24
+        gw: 192.168.0.2
+        device: enp1s0f1
+    nodec6:
+        ip: 10.204.216.63
+        ctrldata_ip: 192.168.0.243
+        prefix: 24
+        gw: 192.168.0.2
+        device: enp1s0f1
+    nodek4-compute-vm:
+        ip: 10.204.216.181
+        ctrldata_ip: 192.168.0.181
+        prefix: 24
+        gw: 192.168.0.2
+        device: bond0
+    nodek5-compute-vm:
+        ip: 10.204.216.182
+        ctrldata_ip: 192.168.0.182
+        prefix: 24
+        gw: 192.168.0.2
+        device: ens192
+    nodek6-compute-vm:
+        ip: 10.204.216.183
+        ctrldata_ip: 192.168.0.183
+        prefix: 24
+        gw: 192.168.0.2
+        device: bond0
+    nodea26:
+        ip: 10.204.216.22
+        ctrldata_ip: 192.168.27.26
+        prefix: 24
+        gw: 192.168.0.2
+        device: eno1
+    nodea23:
+        ip: 10.204.216.19
+        ctrldata_ip: 192.168.27.23
+        prefix: 24
+        gw: 192.168.0.2
+        device: eno1

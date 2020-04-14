@@ -1,0 +1,113 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "container_hosts"
+      with_dict: "{{ instances }}"
+      when: deployment.type.helm is defined or deployment.type.openshift is defined or deployment.type.marathon is defined
+
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "pg_hosts"
+      with_dict: "{{ instances }}"
+      when:
+        - item.value.roles.policy_generator is defined
+        - deployment.type.contrail is defined
+        - deployment.deployer is undefined or deployment.deployer != "contrail_command"
+
+- hosts: container_hosts
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: uname
+      command: uname -a
+      when: deployment.type.helm is defined
+   
+    - name: check for openstack helm infra directory
+      stat:
+        path: /opt/openstack-helm-infra
+      register: OSH_INFRA_PATH
+
+    - name: check for openstack helm directory
+      stat:
+        path: /opt/openstack-helm
+      register: OSH_PATH
+    
+    - name: check for contrail helm deployer directory
+      stat:
+        path: /opt/contrail-helm-deployer
+      register: CHD_PATH
+
+    - name: clone openstack helm infra
+      git:
+        repo: 'https://github.com/Juniper/openstack-helm-infra.git'
+        accept_hostkey: yes
+        update: yes
+        dest: "/opt/openstack-helm-infra"
+        version: "{{ deployment.type.helm.branch }}"
+      when: deployment.type.helm is defined and not OSH_INFRA_PATH.stat.exists
+
+    - name: clone openstack helm
+      git:
+        repo: 'https://github.com/Juniper/openstack-helm.git'
+        accept_hostkey: yes
+        update: yes
+        dest: "/opt/openstack-helm"
+        version: "{{ deployment.type.helm.branch }}"
+      when: deployment.type.helm is defined and not OSH_PATH.stat.exists
+
+    - name: clone contrail helm deployer repo
+      git:
+        repo: 'https://github.com/tungstenfabric/tf-helm-deployer.git'
+        accept_hostkey: yes
+        update: yes
+        dest: "/opt/contrail-helm-deployer"
+        version: "{{ deployment.type.helm.branch  }}"
+      when: deployment.type.helm is defined and not CHD_PATH.stat.exists
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+    ANSIBLE_PYTHON_INTERPRETER: '/usr/bin/python3'
+
+- hosts: container_hosts
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+     - name: Update /etc/hosts file
+       lineinfile:
+         path: /etc/hosts
+         line:  "{{ vars['hostvars'][item.value.ip]['ansible_default_ipv4']['address'] }} {{ vars['hostvars'][item.value.ip]['ansible_hostname'] }}.{{ vars['hostvars'][item.value.ip]['ansible_domain'] }} {{ vars['hostvars'][item.value.ip]['ansible_hostname'] }}"
+       with_dict: "{{ instances }}"
+       when: deployment.type.openshift is defined
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+
+- hosts: localhost
+  gather_facts: yes
+  become: true
+  become_user: root
+  roles:
+  - deploy
+
+- hosts: pg_hosts
+  strategy: debug
+  gather_facts: no
+  become: true
+  become_user: root
+  roles:
+  - install_policy_generator
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug

@@ -1,0 +1,5 @@
+network_ether_interfaces:
+  - device: eno2
+    bootproto: static
+    address: 192.168.27.241
+    netmask: 255.255.255.0

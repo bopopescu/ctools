@@ -1,0 +1,211 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "container_hosts"
+      when: '"contrail_command" not in "{{ item.value.roles }}"'
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "boot_master"
+      when: '"config" in "{{ item.value.roles }}" and deployment.type.marathon is defined'
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "mesos_master"
+      when: '"mesos_master" in "{{ item.value.roles }}" and deployment.type.marathon is defined'
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "mesos_nodes_private"
+      when: '"mesos_nodes" in "{{ item.value.roles }}" and "slave1" in "{{ item.key }}" and deployment.type.marathon is defined'
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "mesos_nodes_public"
+      when: '"mesos_nodes" in "{{ item.value.roles }}" and "slave2" in "{{ item.key }}" and deployment.type.marathon is defined'
+      with_dict: "{{ instances }}"
+    - add_host:
+        name: "{{ item.value.ip }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "mesos_all"
+      when: '"mesos_master" in "{{ item.value.roles }}" or "mesos_nodes" in "{{ item.value.roles }}" and deployment.type.marathon is defined'
+      with_dict: "{{ instances }}"
+
+- hosts: container_hosts
+  gather_facts: no
+  become: true
+  become_user: root
+  roles:
+  - install_packages
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug
+
+- hosts: boot_master
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: localectl set-locale LANG=en_US.utf8
+      command: localectl set-locale LANG=en_US.utf8
+
+    - name: mkdir genconf
+      command: mkdir genconf
+
+    - name: config file
+      template:
+         src: mesos/config.yaml
+         dest: "./genconf/config.yaml"
+
+    - name: ip-detect file
+      template:
+         src: mesos/ip-detect
+         dest: "./genconf/ip-detect"
+
+    - name: wget https://downloads.dcos.io/dcos/stable/1.11.0/dcos_generate_config.sh
+      command: wget https://downloads.dcos.io/dcos/stable/1.11.0/dcos_generate_config.sh
+
+#    - name: dcos_generate_config.sh
+#      copy:
+#         src: mesos/dcos_generate_config.sh
+#         dest: "./dcos_generate_config.sh"
+
+    - name: sudo yum check-update
+      command: sudo yum check-update
+      ignore_errors: yes
+
+    - name: curl -fsSL https://get.docker.com/ | sh
+      shell: curl -fsSL https://get.docker.com/ | sh
+
+    - name: start docker
+      command: sudo systemctl start docker
+
+    - name: enable docker
+      command: sudo systemctl enable docker
+
+    - name: DCOS generate config
+      command: sudo bash dcos_generate_config.sh
+
+    - name: docker run
+      command: sudo docker run -d -p 80:80 -v $PWD/genconf/serve:/usr/share/nginx/html:ro nginx
+
+- hosts: mesos_all
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: overlay config
+      command: sudo echo 'overlay' >> /etc/modules-load.d/overlay.conf
+
+    - name: sudo modprobe overlay
+      command: sudo modprobe overlay
+
+    - name: yum update
+      command: sudo yum update --exclude=docker-engine,docker-engine-selinux,centos-release* --assumeyes --tolerant
+
+    - name: install utils
+      command: yum install yum-utils -y
+
+    - name: config manager
+      command: sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: install docker-ce
+      command: sudo yum install docker-ce -y
+
+    - name: start docker
+      shell: sudo systemctl start docker
+
+    - name: enable docker
+      shell: sudo systemctl enable docker
+
+#    - name: start firewall
+#      shell: sudo systemctl stop firewalld && sudo systemctl disable firewalld
+
+    - name: time
+      command: localectl set-locale LANG=en_US.utf8
+
+    - name: utils
+      command: sudo yum install -y tar xz unzip curl ipset bind-utils
+
+    - name: add group
+      command: sudo groupadd nogroup
+
+#    - name: add group
+#      command: sudo groupadd docker
+
+    - name: mkdir
+      shell: mkdir /tmp/dcos
+
+    - name: setting hostname
+      vars:
+        host_hostip:
+      set_fact:
+        host_hostip: "{{ item.value.ip }}"
+      when: item.key == "boot"
+      with_dict: "{{ instances }}"
+
+    - name: curl dcos install
+      shell: cd /tmp/dcos && curl -O http://{{ host_hostip }}:80/dcos_install.sh
+
+- hosts: mesos_master
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: dcos install
+      shell: cd /tmp/dcos && sudo bash dcos_install.sh master
+
+- hosts: mesos_nodes_private
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: dcos install
+      shell: cd /tmp/dcos && sudo bash dcos_install.sh slave
+
+- hosts: mesos_nodes_public
+  gather_facts: yes
+  become: true
+  become_user: root
+  tasks:
+    - name: dcos install
+      shell: cd /tmp/dcos && sudo bash dcos_install.sh slave_public
+
+- hosts: localhost
+  gather_facts: no
+  become: true
+  become_user: root
+  roles:
+    - role: install_packages/command_deployer
+      when:
+       - deployment is defined
+       - deployment.deployer is defined
+       - deployment.deployer == 'contrail_command'
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug

@@ -1,0 +1,107 @@
+system {
+    host-name {{ inventory_hostname }};
+    services {
+        ssh {
+            root-login allow;
+        }
+        netconf {
+            ssh;
+        }
+    }
+    extensions {
+        providers {
+            juniper {
+                license-type juniper deployment-scope commercial;
+            }
+            chef {
+                license-type juniper deployment-scope commercial;
+            }
+        }
+    }
+}
+interfaces {
+    xe-0/0/0 {
+        mac {{ control_mac }};
+        unit 0 {
+            family inet {
+                address {{ control_ip }}/24;
+            }
+        }
+    }
+{% for interface in interfaces %}
+    {{ interface.name }} {
+        mac {{ interface.mac }};
+        unit 0 {
+            family inet {
+                address {{ interface.ip }}/24;
+                }
+            }
+        }
+{% endfor %}
+    lo0 {
+        unit 0 {
+            family inet {
+                address {{ loopback_ip }};
+            }
+        }
+    }
+    em1 {
+        unit 0 {
+            family inet {
+                address 169.254.0.2/24;
+            }
+        }
+    }
+}
+routing-options {
+    router-id {{ loopback_ip }};
+    autonomous-system {{ overlay_asn }};
+}
+protocols {
+    bgp {
+        group CLOS {
+            type external;
+            multipath;
+{% if my_info.role == 'spine' %}
+            advertise-peer-as;
+            local-as {{ local_as }};
+{% elif my_info.role == 'leaf' %}
+            local-as {{ local_as }} loops 2;
+{% endif %}
+            family inet {
+                unicast;
+            }
+            export export-bgp;
+{% for peer in peers %}
+            neighbor {{ peer.peer_ip }} {
+                peer-as {{ peer_as }};
+            }
+{% endfor %}
+        }
+    }
+    lldp {
+        interface all;
+    }
+}
+policy-options {
+    policy-statement export-bgp {
+        term 1 {
+            from {
+                interface lo0.0;
+            }
+            then accept;
+        }
+        term 2 {
+            from protocol bgp;
+            then accept;
+        }
+        term 3 {
+            then reject;
+        }
+    }
+}
+vlans {
+    default {
+        vlan-id 1;
+    }
+}

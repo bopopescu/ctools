@@ -1,0 +1,168 @@
+- name: set contrail helm repo version if undefined
+  set_fact:
+    contrail_branch: master
+  when: deployment.type.helm.branch is undefined
+
+- name: set contrail helm repo version if defined
+  set_fact:
+    contrail_branch: "{{ deployment.type.helm.branch }}"
+  when: deployment.type.helm.branch is defined
+
+- name: set contrail helm provision dir
+  set_fact:
+      contrail_helm_provision_dir: "/opt/contrail-helm-deployer"
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.helm.registry }}"
+  when: deployment.type.helm.registry is defined
+
+- name: get controller nodes
+  vars:
+    controller_nodes: []
+  set_fact:
+     controller_nodes: "{{ controller_nodes + [ item.value.ip ] }}"
+  when: item.value.roles.config is defined
+  with_dict: "{{ instances }}"
+
+- name: set controller nodes if defined
+  set_fact:
+    controller_nodes: "{{ contrail_configuration.CONTROLLER_NODES }}"
+  when: contrail_configuration.CONTROLLER_NODES is defined
+
+- name: get control nodes if defined
+  set_fact:
+    control_nodes: "{{ contrail_configuration.CONTROL_NODES | default(controller_nodes) }}"
+
+- name: get contrail aaa_mode if defined
+  set_fact:
+    aaa_mode: "{{ contrail_configuration.AAA_MODE }}"
+  when: contrail_configuration.AAA_MODE is defined
+
+- name: check if cluster admin file exists
+  stat: path="{{ contrail_helm_provision_dir }}/rbac/cluster-admin.yaml"
+  register: ca_file
+
+- name: K8s clusterrolebinding for contrail
+  command: kubectl replace -f rbac/cluster-admin.yaml
+  args:
+   chdir: "{{ contrail_helm_provision_dir }}"
+  when: ca_file.stat.exists
+
+- name: build all charts
+  command: make
+  args:
+    chdir: "{{ contrail_helm_provision_dir }}"
+
+- name: update contrail thirdparty values yaml
+  replace:
+    path: "{{ contrail_helm_provision_dir }}/contrail-thirdparty/values.yaml"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+  with_items:
+    - { regexp: 'docker.io/opencontrailnightly', line: '{{ contrailregistry }}' }
+    - { regexp: 'latest', line: '{{ version }}' }
+    - { regexp: 'CONTROLLER_NODES: 10.87.65.248', line: 'CONTROLLER_NODES: {{ controller_nodes }}' }
+    - { regexp: 'CLOUD_ORCHESTRATOR: openstack', line: 'CLOUD_ORCHESTRATOR: {{ orchestrator }}' }
+    - { regexp: 'AAA_MODE: cloud-admin', line: 'AAA_MODE: {{ aaa_mode | default("rbac")}}' }
+
+- name: update contrail analytics values yaml
+  replace:
+    path: "{{ contrail_helm_provision_dir }}/contrail-analytics/values.yaml"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+  with_items:
+    - { regexp: 'docker.io/opencontrailnightly', line: '{{ contrailregistry }}' }
+    - { regexp: 'latest', line: '{{ version }}' }
+    - { regexp: 'CONTROLLER_NODES: 10.87.65.248', line: 'CONTROLLER_NODES: {{ controller_nodes }}' }
+    - { regexp: 'CLOUD_ORCHESTRATOR: openstack', line: 'CLOUD_ORCHESTRATOR: {{ orchestrator }}' }
+    - { regexp: 'AAA_MODE: cloud-admin', line: 'AAA_MODE: {{ aaa_mode | default("rbac")}}' }
+
+- name: update contrail controller values yaml
+  replace:
+    path: "{{ contrail_helm_provision_dir }}/contrail-controller/values.yaml"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+  with_items:
+    - { regexp: 'docker.io/opencontrailnightly', line: '{{ contrailregistry }}' }
+    - { regexp: 'latest', line: '{{ version }}' }
+    - { regexp: 'CONTROLLER_NODES: 10.87.65.248', line: 'CONTROLLER_NODES: {{ controller_nodes }}\n    CONTROL_NODES: {{ control_nodes }}' }
+    - { regexp: 'CLOUD_ORCHESTRATOR: openstack', line: 'CLOUD_ORCHESTRATOR: {{ orchestrator }}' }
+    - { regexp: 'AAA_MODE: cloud-admin', line: 'AAA_MODE: {{ aaa_mode | default("rbac")}}\n    BGP_PORT: {{ contrail_configuration.BGP_PORT }}' }
+    - { regexp: 'default: rabbitmq', line: 'default: {{ controller_nodes }}' }
+
+- name: update contrail vrouter values yaml
+  replace:
+    path: "{{ contrail_helm_provision_dir }}/contrail-vrouter/values.yaml"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+  with_items:
+    - { regexp: 'docker.io/opencontrailnightly', line: '{{ contrailregistry }}' }
+    - { regexp: 'latest', line: '{{ version }}' }
+    - { regexp: 'CONTROLLER_NODES: 10.87.65.248', line: 'CONTROLLER_NODES: {{ controller_nodes }}\n    CONTROL_NODES: {{ control_nodes }}' }
+    - { regexp: 'CLOUD_ORCHESTRATOR: openstack', line: 'CLOUD_ORCHESTRATOR: {{ orchestrator }}' }
+    - { regexp: 'AAA_MODE: cloud-admin', line: 'AAA_MODE: {{ aaa_mode | default("rbac")}}' }
+    - { regexp: 'contrail_env_vrouter_kernel:', line: 'contrail_env_vrouter_kernel:\n    VROUTER_GATEWAY: {{ contrail_configuration.VROUTER_GATEWAY }}' }
+    - { regexp: 'AGENT_MODE: nic', line: 'AGENT_MODE: {{ contrail_configuration.AGENT_MODE }}' }
+
+- name: deploy contrail thirdparty charts
+  command: 'helm install --name contrail-thirdparty ${CHD_PATH}/contrail-thirdparty --namespace=contrail'
+  environment:
+    CHD_PATH: "{{ contrail_helm_provision_dir }}"
+
+- name: wait for contrail thirdparty pods
+  command: './wait-for-pods.sh contrail'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"
+  ignore_errors: yes
+
+- name: deploy contrail controller charts
+  command: 'helm install --name contrail-controller ${CHD_PATH}/contrail-controller --namespace=contrail'
+  environment:
+    CHD_PATH: "{{ contrail_helm_provision_dir }}"
+
+- name: wait for contrail controller pods         
+  command: './wait-for-pods.sh contrail'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"
+  ignore_errors: yes
+
+- name: deploy contrail analytics
+  command: 'helm install --name contrail-analytics ${CHD_PATH}/contrail-analytics --namespace=contrail' 
+  environment:
+    CHD_PATH: "{{ contrail_helm_provision_dir }}"
+
+- name: wait for contrail analytics pods 
+  command: './wait-for-pods.sh contrail'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"
+  ignore_errors: yes
+
+- name: deploy contrail vrouter
+  command: 'helm install --name contrail-vrouter ${CHD_PATH}/contrail-vrouter --namespace=contrail'
+  environment:
+    CHD_PATH: "{{ contrail_helm_provision_dir }}"
+
+- name: wait for contrail vrouter pods
+  command: './wait-for-pods.sh contrail'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"
+  ignore_errors: yes
+
+- name: deploy heat charts
+  command: "./tools/deployment/multinode/151-heat-opencontrail.sh"
+  args:
+    chdir: "/opt/openstack-helm"
+#  environment:
+#    OSH_EXTRA_HELM_ARGS_HEAT: "--set images.tags.opencontrail_heat_init={{ contrailregistry }}/contrail-openstack-heat-init:{{ version }}"
+  ignore_errors: yes
+
+- name: Additional wait for openstack pods
+  command: './wait-for-pods.sh openstack'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"
+
+- name: Additional wait for contrail pods
+  command: './wait-for-pods.sh contrail'
+  args:
+   chdir: "/opt/openstack-helm/tools/deployment/common"

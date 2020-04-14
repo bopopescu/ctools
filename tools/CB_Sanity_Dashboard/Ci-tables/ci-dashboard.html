@@ -1,0 +1,56 @@
+<script src="./third-party-libraries/jquery-3.2.1.min.js"></script>
+
+<script type="text/javascript" charset="utf8" src="./third-party-libraries/jquery-datatables/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="./third-party-libraries/jquery-datatables/jquery.dataTables.min.css">
+
+<script type="text/javascript" charset="utf8" src="./third-party-libraries/tether.min.js"></script>
+<script type="text/javascript" charset="utf8" src="./third-party-libraries/bootstrap-4.0.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" type="text/css" href="./third-party-libraries/bootstrap-4.0.0/css/bootstrap.min.css">
+
+<link rel="stylesheet" type="text/css" href="./third-party-libraries/font-awesome-4.7.0/css/font-awesome.min.css">
+
+<script type="text/javascript" charset="utf8" src="./js/table-helper.js"></script>
+<link rel="stylesheet" type="text/css" href="./css/table.style.css">
+
+<div>
+  <div id ="ci-dashboard" class="card">
+   <div class="card-block">
+     <h3 class="card-title">Continuous Build Sanity Dashboard</h3>
+       <div>
+          <table id="ci-info-table" class="display table table-hover table-bordered blink" cellspacing="0" width="100%">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                </tr>
+              </thead>
+          </table>
+       </div>
+    </div>
+</div>
+
+<table id="try2" class="display" width="100%"></table>
+    
+
+<div class="card">
+  <div class="card-block">
+      <h3 class="card-title">Bugs Information</h3>
+          <div>
+              <table id="bugs-info-table" class="display table table-hover" cellspacing="0" width="100%">
+                  <thead>
+                    <tr>
+                      <th>Bug id</th>
+                      <th>Description</th>
+                      <th>Link</th>
+                      <th>Assignee</th>   
+                    </tr>
+                  </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

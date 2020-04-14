@@ -1,0 +1,230 @@
+heat_template_version: "2015-04-30"
+
+description: >
+  HOT template for kubernetes nested deployment
+  creates a virtual network and five virtual machines on this network
+  2 for juju_client and controller ,one for kubernetes master and rest for slave
+
+outputs:
+  juju_client_ssh:
+   description: Public IP of Kubernetes Master
+   value: { get_attr: ['juju_fip', 'floating_ip_address'] }
+  juju_client_ip:
+   description: Private IP of juju client
+   value: { get_attr: ['juju_client', 'networks', 'k8net', 0] }
+  controller_ip:
+   description: Private IP of juju controller
+   value: { get_attr: ['controller', 'first_address'] }
+  master_ssh:
+   description: Public IP of Kubernetes Master
+   value: { get_attr: ['fip', 'floating_ip_address'] }
+  master_ip:
+   description: Private IP of Kubernetes Master
+   value: { get_attr: ['master', 'networks', 'k8net', 0] }
+  slave1_ip:
+   description: Private IP of Kubernetes Slave1
+   value: { get_attr: ['slave1', 'first_address'] }
+  slave2_ip:
+   description: Private IP of Kubernetes Slave2
+   value: { get_attr: ['slave2', 'first_address'] }
+  network:
+   description: FQN of Cluster Network
+   value: { get_attr: ['net', 'fq_name'] }
+
+parameters:
+  flavor:
+    type: string
+    description: ID of the flavor
+  image:
+    type: string
+    description: ID of the image
+  publicvn:
+    type: string
+    description: ID of the public virtual network
+  fippool:
+    type: string
+    description: ID of the public FIP pool
+  project:
+    type: string
+    description: ID of the project
+  secgrp:
+    type: string
+    description: ID of default security group of the project
+
+  ipam_name:
+    type: string
+    description: Name of IPAM
+
+  net_name:
+    type: string
+    description: Name of private network to be created
+  net_prefix:
+    type: string
+    description: Private network address prefix
+  net_prefix_len:
+    type: string
+    description: Private network address prefix len
+  fabric_snat:
+    type: boolean
+    description: Fabric SNAT enable
+
+  juju_client_name:
+    type: string
+    description: Name of juju_client VM
+  juju_client_intf:
+    type: string
+    description: Name of juju client VMI
+  controller_name:
+    type: string
+    description: Name of controller VM
+  master_name:
+    type: string
+    description: Name of Kubernetes Master VM
+  master_intf:
+    type: string
+    description: Name of Kubernetes Master VMI
+  slave1_name:
+    type: string
+    description: Name of Kubernetes slave1 VM
+  slave2_name:
+    type: string
+    description: Name of Kubernetes slave2 VM
+
+resources:
+  ipam:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: { get_param: ipam_name }
+
+  net:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ ipam ]
+    properties:
+      name: { get_param: net_name }
+      fabric_snat: { get_param: fabric_snat }
+      network_ipam_refs: [{ get_resource: ipam }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: { get_param: net_prefix },
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: { get_param: net_prefix_len },
+                },
+              network_ipam_refs_data_ipam_subnets_addr_from_start: True
+            }]
+         }]
+
+  slave1:
+    type: OS::Nova::Server
+    depends_on: [ net ]
+    properties:
+      name: { get_param: slave1_name }
+      flavor: { get_param: flavor }
+      image: { get_param:  image }
+      networks:
+        - network: { get_resource: net }
+
+  slave2:
+    type: OS::Nova::Server
+    depends_on: [ net ]
+    properties:
+      name: { get_param: slave2_name }
+      flavor: { get_param: flavor }
+      image: { get_param:  image }
+      networks:
+        - network: { get_resource: net }
+
+  controller:
+    type: OS::Nova::Server
+    depends_on: [ net ]
+    properties:
+      name: { get_param: controller_name }
+      flavor: { get_param: flavor }
+      image: { get_param:  image }
+      networks:
+        - network: { get_resource: net }
+
+  juju_client_vmi:
+    type: OS::ContrailV2::VirtualMachineInterface
+    depends_on: [ net ]
+    properties:
+      name: { get_param: juju_client_intf }
+      virtual_network_refs:
+        - { get_resource: net }
+      security_group_refs:
+        - { get_param: secgrp }
+
+
+  vmi:
+    type: OS::ContrailV2::VirtualMachineInterface
+    depends_on: [ net ]
+    properties:
+      name: { get_param: master_intf }
+      virtual_network_refs:
+        - { get_resource: net }
+      security_group_refs:
+        - { get_param: secgrp }
+
+  ip:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ vmi, net ]
+    properties:
+      virtual_machine_interface_refs:
+        - { get_resource: vmi }
+      virtual_network_refs:
+        - { get_resource: net }
+  
+  juju_ip:
+    type: OS::ContrailV2::InstanceIp
+    depends_on: [ juju_client_vmi, net ]
+    properties:
+      virtual_machine_interface_refs:
+        - { get_resource: juju_client_vmi }
+      virtual_network_refs:
+        - { get_resource: net }
+  
+
+  master:
+    type: OS::Nova::Server
+    depends_on: [ vmi, ip ]
+    properties:
+      name: { get_param: master_name }
+      flavor: { get_param: flavor }
+      image: { get_param:  image }
+      networks:
+        - port: { get_resource: vmi }
+
+ 
+  juju_client:
+    type: OS::Nova::Server
+    depends_on: [ juju_client_vmi, juju_ip ]
+    properties:
+      name: { get_param: juju_client_name }
+      flavor: { get_param: flavor }
+      image: { get_param:  image }
+      networks:
+        - port: { get_resource: juju_client_vmi  }
+
+  juju_fip:
+    type: OS::ContrailV2::FloatingIp
+    depends_on: [ juju_client_vmi ]
+    properties:
+      floating_ip_pool: { get_param: fippool }
+      virtual_machine_interface_refs:
+        - { get_resource: juju_client_vmi }
+      project_refs:
+        - { get_param: project }
+   
+  fip:
+    type: OS::ContrailV2::FloatingIp
+    depends_on: [ vmi ]
+    properties:
+      floating_ip_pool: { get_param: fippool }
+      virtual_machine_interface_refs:
+        - { get_resource: vmi }
+      project_refs:
+        - { get_param: project }
+   
+   

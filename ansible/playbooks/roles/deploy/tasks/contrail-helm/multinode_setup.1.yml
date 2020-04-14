@@ -1,0 +1,121 @@
+- hosts: all
+  tasks:
+    - name: set contrail helm repo version if undefined
+      set_fact:
+        contrail_branch: master
+      when: deployment.type.helm.branch is undefined
+    
+    - name: set contrail helm repo version if defined
+      set_fact:
+        contrail_branch: "{{ deployment.type.helm.branch }}"
+      when: deployment.type.helm.branch is defined
+    
+    - name: set contrail helm provision dir
+      set_fact:
+          contrail_helm_provision_dir: "/opt/contrail-helm-deployer"
+    
+    - name: set contrailregistry if defined
+      set_fact:
+        contrailregistry: "{{ deployment.type.helm.registry }}"
+      when: deployment.type.helm.registry is defined
+    
+    - name: get controller nodes
+      vars:
+        controller_nodes: []
+      set_fact:
+         controller_nodes: "{{ controller_nodes + [ item.value.ip ] }}"
+      when: item.value.roles.openstack is defined
+      with_dict: "{{ instances }}"
+    
+    - name: get control nodes if defined
+      set_fact:
+        control_nodes: "{{ contrail_configuration.CONTROL_NODES }}"
+      when: contrail_configuration.CONTROL_NODES is defined
+    
+    - name: get contrail aaa_mode if defined
+      set_fact:
+        aaa_mode: "{{ contrail_configuration.AAA_MODE }}"
+      when: contrail_configuration.AAA_MODE is defined
+    
+    - name: set labels for controller nodes
+      command: kubectl label node "{{ item.value.ansible_fqdn }}" opencontrail.org/controller=enabled --overwrite
+      when: item.value.roles.control is defined
+      with_dict: "{{ instances }}"
+    
+    - name: set labels for vrouter kernel nodes
+      command: kubectl label node "{{ item.value.ansible_fqdn }}" opencontrail.org/vrouter-kernel=enabled --overwrite
+      when: item.value.roles.vrouter is defined
+    #  when: item.value.roles.vrouter is defined and contrail_configuration.AGENT_MODE == 'nic'
+      with_dict: "{{ instances }}"
+    
+    #- name: set labels for vrouter dpdk nodes
+    #  command: kubectl label node "{{ vars['hostvars'][item.value.ip]['ansible_fqdn'] }}" opencontrail.org/vrouter-dpdk=enabled
+    #  when: item.value.roles.vrouter is defined and contrail_configuration.AGENT_MODE == 'dpdk'
+    #  with_dict: "{{ instances }}"
+    
+    - name: check if cluster admin file exists
+      stat: path="{{ contrail_helm_provision_dir }}/rbac/cluster-admin.yaml"
+      register: ca_file
+    
+    - name: K8s clusterrolebinding for contrail
+      command: kubectl replace -f rbac/cluster-admin.yaml
+      args:
+       chdir: "{{ contrail_helm_provision_dir }}"
+      when: ca_file.stat.exists
+    
+    - name: build all charts
+      command: make
+      args:
+        chdir: "{{ contrail_helm_provision_dir }}"
+    
+    - name: deploy contrail thirdparty charts
+      command: 'helm install --name contrail-thirdparty ${CHD_PATH}/contrail-thirdparty --namespace=contrail --values=/tmp/contrail-env-images.yaml'
+      environment:
+        CHD_PATH: "{{ contrail_helm_provision_dir }}"
+    
+    - name: wait for contrail thirdparty pods
+      command: './wait-for-pods.sh contrail'
+      args:
+       chdir: "/opt/openstack-helm/tools/deployment/common"
+      ignore_errors: yes
+    
+    - name: deploy contrail controller charts
+      command: 'helm install --name contrail-controller ${CHD_PATH}/contrail-controller --namespace=contrail --values=/tmp/contrail-env-images.yaml'
+      environment:
+        CHD_PATH: "{{ contrail_helm_provision_dir }}"
+    
+    - name: wait for contrail controller pods         
+      command: './wait-for-pods.sh contrail'
+      args:
+       chdir: "/opt/openstack-helm/tools/deployment/common"
+      ignore_errors: yes
+    
+    - name: deploy contrail analytics
+      command: 'helm install --name contrail-analytics ${CHD_PATH}/contrail-analytics --namespace=contrail --values=/tmp/contrail-env-images.yaml' 
+      environment:
+        CHD_PATH: "{{ contrail_helm_provision_dir }}"
+    
+    - name: wait for contrail analytics pods 
+      command: './wait-for-pods.sh contrail'
+      args:
+       chdir: "/opt/openstack-helm/tools/deployment/common"
+      ignore_errors: yes
+    
+    - name: deploy contrail vrouter
+      command: 'helm install --name contrail-vrouter ${CHD_PATH}/contrail-vrouter --namespace=contrail --values=/tmp/contrail-env-images.yaml'
+      environment:
+        CHD_PATH: "{{ contrail_helm_provision_dir }}"
+    
+    - name: wait for contrail vrouter pods
+      command: './wait-for-pods.sh contrail'
+      args:
+       chdir: "/opt/openstack-helm/tools/deployment/common"
+      ignore_errors: yes
+    
+    - name: deploy heat charts
+      command: "./tools/deployment/multinode/151-heat-opencontrail.sh"
+      args:
+        chdir: "/opt/openstack-helm"
+    #  environment:
+    #    OSH_EXTRA_HELM_ARGS_HEAT: "--set images.tags.opencontrail_heat_init={{ contrailregistry }}/contrail-openstack-heat-init:{{ version }}"
+      ignore_errors: yes

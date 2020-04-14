@@ -1,0 +1,7 @@
+- include: install.yml 
+- include: configure_static_routes.yml
+- include: deploy.yml
+- include: install_appformix.yml
+- include: configure_underlay.yml
+- include: run_sanity.yml
+- include: upload_logs_cores.yml

@@ -1,0 +1,14 @@
+{
+    "image": [
+        {
+            "category": "package",
+            "id": "combined_image_mainline",
+            "path": "/root/sm_files/contrail-install-packages",
+            "type": "contrail-ubuntu-package",
+            "version": "4.0.0-3051",
+            "parameters": { 
+		"contrail-container-package": true
+            }                       
+        }
+    ]
+}

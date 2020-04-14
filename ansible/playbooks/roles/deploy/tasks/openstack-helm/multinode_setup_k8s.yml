@@ -1,0 +1,281 @@
+- hosts: all
+  tasks:
+   - name: Generate SSH keys
+     shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+     args:
+       creates: /root/.ssh/id_rsa
+   - name: Copy SSH key to all nodes
+     command: sshpass -p c0ntrail123 ssh-copy-id -i ~/.ssh/id_rsa.pub -o StrictHostKeyChecking=no root@{{ item.value.ip }}
+     with_dict: "{{ instances }}"
+
+   - name: set openstack helm repo version if undefined
+     set_fact:
+       openstack_helm_branch: master
+     when: deployment.type.helm.branch is undefined
+   
+   - name: set sku 
+     set_fact:
+       sku: "{{deployment.sku }}"
+     when: deployment.sku is defined
+
+   - name: set openstack helm repo version if defined
+     set_fact:
+       openstack_helm_branch: "{{ deployment.type.helm.branch }}"
+     when: deployment.type.helm.branch is defined
+
+   
+   - name: set openstack helm provision dir
+     set_fact:
+        openstack_helm_dir: "/opt/openstack-helm"
+   
+   - name: set openstack helm infra dir
+     set_fact:
+          openstack_helm_infra_dir: "/opt/openstack-helm-infra"
+   
+   - name: set openstack helm registry if defined
+     set_fact:
+       openstackregistry: "{{ deployment.type.helm.registry }}"
+     when: deployment.type.helm.registry is defined
+   
+   #- name: add nameserver to vars.yaml # temp fix, Bug ID: 1763820
+   #  lineinfile:
+   #    path: "{{ openstack_helm_infra_dir }}/tools/images/kubeadm-aio/assets/opt/playbooks/vars.yaml"
+   #    insertafter: "external_dns_nameservers:"
+   #    line: "      - 172.29.131.60\n      - 10.0.0.2\n      - 10.10.0.2"
+   #
+   #- name: set default device if PHYSICAL_INTERFACE is defined
+   #  set_fact:
+   #    default_device: "{{ contrail_configuration.PHYSICAL_INTERFACE }}"
+   #  when: contrail_configuration.PHYSICAL_INTERFACE is defined
+   #
+   #- name: find physical interface if PHYSICAL_INTERFACE is undefined
+   #  shell: "ip -4 route list | grep {{ contrail_configuration.CONTROL_DATA_NET_LIST }} | awk '{ print $3; exit }'"
+   #  register: result
+   #  when:
+   #    - contrail_configuration.PHYSICAL_INTERFACE is undefined
+   #    - contrail_configuration.CONTROL_DATA_NET_LIST is defined
+   #
+   #- name: set default device if PHYSICAL_INTERFACE is undefined
+   #  set_fact:
+   #    default_device: "{{ result.stdout }}"
+   #  when:
+   #    - contrail_configuration.PHYSICAL_INTERFACE is undefined
+   #    - contrail_configuration.CONTROL_DATA_NET_LIST is defined
+
+   - name: split openstack registry name
+     set_fact:
+        tmp_registry: "{{ openstackregistry.split('/')[0] }}"
+
+   - name: split openstack registry name
+     set_fact:
+        tmp_namespace: "{{ openstackregistry.split('/')[1] }}"
+ 
+   - name: add insecure registries
+     lineinfile:
+        path:  "{{ openstack_helm_infra_dir }}/playbooks/vars.yaml"
+        state: present
+        regexp: 'insecure_registries: '
+        line: '  insecure_registries: ["{{ tmp_registry }}"]'
+   
+   #- name: Update heat, nova and neutron yamls # temp fix, Bug ID: 1764528
+   #  template:
+   #    src: "openstack-helm/{{ item }}.yaml.j2"
+   #    dest: "{{ openstack_helm_dir }}/tools/overrides/backends/opencontrail/{{ item }}.yaml"
+   #  with_items:
+   #    - "heat"
+   #    - "nova"
+   #    - "neutron"
+   #
+   ## Update multinode-vars.yaml for different version of kubernetes, cni, calico
+   #
+   - name: Update glance values.yaml
+     template:
+       src: "../../templates/openstack-helm/glance-values.yaml.j2"
+       dest: "{{ openstack_helm_dir }}/tools/overrides/backends/opencontrail/glance.yaml"
+   
+   - name: Install opencontrail packages
+     command: "./tools/deployment/developer/common/{{ item }}"
+     with_items:
+       - 001-install-packages-opencontrail.sh
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+
+   - name: Create an inventory file on the master node for the cluster
+     template:
+       src: "../../templates/openstack-helm/multinode-inventory.1.yaml.j2"
+       dest: "{{ openstack_helm_infra_dir }}/tools/gate/devel/multinode-inventory.yaml"
+   
+   - name: Create an environment file on the master node for the cluster
+     template:
+       src: "../../templates/openstack-helm/multinode-vars.1.yaml.j2"
+       dest: "{{ openstack_helm_infra_dir }}/tools/gate/devel/multinode-vars.yaml"
+   
+   - name: deploy kubernetes - setup-host
+     command: make dev-deploy setup-host multinode
+     args:
+      chdir: "{{ openstack_helm_infra_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+
+   - name: deploy kubernetes - k8s
+     command: make dev-deploy k8s multinode
+     args:
+      chdir: "{{ openstack_helm_infra_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+     retries: 2 
+
+   - name: disable openstack compute labels for controller nodes
+     command: kubectl label node "{{ item.value.ansible_fqdn }}" --overwrite openstack-compute-node=disabled
+     when: item.value.roles.vrouter is undefined
+     with_dict: "{{ instances }}"
+   
+   - name: disable openstack control labels for compute nodes
+     command: kubectl label node "{{ item.value.ansible_fqdn }}" --overwrite openstack-control-plane=disabled
+     when: item.value.roles.openstack is undefined
+     with_dict: "{{ instances }}"
+   
+   - name: setup client
+     command: "./tools/deployment/multinode/010-setup-client.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+     ignore_errors: yes                                    # WA: Bug ID:1765804  
+   
+   - name: deploy ingress chart
+     command: "./tools/deployment/multinode/021-ingress-opencontrail.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   
+   - name: deploy ceph chart
+     command: "./tools/deployment/multinode/030-ceph.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   
+   - name: deploy ceph-ns chart
+     command: "./tools/deployment/multinode/040-ceph-ns-activate.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   
+   - name: deploy mariadb chart
+     command: "./tools/deployment/multinode/050-mariadb.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OSH_EXTRA_HELM_ARGS_MARIADB: "--set pod.replicas.server=1"
+   
+   - name: deploy rabbitmq chart
+     command: "./tools/deployment/multinode/060-rabbitmq.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   
+   - name: deploy memcached chart
+     command: "./tools/deployment/multinode/070-memcached.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   
+   - name: deploy keystone chart
+     command: "./tools/deployment/multinode/080-keystone.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+     ignore_errors: yes
+   
+   - name: deploy ceph-radosgateway chart
+     command: "./tools/deployment/multinode/090-ceph-radosgateway.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+     ignore_errors: yes
+   
+   - name: deploy horizon chart
+     command: "./tools/deployment/developer/ceph/100-horizon.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+   
+   - name: deploy glance chart
+     command: "./tools/deployment/multinode/100-glance.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+      OSH_EXTRA_HELM_ARGS_GLANCE: "--values={{ openstack_helm_dir }}/tools/overrides/backends/opencontrail/glance.yaml"  
+   
+   - name: deploy cinder chart
+     command: "./tools/deployment/multinode/110-cinder.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+     ignore_errors: yes                   #Test fails
+   
+   - name: deploy libvert chart
+     command: "./tools/deployment/multinode/131-libvirt-opencontrail.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+     ignore_errors: yes                   #Check
+   
+   - name: deploy compute-kit chart
+     command: "./tools/deployment/multinode/141-compute-kit-opencontrail.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+   #   OSH_EXTRA_HELM_ARGS_NOVA: "--set images.tags.opencontrail_compute_init={{ openstackregistry }}/contrail-openstack-compute-init:{{ version }}"
+   #   OSH_EXTRA_HELM_ARGS_NEUTRON: "--set images.tags.opencontrail_neutron_init={{ openstackregistry }}/contrail-openstack-neutron-init:{{ version }}"
+     ignore_errors: yes
+   
+   - name: deploy neutron rbac chart
+     command: "./tools/deployment/multinode/142-neutron-rbac-opencontrail.sh"
+     args:
+      chdir: "{{ openstack_helm_dir }}"
+     environment:
+      OSH_PATH: "{{ openstack_helm_dir }}"
+      OSH_INFRA_PATH: "{{ openstack_helm_infra_dir }}"
+      OPENSTACK_VERSION: "{{ sku }}"
+     when: contrail_configuration.AAA_MODE is defined and contrail_configuration.AAA_MODE == "rbac"
+     ignore_errors: yes
+

@@ -1,0 +1,17 @@
+
+- name: install the latest version of packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python-pip
+  ignore_errors: yes
+
+- pause:
+    seconds: 5
+
+- name: Installing python libraries using requirements file in Ansible
+  pip:
+    requirements: "{{playbook_dir}}/files/vc_req.txt"
+  ignore_errors: yes
+

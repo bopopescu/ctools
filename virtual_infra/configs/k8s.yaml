@@ -1,0 +1,41 @@
+deployment:
+  type:
+    contrail:
+      branch: master
+      registry: svl-artifcatory.juniper.net/contrail-nightly
+  version:
+  deployer: contrail-ansible-deployer
+  orchestrator: kubernetes
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+contrail_configuration:
+  AAA_MODE: no-auth
+  RABBITMQ_NODE_PORT: 5673
+  LOG_LEVEL: SYS_DEBUG
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+
+test_configuration:
+  image_web_server: 10.84.5.120
+  use_project_scoped_token: True
+  web_server:
+    server: zephyrine.englab.juniper.net
+    username: stack
+    password: stack@123
+    report_path:
+    log_path: /var/www/html/Docs/logs
+    web_root: /Docs/logs
+  mail_server:
+    server: 10.84.24.64
+    port: 4000
+    to: dl-contrail-sw@juniper.net
+    sender: contrail-build@juniper.net

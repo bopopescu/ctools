@@ -1,0 +1,284 @@
+{
+    "cluster": [
+        {
+            "id": "ocata_cluster", 
+            "parameters": {
+                "provision": {
+                    "contrail": {
+                        "kernel_upgrade": false,
+                         "ha": {
+                            "contrail_internal_vip": "10.204.216.48",
+                            "contrail_external_vip": "10.204.216.48"
+                        }
+                    }, 
+                    "openstack": {
+                        "openstack_manage_amqp": true, 
+                        "enable_ceilometer": false, 
+                        "region": "RegionOne", 
+                        "rabbitmq": {
+                            "password": "contrail123", 
+                            "user": "openstack"
+                        }, 
+                        "multi_tenancy": true, 
+                        "keystone": {
+                            "mysql_service_password": "contrail123", 
+                            "admin_user": "admin", 
+                            "admin_token": "admin", 
+                            "ip": "10.204.216.105", 
+                            "auth_port": 35357, 
+                            "auth_protocol": "http", 
+                            "version": "v2.0", 
+                            "admin_password": "contrail123", 
+                            "admin_tenant": "admin"
+                        }, 
+                        "ha": {
+                            "internal_vip": "10.204.216.141", 
+                            "external_vip": "10.204.216.141"
+                        }, 
+                        "neutron": {
+                            "shared_secret": "contrail123"
+                        }
+                    }, 
+                    "contrail_4": {
+                        "rabbitmq_config": {
+                            "password": "contrail123", 
+                            "user": "openstack"
+                        }, 
+                        "global_config": {
+                            "xmpp_dns_auth_enable": true, 
+                            "xmpp_auth_enable": true, 
+                            "external_rabbitmq_servers": "10.204.216.105, 10.204.216.106, 10.204.216.107"
+                        }, 
+                        "controller_config": {
+                            "external_routers_list": {
+                                "blr-mx2": "10.204.216.245"
+                            }, 
+                            "encap_priority": "MPLSoUDP,MPLSoGRE,VXLAN", 
+                            "bgp_asn": "64512"
+                        },
+                        "api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "aaa_mode": "rbac",
+                            "cloud_admin_role": "admin",
+                            "global_read_only_role": ""
+                        },
+                        "analytics_api_config": {
+                            "log_level": "SYS_NOTICE",
+                            "log": "/var/log/contrail/contrail-analytics-api.log",
+                            "aaa_mode": "rbac"
+                        }, 
+                        "enable_lbaas": true
+                    }, 
+                    "kolla_globals": {
+                        "kolla_base_distro": "ubuntu",
+                        "openstack_release": "4.0.0",
+                        "kolla_external_vip_interface": "eno1",
+			"horizon_port": 8898,
+                        "network_interface": "eno1",
+                        "neutron_external_interface": "eno2",
+                        "keepalived_virtual_router_id": 217
+                    }
+                }
+            }, 
+            "email": "vvelpula@juniper.net"
+        }
+    ],
+    "server": [
+        {
+            "domain": "englab.juniper.net", 
+            "network": {
+                "management_interface": "eno1", 
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.16/24", 
+                        "mac_address": "0c:c4:7a:dc:42:93"
+                    },
+                    {
+                        "dhcp": true, 
+                        "mac_address": "0c:c4:7a:dc:42:92", 
+                        "ip_address": "10.204.216.105/24", 
+                        "name": "eno1", 
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            }, 
+            "roles": [
+                "openstack",
+                "contrail-analytics", 
+                "contrail-analyticsdb",
+                "contrail-controller"
+            ],
+            "email": "vvelpula@juniper.net", 
+            "cluster_id": "ocata_cluster", 
+            "ipmi_address": "10.207.25.234", 
+            "password": "c0ntrail123", 
+            "id": "nodem16"
+        }, 
+        {
+            "domain": "englab.juniper.net", 
+            "network": {
+                "management_interface": "eno1", 
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.17/24", 
+                        "mac_address": "0c:c4:7a:dc:42:d9"
+                    },
+                    {
+                        "dhcp": true, 
+                        "mac_address": "0C:C4:7A:DC:42:D8", 
+                        "ip_address": "10.204.216.106/24", 
+                        "name": "eno1", 
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            }, 
+            "roles": [
+                "openstack",
+                "contrail-analytics", 
+                "contrail-analyticsdb",
+                "contrail-controller"
+            ], 
+            "email": "vvelpula@juniper.net", 
+            "cluster_id": "ocata_cluster", 
+            "ipmi_address": "10.207.25.235", 
+            "password": "c0ntrail123", 
+            "id": "nodem17"
+        }, 
+        {
+            "domain": "englab.juniper.net", 
+            "network": {
+                "management_interface": "eno1", 
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.18/24", 
+                        "mac_address": "0c:c4:7a:dc:42:d5"
+                    },
+                    {
+                        "dhcp": true, 
+                        "mac_address": "0C:C4:7A:DC:42:D4", 
+                        "ip_address": "10.204.216.107/24", 
+                        "name": "eno1", 
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            }, 
+            "roles": [
+                "openstack",
+                "contrail-analytics", 
+                "contrail-controller",
+                "contrail-analyticsdb"
+            ], 
+            "email": "vvelpula@juniper.net", 
+            "cluster_id": "ocata_cluster", 
+            "ipmi_address": "10.207.25.236", 
+            "password": "c0ntrail123", 
+            "id": "nodem18"
+        }, 
+        {
+            "cluster_id": "ocata_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodea10",
+            "email": "vvelpula@juniper.net",
+            "password": "c0ntrail123",
+            "network": {
+                "management_interface": "enp5s0",
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.216.254",
+                        "dhcp": true,
+                        "ip_address": "10.204.216.48/24",
+                        "mac_address": "00:25:90:A5:3B:1A",
+                        "name": "enp5s0"
+                    }
+                ]
+            },
+            "roles": ["contrail-lb"],
+            "ipmi_address": "10.207.25.213"
+        },
+        {
+            "domain": "englab.juniper.net", 
+            "network": {
+                "management_interface": "eno1", 
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.19/24", 
+                        "mac_address": "0c:c4:7a:dc:42:d7"
+                    },
+                    {
+                        "dhcp": true, 
+                        "mac_address": "0C:C4:7A:DC:42:D6", 
+                        "ip_address": "10.204.216.108/24", 
+                        "name": "eno1", 
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            }, 
+            "roles": [
+                "contrail-compute"
+            ], 
+            "email": "vvelpula@juniper.net", 
+            "cluster_id": "ocata_cluster", 
+            "ipmi_address": "10.207.25.237", 
+            "password": "c0ntrail123", 
+            "id": "nodem19"
+        }, 
+        {
+            "domain": "englab.juniper.net", 
+            "network": {
+                "management_interface": "eno1", 
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.20/24", 
+                        "mac_address": "0c:c4:7a:dc:44:43"
+                    },
+                    {
+                        "dhcp": true, 
+                        "mac_address": "0C:C4:7A:DC:44:42", 
+                        "ip_address": "10.204.216.109/24", 
+                        "name": "eno1", 
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            }, 
+            "roles": [
+                "contrail-compute"
+            ], 
+            "cluster_id": "ocata_cluster", 
+            "ipmi_address": "10.207.25.238", 
+            "password": "c0ntrail123", 
+            "id": "nodem20"
+        },
+        {
+            "domain": "englab.juniper.net",
+            "network" : {
+                "management_interface": "eno1",
+                "interfaces": [
+                    {
+                        "name": "eno2",
+                        "ip_address": "10.10.11.5/24", 
+                        "mac_address": "0c:c4:7a:dc:44:6b"
+                    },
+                    {
+                        "name": "eno1",
+                        "dhcp": true,
+                        "mac_address": "0c:c4:7a:dc:44:6a",
+                        "ip_address": "10.204.216.94/24",
+                        "default_gateway": "10.204.216.254"
+                    }
+                ]
+            },
+            "roles": [
+                     "contrail-compute"
+             ],
+            "cluster_id": "ocata_cluster",
+            "password": "c0ntrail123",
+            "ipmi_address": "10.207.25.223",
+            "id": "nodem5"
+        }  
+    ]
+}

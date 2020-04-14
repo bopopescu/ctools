@@ -1,0 +1,11 @@
+os: centos7
+sku: ocata
+version: latest
+contrailregistry: opencontrailnightly
+orchestrator: openstack
+contrail_rabbitmq_port: 5673
+keystone_version: v3
+feature_dict:
+    openstack: sanity
+    kubernetes: k8s_sanity
+    vcenter: vcenter

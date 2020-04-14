@@ -1,0 +1,234 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: ci-repo.englab.juniper.net:5000
+        contrail:
+            branch: master
+            registry: ci-repo.englab.juniper.net:5000
+        helm:
+            branch: master
+            registry: 10.204.217.152:5000
+    sku: ocata
+    os: ubuntu
+    version: latest
+    orchestrator: openstack
+    k8s_git_version: R5.0
+
+openstackregistry:
+   registry: 10.204.217.152:5000
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+master_node:
+    host: nodec1
+    ip: 10.204.216.58
+slave_nodes:
+    nodec2:
+      ip: 10.204.216.59
+    nodec3: 
+      ip: 10.204.216.60
+    nodek2:
+      ip: 10.204.216.222
+    nodek3:
+      ip: 10.204.216.223
+instances:
+  nodec1:
+    provider: bms
+    ip: 10.204.216.58
+    ansible_fqdn: nodec1.englab.juniper.net
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+  nodec2:
+    provider: bms
+    ip: 10.204.216.59
+    ansible_fqdn: nodec2.englab.juniper.net
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+
+  nodec3:
+    provider: bms
+    ip: 10.204.216.60
+    ansible_fqdn: nodec3.englab.juniper.net
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+
+  nodek2:
+    provider: bms
+    ip: 10.204.216.222
+    ansible_fqdn: nodek2.englab.juniper.net
+    roles:
+      vrouter:
+  nodek3:
+    provider: bms
+    ip: 10.204.216.223
+    ansible_fqdn: nodek3.englab.juniper.net
+    roles:
+      vrouter:
+
+contrail_configuration:
+  AAA_MODE: rbac
+  VROUTER_GATEWAY: 10.204.216.254
+  CONTROL_NODES: 10.204.216.58,10.204.216.59,10.204.216.60
+  BGP_PORT: 1179
+  CONTROL_DATA_NET_LIST: 10.204.216.0/24
+  AGENT_MODE: nic
+  RABBITMQ_NODE_PORT: 5673
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    password: c0ntrail123
+  internal_vip: 10.10.0.200
+  external_vip: 10.0.0.200
+  network_interface: eth1
+
+test_configuration:
+    cfgm0_host_string: root@10.204.216.58
+    cfgm0_host_pwd: c0ntrail123
+    image_web_server: 10.204.217.158
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    web_server:
+        server: 10.204.216.50
+        username: bhushana
+        password: c0ntrail!23
+        report_path: /var/www/html/sanity/fb-sanity/FB-R5.0-ocata-ubuntu16-helm-tempest
+        log_path: /var/www/html/Docs/logs
+        web_root: Docs/logs
+    mail_server:
+        server: 10.204.216.49
+        port: 25
+        to: dl-contrail-sw-in@juniper.net
+        sender: contrailbuild@juniper.net
+
+server_manager:
+  ip: 10.84.5.1
+  username: test
+  password: test123
+  image: centos74
+  client: /cs-shared/server-manager/client/server-manager
+
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/images/node_vm_images/centos-7.4-copy.qcow2.gz
+  hypervisors:
+    kvm_5c3s29_1:
+      username: 
+      ip: 
+      password: 
+      vm_config:
+        host1:
+          name:
+          ram: 
+          vcpus:
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge:
+                mac: 
+                model: 
+              intf2:
+                bridge:
+                model: 
+        host2:
+          name: 
+          ram: 
+          vcpus:
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge:
+                mac: 
+                model: 
+              intf2:
+                bridge: 
+                model: 
+        host3:
+          name: 
+          ram: 
+          vcpus: 
+          server: 
+          network:
+            interfaces:
+              intf1:
+                bridge: 
+                mac: 
+                model:
+
+control_data:
+    host1:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host2:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device: 
+    host3:
+      ip:
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host4:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host5:
+      ip: 
+      ctrldata_ip:
+      prefix: 
+      gw: 
+      device:
+    host6:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device:
+    host7:
+      ip: 
+      ctrldata_ip:
+      prefix: 
+      gw: 
+      device:
+    host8:
+      ip: 
+      ctrldata_ip: 
+      prefix: 
+      gw: 
+      device: 

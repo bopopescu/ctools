@@ -1,0 +1,61 @@
+cluster_name: dcos-contrail
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "config" in value['roles'] %}
+bootstrap_url: http://{{ value['ip'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+exhibitor_storage_backend: static
+master_discovery: static
+master_list:
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "mesos_master" in value['roles'] %}
+- {{ value['ip'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+resolvers:
+- 10.84.5.101
+- 172.21.200.60
+- 172.29.131.60
+superuser_username: admin
+superuser_password_hash: "=65600023o/Qz.InhbkbsO/27LkyDgWrml36lLxDtckZkCxu22uihAJ4DOJVVnNbsz/Y5MCK3B1InquE6E7Jmh30"
+ssh_port: 22
+ssh_user: root
+agent_list:
+{% set flag=1 %}
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "mesos_nodes" in value['roles'] %}
+{% if flag == 1 %}
+- {{ value['ip'] }}
+{% set flag=0 %}
+{% else %}
+{% set flag=0 %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+public_agent_list:
+{% set flag=0 %}
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "mesos_nodes" in value['roles'] %}
+{% if flag == 0 %}
+{% set flag=1 %}
+{% else %}
+- {{ value['ip'] }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+check_time: false
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "config" in value['roles'] %}
+exhibitor_zk_hosts: {{ value['ip'] }}:2181
+{% endif %}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,111 @@
+[OSEv3:children]
+masters
+nodes
+etcd
+openshift_ca
+lb
+
+[OSEv3:vars]
+ansible_ssh_user=root
+ansible_become=yes
+debug_level=2
+deployment_type=openshift-enterprise
+openshift_release={{ openshiftrelease }}
+openshift_repos_enable_testing=true
+containerized=false
+openshift_install_examples=true
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+osm_cluster_network_cidr=10.32.0.0/12
+openshift_portal_net=10.96.0.0/12
+openshift_use_dnsmasq=true
+openshift_clock_enabled=true
+openshift_hosted_manage_registry=true
+openshift_hosted_registry_selector="region=infra"
+openshift_hosted_manage_router=true
+openshift_hosted_router_selector="region=infra"
+openshift_enable_service_catalog=false
+openshift_use_openshift_sdn=false
+os_sdn_network_plugin_name='cni'
+openshift_docker_insecure_registries={{ openshiftregistry }}
+openshift_disable_check=disk_availability,package_version,docker_storage
+openshift_web_console_install=true
+openshift_web_console_nodeselector={'region':'infra'}
+ntpserver=10.84.5.100
+
+# Openshift HA
+{% if master_nodes | length >= 1 %}
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "load_balancer" in value['roles'] %}
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+openshift_master_cluster_public_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+# Below are Contrail variables. Comment them out if you don't want to install Contrail through ansible-playbook
+openshift_use_contrail=true
+contrail_version=5.1
+contrail_container_tag={{ 'rhel-'+ version if os == 'redhat' else version }}
+
+contrail_registry={{ openshiftregistry }}
+
+contrail_nodes=[{{ master_nodes|join(',') }}]
+
+{% if contrail_configuration is defined %}
+vrouter_physical_interface={{ default_device | default("eth0") }}
+{% endif %}
+
+#contrail_vip={{ master_nodes[0] }}
+
+
+[masters]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[etcd]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[lb]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "load_balancer" in value['roles'] %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[nodes]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "config" in value['roles'] %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }} openshift_node_labels="{'region':'infra'}"
+{% elif "load_balancer" in value['roles'] %}
+{% else %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+
+[openshift_ca]
+{% if instances is defined %}
+{% for key, value in instances.iteritems() %}
+{% if "k8s_master" in value['roles'] %}
+{{ value['ip'] }} openshift_hostname={{ vars['hostvars'][value['ip']]['ansible_hostname'] }}
+{% endif %}
+{% endfor %}
+{% endif %}

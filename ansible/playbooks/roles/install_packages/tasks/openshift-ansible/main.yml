@@ -1,0 +1,47 @@
+  
+- name: install the latest version of packages
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - git
+    - tcpdump
+    - wget
+    - net-tools
+    - bind-utils
+    - yum-utils
+    - iptables-services
+    - bridge-utils
+    - bash-completion
+    - kexec-tools
+    - sos
+    - psacct
+    - python-netaddr
+    - openshift-ansible
+
+- name: Add nameserver and change to read-only mode #temp change
+  lineinfile: 
+    path: /etc/resolv.conf
+    line: "nameserver 172.29.131.50"
+
+- name: Change resolv.conf attributes
+  file:
+    path: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: 0777
+
+- name: Remove default ntp servers
+  lineinfile:
+    dest: /etc/chrony.conf
+    regexp: '^server'
+    state: absent
+
+- name: Add ntp server
+  lineinfile:
+    dest: /etc/chrony.conf
+    line: 'server 10.84.5.101 iburst'
+    state: present
+
+- name: Restart chrony service
+  command: systemctl restart chronyd

@@ -1,0 +1,49 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        name: "{{ server_manager.ip }}"
+        ansible_ssh_host: "{{ server_manager.ip }}"
+        ansible_ssh_user: "{{ server_manager.username | default('root') }}"
+        ansible_ssh_pass: "{{ server_manager.password | default('c0ntrail123') }}"
+        group: "server_manager"
+      when: server_manager is defined
+
+- hosts: server_manager
+  gather_facts: no
+  roles:
+    - reimage
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - copy:
+        src: "{{ inventory_dir }}/group_vars/vcenter_vars.yml"
+        dest: "{{ playbook_dir }}/roles/cleanup_vcenter/vars/"
+      when: deployment.type.vcenter is defined
+
+- hosts:
+  - localhost
+  gather_facts: no
+  tasks:
+  - include_role:
+      name: cleanup_vcenter
+      vars_from: vcenter_vars.yml
+    when: deployment.type.vcenter is defined
+
+- hosts: server_manager
+  gather_facts: no
+  roles:
+    - check_reimage 
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: "Wait up to 300 seconds for the servers to be reachable"
+      wait_for:
+        host: "{{ item.value.ip }}"
+        port: 22
+        timeout: 300
+        delay: 30
+      with_dict: "{{ instances }}"
+      when: deployment.type.vcenter is undefined

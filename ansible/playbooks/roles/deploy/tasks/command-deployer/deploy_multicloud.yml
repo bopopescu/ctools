@@ -1,0 +1,422 @@
+
+- name: Set ID and Password for auth access
+  set_fact:
+    admin_username: "{{ admin_user }}"
+    admin_password: "{{ admin_password }}"
+    api_endpoint: "https://{{ command_server_ip }}:9091"
+
+- name: Set REST API URL
+  set_fact:
+    rest_api_url: "{{ api_endpoint }}/keystone/v3/auth/tokens"
+
+- name: Set REST API Data 
+  set_fact:
+    rest_api_data_temp_token: "{{ rest_api_data_temp_token }}"
+  when: admin_username is defined
+
+- debug:
+    var: rest_api_url
+
+- name: Get temp token
+  uri:
+    url: "{{ rest_api_url }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+    body: "{{ rest_api_data_temp_token }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_url is defined and rest_api_data_temp_token is defined
+  register: temp_token_op
+
+- name: Set temp_token
+  set_fact:
+    temp_token: "{{ temp_token_op.x_subject_token }}"
+  when: temp_token_op.x_subject_token
+
+- debug:
+    var: temp_token
+
+- name: Set REST API URL for admin project add
+  set_fact:
+    rest_api_url_project: "{{ api_endpoint }}/keystone/v3/auth/projects"
+  when: api_endpoint is defined
+
+- name: Get admin project information
+  uri:
+    url: "{{ rest_api_url_project }}"
+    method: GET
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ temp_token }}"
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_url_project is defined and temp_token is defined
+  register: register_admin_project
+
+- name: Set REST API Data for final token
+  set_fact:
+    rest_api_data_final_token: "{{ rest_api_data_final_token }}"
+  when: admin_username is defined and admin_project_id is defined
+
+- name: Get final token
+  uri:
+    url: "{{ rest_api_url }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+    body: "{{ rest_api_data_final_token }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_url is defined and rest_api_data_final_token is defined
+  register: final_token_op
+
+- name: Set final_token
+  set_fact:
+    final_token: "{{ final_token_op.x_subject_token}}"
+  when: final_token_op.x_subject_token
+
+- name: Set REST API URL for adding servers and doing provision
+  set_fact:
+    rest_api_sync: "{{ api_endpoint }}/sync"
+  when: api_endpoint is defined
+
+- name: Set REST API URL for uploading keys
+  set_fact:
+    rest_api_upload: "{{ api_endpoint }}/upload-cloud-keys"
+  when: api_endpoint is defined
+
+- name: set fact nodes uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli list node\" | grep 'display_name' -A33 | grep ' uuid: ' | cut -d ' ' -f6"
+  register: nodes_uuid
+
+- debug:
+    var: nodes_uuid.stdout_lines
+
+- name: get node name from node uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli show node {{ item }}\" | grep 'hostname' | cut -d ' ' -f6"
+  register: node_names
+  with_items: "{{ nodes_uuid.stdout_lines }}"
+
+- name: create node_name and uuid dict
+  set_fact:
+    node_dict: "{{ node_dict|default({}) | combine( {item.stdout: item.item} ) }}"
+  with_items: "{{ node_names.results }}"
+
+- debug:
+    var: node_dict
+
+- name: create payload
+  template:
+    src: contrail-command/add_ctl_data_interface_to_node_payload.j2
+    dest: "/tmp/add_ctl_data_interface_to_node_payload.yaml"
+
+- name: Include vars of add payload
+  include_vars:
+    file: /tmp/add_ctl_data_interface_to_node_payload.yaml
+    name: port_json_dict
+
+- debug:
+    var: port_json_dict
+
+- name: Add ctl-data interface to nodes in GO database
+  uri:
+    url: "{{ rest_api_sync }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ port_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_sync is defined and final_token is defined and port_json_dict is defined
+
+- name: create public cloud keys
+  template:
+    src: contrail-command/public_cloud_keys.j2
+    dest: "/tmp/public_cloud_keys.yaml"
+
+- name: Include vars of public cloud keys
+  include_vars:
+    file: /tmp/public_cloud_keys.yaml
+    name: public_cloud_keys_json_dict
+
+- name: Upload Public cloud keys
+  uri:
+    url: "{{ rest_api_upload }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ public_cloud_keys_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_upload is defined and final_token is defined and public_cloud_keys_json_dict is defined
+
+- name: set fact contrail_cluster uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli list contrail_cluster | grep ' uuid: '\" | cut -d ' ' -f6"
+  register: contrail_cluster_uuid
+
+- name: create public cloud payload
+  template:
+    src: contrail-command/create_public_cloud.j2
+    dest: "/tmp/create_public_cloud.yaml"
+
+- name: Include vars of public cloud payload
+  include_vars:
+    file: /tmp/create_public_cloud.yaml
+    name: public_cloud_json_dict
+
+- name: Create Public cloud objects
+  uri:
+    url: "{{ rest_api_sync }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ public_cloud_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_sync is defined and final_token is defined and public_cloud_json_dict is defined
+
+- name: Copy file to check cloud status
+  copy:
+    src: "{{ role_path }}/files/command-deployer/get_cloud_status.sh"
+    dest: "/tmp/get_cloud_status.sh"
+    mode: preserve
+
+- debug:
+    var: public_cloud_json_dict['resources'][2]['data']['uuid']
+
+- name: Check cloud status
+  shell: /tmp/get_cloud_status.sh "{{ public_cloud_json_dict['resources'][2]['data']['uuid'] }}" 6
+  register: cloud_status
+
+- debug:
+    var: cloud_status.stdout
+
+- name: Fail if cloud status not successful
+  fail: msg="Cloud creation/update FAILED!"
+  when: '"FAILED" in cloud_status.stdout'
+
+- meta: end_play
+  when: '"FAILED" in cloud_status.stdout'
+
+- name: Add cloud keys
+  template:
+    src: contrail-command/add_cloud_keys.j2
+    dest: "/tmp/add_cloud_keys.yaml"
+
+- name: Include vars of add cloud keys
+  include_vars:
+    file: /tmp/add_cloud_keys.yaml
+    name: add_cloud_keys_json_dict
+
+- debug:
+    var: add_cloud_keys_json_dict
+
+- name: Upload Add cloud keys
+  uri:
+    url: "{{ rest_api_upload }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ add_cloud_keys_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_upload is defined and final_token is defined and add_cloud_keys_json_dict is defined
+
+- name: Add public cloud - payload
+  template:
+    src: contrail-command/add_public_cloud.j2
+    dest: "/tmp/add_public_cloud.yaml"
+
+- name: Include vars of add cloud payload
+  include_vars:
+    file: /tmp/add_public_cloud.yaml
+    name: add_public_cloud_json_dict
+
+- debug:
+    var: add_public_cloud_json_dict
+
+- debug:
+    var: add_public_cloud_json_dict['resources'][2]['data']['uuid']
+
+- name: Add Public cloud objects
+  uri:
+    url: "{{ rest_api_sync }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ add_public_cloud_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_sync is defined and final_token is defined and add_public_cloud_json_dict is defined
+
+- name: Copy file to check cloud status
+  copy:
+    src: "{{ role_path }}/files/command-deployer/get_cloud_status.sh"
+    dest: "/tmp/get_cloud_status.sh"
+    mode: preserve
+
+- debug:
+    var: public_cloud_json_dict['resources'][2]['data']['uuid']
+
+- name: Check cloud status
+  shell: /tmp/get_cloud_status.sh "{{ public_cloud_json_dict['resources'][2]['data']['uuid'] }}" 6
+  register: cloud_status
+
+- debug:
+    var: cloud_status.stdout
+
+- name: Fail if cloud status not successful
+  fail: msg="Cloud creation/update FAILED!"
+  when: '"FAILED" in cloud_status.stdout'
+
+- meta: end_play
+  when: '"FAILED" in cloud_status.stdout'
+
+- name: Upload Add cloud keys
+  uri:
+    url: "{{ rest_api_upload }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ add_cloud_keys_json_dict }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_upload is defined and final_token is defined and add_cloud_keys_json_dict is defined
+
+- name: set fact bms credential uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli list credential | grep ' name: bms' -A20 | grep ' uuid: '\" | cut -d ' ' -f6"
+  register: bms_credential_uuid
+
+- debug:
+    var: bms_credential_uuid.stdout
+
+- name: set fact nodes uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli list node\" | grep 'display_name' -A33 | grep ' uuid: ' | cut -d ' ' -f6"
+  register: nodes_uuid
+
+- debug:
+    var: nodes_uuid.stdout_lines
+
+- name: get node name from node uuid
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli show node {{ item }}\" | grep 'hostname' | cut -d ' ' -f6"
+  register: node_names
+  with_items: "{{ nodes_uuid.stdout_lines }}"
+
+- name: create node_name and uuid dict
+  set_fact:
+    node_dict: "{{ node_dict|default({}) | combine( {item.stdout: item.item} ) }}"
+  with_items: "{{ node_names.results }}"
+
+- debug:
+    var: node_dict
+
+- name: Get public cloud gateway list. 
+  shell: "docker exec contrail_command bash -c \"export CONTRAIL_CONFIG='/etc/contrail/contrail.yml'; contrailcli list node\" | grep roles -A3 | grep gateway -A2 | grep display_name | cut -d ' ' -f6"
+  register: public_cloud_gw_list
+
+- debug:
+    var: public_cloud_gw_list.stdout_lines
+
+- name: Create private cloud - payload
+  template:
+    src: contrail-command/create_private_cloud_and_provision.j2
+    dest: "/tmp/create_private_cloud_and_provision.yaml"
+
+- name: Include vars of create private cloud and provision payload
+  include_vars:
+    file: /tmp/create_private_cloud_and_provision.yaml
+    name: create_private_cloud_and_provision
+
+- debug:
+    var: create_private_cloud_and_provision
+
+- name: Create Private cloud objects and extend
+  uri:
+    url: "{{ rest_api_sync }}"
+    method: POST
+    headers:
+      Accept: "*/*"
+      Connection: "keep-alive"
+      Content-Type: "application/json"
+      X-Requested-With: "XMLHttpRequest"
+      X-Auth-Token: "{{ final_token }}"
+    body: "{{ create_private_cloud_and_provision }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+  when: rest_api_sync is defined and final_token is defined and create_private_cloud_and_provision is defined
+
+- name: Copy file to check private cloud status
+  copy:
+    src: "{{ role_path }}/files/command-deployer/get_cluster_status.sh"
+    dest: "/tmp/get_cluster_status.sh"
+    mode: preserve
+
+- name: Check cluster extention status
+  shell: /tmp/get_cluster_status.sh "{{ contrail_cluster_uuid.stdout }}" 6
+  register: cluster_status
+
+- debug:
+    var: cluster_status.stdout
+
+- name: Fail if cluster extention status not successful
+  fail: msg="Cluster extention to public cloud FAILED!"
+  when: '"FAILED" in cluster_status.stdout'
+
+- meta: end_play
+  when: '"FAILED" in cluster_status.stdout'
+
+
+

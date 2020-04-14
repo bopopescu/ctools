@@ -1,0 +1,132 @@
+deployment:
+    type:
+      kolla:
+      contrail:
+        branch: master
+        registry: 10.204.217.152:5010
+    sku: queens
+    os: centos7
+    version: null
+    orchestrator: kubernetes
+    deployer: contrail-ansible-deployer
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+
+instances:
+  nodeh4:
+    provider: bms
+    ip: 10.204.217.108
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      k8s_master:
+      kubemanager:
+
+  nodei12:
+    provider: bms
+    ip: 10.204.217.124
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      kubemanager:
+
+  nodel11:
+    provider: bms
+    ip: 10.204.217.248
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      kubemanager:
+
+  nodel8:
+    provider: bms
+    ip: 10.204.217.218
+    roles:
+      k8s_node:
+      vrouter:
+        PHYSICAL_INTERFACE: eno1
+        VROUTER_GATEWAY: 10.204.217.254
+
+  nodei38:
+    provider: bms
+    ip: 10.204.217.150
+    roles:
+      k8s_node:
+      vrouter:
+        PHYSICAL_INTERFACE: eno1
+        VROUTER_GATEWAY: 10.204.217.254
+
+global_configuration:
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTAINER_REGISTRY: 10.204.217.152:5010
+
+contrail_configuration:
+  LOG_LEVEL: SYS_DEBUG
+  CONTRAIL_VERSION: null
+  CLOUD_ORCHESTRATOR: kubernetes
+  KUBERNETES_PUBLIC_FIP_POOL: {'project': 'default', 'domain': 'default-domain', 'name': '__fip_pool_public__', 'network': '__public__'}
+  #KUBERNETES_IP_FABRIC_SUBNETS: TODO
+  KUBERNETES_API_NODES: 10.204.217.108
+  KUBERNETES_API_SERVER: 10.204.217.108
+  CONTAINER_REGISTRY: 10.204.217.152:5010
+  REGISTRY_PRIVATE_INSECURE: True
+  CONFIG_API_VIP: 10.204.217.108
+  CONTROLLER_NODES: 10.204.217.108,10.204.217.124,10.204.217.248
+  CONTROL_NODES: 10.204.217.108,10.204.217.124,10.204.216.7
+  RABBITMQ_NODE_PORT: 5673
+  VROUTER_GATEWAY: 10.204.217.254
+  JVM_EXTRA_OPTS: "-Xms1g -Xmx2g"
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  VNC_CURL_LOG_NAME: vnc_logs_k8s.log
+
+test_configuration:
+    cfgm0_host_string: root@10.204.217.108
+    cfgm0_host_pwd: c0ntrail123
+    cluster_id: cluster_k8s_nested_1
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    router_asn: 64512
+    public_rt: 600
+    public_virtual_network: __public__
+    public_subnet: 10.204.219.128/29
+    fip_pool_name: __fip_pool_public__
+    ext_routers:
+        hooper: 10.204.217.240
+    mail_server:
+        server: 10.204.216.49
+        port: 25
+        to: dl-contrail-sw@juniper.net
+        sender: contrailbuild@juniper.net
+    web_server:
+        server: 10.204.216.50
+        username: bhushana
+        password: c0ntrail!23
+        report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-k8s-centos7-ha-ansible-sanity
+        log_path: /home/bhushana/Documents/technical/logs
+        web_root: Docs/logs
+
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: centos-7.5
+  client: /cs-shared/server-manager/client/server-manager

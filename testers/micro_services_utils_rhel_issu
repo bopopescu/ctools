@@ -1,0 +1,400 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+TOOLS_WS=${TOOLS_WS:-$(pwd)}
+echo **** MASTER ****
+
+function build_version_string() {
+
+    #Needs refinement based on mainline, latest and other future tags.
+    echo "Running build_version_string"
+    VERSION=`echo $BRANCH | cut -d 'R' -f 2`.${BUILDID}
+    #VERSION=$SKU-$VERSION
+    export SANITY_VERSION=$VERSION
+
+    TEST_VERSION=$VERSION
+    if [[ $DISTRO =~ ^(redhat) ]]; then
+        VERSION=$VERSION-rhel
+    fi
+    echo $VERSION
+    export VERSION=$VERSION
+    export TEST_VERSION=$TEST_VERSION
+
+    undercloud=`sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "virsh domifaddr ${UNDERCLOUD_NAME} |grep ipv4"`
+    undercloud_ip=`echo $undercloud | awk '{print $4}' | awk -F"/" '{print $1}'`
+    export UNDERCLOUD_IP=${undercloud_ip}
+}
+
+function clean_pool_rhosp() {
+    if [ $POOL_CLEAN -ne 0 ]
+    then
+        return 0
+    fi
+    undercloud=`sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "virsh domifaddr ${UNDERCLOUD_NAME} |grep ipv4"`
+    undercloud_ip=`echo $undercloud | awk '{print $4}' | awk -F"/" '{print $1}'`
+    export UNDERCLOUD_IP=${undercloud_ip}
+    
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+        sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $UNDERCLOUD_IP \"subscription-manager remove --pool ${REDHAT_POOL}\"
+    ) "
+    
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    	subscription-manager remove --pool ${REDHAT_POOL}
+    ) "
+    
+    sshpass -p ${NODE_PASS} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_0_IP} "(
+	subscription-manager remove --pool ${REDHAT_POOL}
+    ) "
+    
+    sshpass -p ${NODE_PASS} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_1_IP} "(
+	subscription-manager remove --pool ${REDHAT_POOL}
+    ) "
+
+}
+
+function reimage_setup_rhosp() {
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running reimage_setup_rhosp"
+    #cd ${TOOLS_WS}/ansible; ansible-playbook -i inventory/ playbooks/reimage.yml
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        server-manager reimage --no_confirm --cluster_id $CLUSTER_NAME $DISTRO
+        set -e
+        echo "reimage in progress please wait ..."
+        sleep 10
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+    ) "
+    if [ $? == 0 ]
+    then
+        echo "reimaged the target $CLUSTER_NAME successfully"
+        sleep 400
+    else
+        echo "reimage of target $CLUSTER_NAME failed!!!"
+        exit 1
+    fi
+}
+
+function copy_and_edit_yaml_file() {
+    echo "Running copy_and_edit_yaml_file"
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS} root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "chmod +x /root/contrail-tools/yamls/rhosp13/copy_edit_yaml_files_issu.sh;/root/contrail-tools/yamls/rhosp13/copy_edit_yaml_files_issu.sh ${UNDERCLOUD_IP} ${UNDERCLOUD_REG} ${YAML} ${AGENT_MODE} ${CONTRAIL_REG_INSECURE} ${CONTRAIL_REGISTRY} ${VERSION} ${NTP_SERVER} ${SKIP_COPY_EDIT_YAML} ${VLAN_1} ${VLAN_2} ${VLAN_3} ${VLAN_4} ${SRIOV_INT} ${SKIP_DEL_OF_CONTRAIL_HEAT_TEMP}"
+}
+
+function update_test_yaml() {
+    if [ $SKIP_SANITY -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running update_test_yaml"
+
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+        sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"source stackrc;./get_server_ip_issu.sh;python update_test_yaml_issu.py ${AGENT_MODE}\"
+    ) "
+}
+
+function pre_undercloud() {
+    if [ $SKIP_PRE_UNDERCLOUD -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running pre_undercloud"
+    
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    mkdir ~/images
+    ) "
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /cs-shared/images/redhat-7.0/rhel-server-7.7-x86_64-kvm.qcow2 root@${HYPERVISOR_IP}:/root/images/
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/yamls/rhosp13/pre_undercloud_issu.sh root@${HYPERVISOR_IP}:
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    chmod +x pre_undercloud_issu.sh;./pre_undercloud_issu.sh ${HYPERVISOR_IP} ${HYPERVISOR_PASSWORD} ${NIC_UC} ${NIC1_N0} ${NIC2_N0} ${NIC1_N1} ${NIC2_N1} ${VLAN_0} ${VLAN_1} ${VLAN_2} ${VLAN_3} ${VLAN_4} ${VLAN_5} ${NODE_0_IP} ${NODE_1_IP} ${NODE_PASS} ${VLAN_6})"
+}
+
+function create_undercloud() {
+    if [ $SKIP_UNDERCLOUD_REFRESH -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running create_undercloud"
+    echo ${REDHAT_USER}
+    echo ${REDHAT_PASSWORD}
+    echo ${REDHAT_POOL}
+    echo ${CONTRAIL_REGISTRY}
+    sleep 1m
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/yamls/rhosp13/create_undercloud_issu.sh root@${HYPERVISOR_IP}:
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+        chmod +x create_undercloud_issu.sh;./create_undercloud_issu.sh ${REDHAT_USER} ${REDHAT_PASSWORD} ${REDHAT_POOL} ${CONTRAIL_REGISTRY} ${UNDERCLOUD_REG} ${VERSION} ${VLAN_2} ${ACTIVATION_KEY} ${VLAN_1} ${VLAN_6} ${UNDERCLOUD_NAME}
+    ) "
+
+    undercloud=`sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "virsh domifaddr ${UNDERCLOUD_NAME} |grep ipv4"`
+    undercloud_ip=`echo $undercloud | awk '{print $4}' | awk -F"/" '{print $1}'`
+    export UNDERCLOUD_IP=${undercloud_ip}
+}
+
+function delete_overcloud() {
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running delete_overcloud"
+
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+        sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"source stackrc;openstack stack list| grep overcloud\"
+) "
+    ret=$?
+    if [ $ret == 0 ]
+    then
+        echo "overcloud stack found, deleting it"
+        sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+            sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"source stackrc;echo -e y | openstack stack delete overcloud\"
+    ) "
+
+        sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+            sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"source stackrc;openstack stack list| grep overcloud\"
+    ) "
+        ret=$?
+        retry=120
+        while [[ $ret == 0 && retry != 0 ]]
+        do
+            sleep 5
+            sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+            sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"source stackrc;openstack stack list| grep overcloud\"
+    ) "
+            ret=$?
+            retry=$(expr $retry - 1)
+        done
+        if [ $ret == 0 ]
+        then
+            echo "overcloud stack deletion failed"
+            return 1
+        fi
+    fi
+}
+
+function deploy_stack() {
+    if [ $SKIP_PROVISION -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running deploy_stack"
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/yamls/rhosp13/create_controller_vm_issu.sh root@${NODE_0_IP}:
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_0_IP} " (
+    chmod +x create_controller_vm_issu.sh
+    ./create_controller_vm_issu.sh 
+    )"
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS}/yamls/rhosp13/create_ISSU_controller_vm.sh root@${NODE_1_IP}:
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_1_IP} " (
+    chmod +x create_ISSU_controller_vm.sh
+    ./create_ISSU_controller_vm.sh
+    )"
+
+    #Create ironic list
+    rm -f ironic_list
+    rm -f ironic_list_compute
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_0_IP} "cat ironic_list" >> ironic_list
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${NODE_1_IP} "cat ironic_list" >> ironic_list
+    if [ ${AGENT_MODE} == 'kernel' ]
+    then 
+        compute_role=compute
+    elif [ ${AGENT_MODE} == 'dpdk' ]
+    then
+        compute_role=compute-dpdk
+    elif [ ${AGENT_MODE} == 'sriov' ]
+    then
+        compute_role=compute-sriov       
+    fi
+    compute_macs=(${COMPUTES_MACS})
+    for compute in "${compute_macs[@]}"
+    do
+        ip=$(echo $compute| cut -d , -f 1)
+        prov_mac=$(echo $compute| cut -d , -f 2)
+        echo ${prov_mac} ${ip} ${ip} ${compute_role} 623 >> ironic_list_compute
+    done
+    sleep 10m
+
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ironic_list root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ironic_list_compute root@${HYPERVISOR_IP}:/root/
+
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+        sshpass -p ${UNDERCLOUD_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /root/ironic_list ${UNDERCLOUD_STACK_USER}@${UNDERCLOUD_IP}:${UNDERCLOUD_STACK_HOME}/
+        sshpass -p ${UNDERCLOUD_PASSWORD} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /root/ironic_list_compute ${UNDERCLOUD_STACK_USER}@${UNDERCLOUD_IP}:${UNDERCLOUD_STACK_HOME}/
+        sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x deploy_issu.sh;./deploy_issu.sh ${UNDERCLOUD_IP} ${VERSION}\"
+    ) "
+}
+
+function deploy_issu_nodes() {
+    if [ $SKIP_ISSU_DEPLOY -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "deploying ISSU nodes"
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS} root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "chmod +x /root/contrail-tools/yamls/rhosp13/deploy_issu_nodes.sh;/root/contrail-tools/yamls/rhosp13/deploy_issu_nodes.sh ${UNDERCLOUD_IP} ${BUILD_ISSU} ${CONTRAIL_REGISTRY}"
+}
+
+function issu_prepare() {
+    if [ $SKIP_ISSU_PREPARE -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "start prepare"
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS} root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "chmod +x /root/contrail-tools/yamls/rhosp13/issu_prepare.sh;/root/contrail-tools/yamls/rhosp13/issu_prepare.sh ${UNDERCLOUD_IP} ${BUILD_ISSU}"
+}
+
+function issu_step_5() {
+    if [ $SKIP_ISSU_STEP_5 -ne 0 ]
+    then
+            return 0
+    fi
+    echo "issue step 5"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+            sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_5.sh;./issu_step_5.sh\"
+    ) "
+}
+
+function issu_step_6() {
+    if [ $SKIP_ISSU_STEP_6 -ne 0 ]
+    then
+            return 0
+    fi
+    echo "issue step 6"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+            sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_6.sh;./issu_step_6.sh ${AGENT_MODE}\"
+   ) "
+}
+
+function issu_step_7() {
+    if [ $SKIP_ISSU_STEP_7 -ne 0 ]
+    then
+	    return 0
+    fi 
+    echo "issue step 7"  
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_7.sh;./issu_step_7.sh\"
+    )"
+}
+
+function issu_step_8() {
+    if [ $SKIP_ISSU_STEP_8 -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "issue step 8"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_8.sh;./issu_step_8.sh\"
+    )"
+}
+
+function issu_step_9() {
+    if [ $SKIP_ISSU_STEP_9 -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "issue step 9"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_9.sh;./issu_step_9.sh\"
+    )"
+}
+
+function issu_step_10() {
+   if [ $SKIP_ISSU_STEP_10 -ne 0 ]
+   then
+           return 0
+   fi
+   echo "issue step 10"
+   sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+   sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_10.sh;./issu_step_10.sh\"
+   )"
+}
+
+function issu_step_11() {
+   if [ $SKIP_ISSU_STEP_11 -ne 0 ]
+   then
+           return 0 
+   fi
+   echo "issue step 11"
+   sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+   sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_11.sh;./issu_step_11.sh ${AGENT_MODE}\"
+      )"
+
+}
+
+function issu_step_12() {
+    if [ $SKIP_ISSU_STEP_12 -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "issue step 12"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} " (
+    sshpass -p ${UNDERCLOUD_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l ${UNDERCLOUD_STACK_USER} $UNDERCLOUD_IP \"chmod +x issu_step_12.sh;./issu_step_12.sh\"
+      )"
+}
+
+function issu_converge() {
+    if [ $SKIP_ISSU_CONVERGE -ne 0 ]
+    then
+	    return 0
+    fi
+    echo "issu converge"
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS} root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "chmod +x /root/contrail-tools/yamls/rhosp13/issu_converge.sh;/root/contrail-tools/yamls/rhosp13/issu_converge.sh ${UNDERCLOUD_IP}"
+}
+
+function remove_issu_nodes() {
+    if [ $SKIP_ISSU_REMOVE -ne 0 ]
+    then
+            return 0
+    fi
+    echo "remove ISSU nodes"
+    sshpass -p ${HYPERVISOR_PASSWORD} scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${TOOLS_WS} root@${HYPERVISOR_IP}:/root/
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "chmod +x /root/contrail-tools/yamls/rhosp13/rm_issu_nodes.sh;/root/contrail-tools/yamls/rhosp13/rm_issu_nodes.sh ${UNDERCLOUD_IP}"
+}
+
+function run_sanity_rhel() {
+    if [ $SKIP_SANITY -ne 0 ]
+    then
+        return 0
+    fi
+    echo "Running run_sanity_rhel"
+    sshpass -p ${HYPERVISOR_PASSWORD} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root ${HYPERVISOR_IP} "cd /root/contrail-tools/yamls/rhosp13; chmod +x run_sanity_issu.sh;./run_sanity_issu.sh ${UNDERCLOUD_STACK_USER} ${UNDERCLOUD_IP} ${UNDERCLOUD_PASSWORD} ${UNDERCLOUD_STACK_HOME} ${DEFAULT_TEST_YAML} ${CONTRAIL_REGISTRY} ${SANITY_VERSION}"
+}
+
+function run_rhel_sanity_task() {
+    echo "Running tests on $1.."
+
+    build_version_string || die "version string could not be built"
+    clean_pool_rhosp || die "clean rhosp pool failed"
+    reimage_setup_rhosp || die "failed to reimage setup"
+    pre_undercloud || die "pre undercloud config failed"
+    delete_overcloud || die "failed to delete the overcloud"
+    create_undercloud || die "failed to create undercloud"
+    copy_and_edit_yaml_file || die "failed to copy and edit yaml file"
+    deploy_stack || die "failed to provision setup"
+    deploy_issu_nodes || die "failed to deploy ISSU nodes"
+    update_test_yaml || die "failed to update test yaml"
+    run_sanity_rhel || die "failed to run sanity"
+    issu_prepare || die "failed to prepare"
+    issu_step_5 || exit 1 
+    issu_step_6 || exit 1 
+    issu_step_7 || exit 1 
+    issu_step_8 || exit 1 
+    issu_step_9 || exit 1
+    issu_step_10 || exit 1 
+    issu_step_11 || exit 1 
+    issu_step_12 || exit 1 
+    issu_converge || die "failed to run issu converge"
+    remove_issu_nodes || die "failed to remove ISSU nodes"
+}

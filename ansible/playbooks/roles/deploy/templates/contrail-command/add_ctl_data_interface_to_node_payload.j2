@@ -1,0 +1,10 @@
+resources:
+{% for key,value in control_data.iteritems() %}
+  - data:
+      name: "{{ value['device'] }}"
+      parent_uuid: "{{ node_dict[key] }}"
+      parent_type: node
+      uuid: "{{ value['ctrldata_ip'] | to_uuid }}"
+      ip_address: "{{ value['ctrldata_ip'] }}"
+    kind: port
+{% endfor %}

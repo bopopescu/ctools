@@ -1,0 +1,5 @@
+port_translation_pools:
+  - protocol: "tcp"
+    port_count: "1024"
+  - protocol: "udp"
+    port_count: "1024"

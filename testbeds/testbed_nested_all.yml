@@ -1,0 +1,25 @@
+#docker_registry: 10.84.5.71:5000
+#docker_registry_insecure: True
+docker_install_method: package
+docker_py_pkg_install_method: pip
+ansible_user: root
+ansible_become: true
+ansible_ssh_private_key_file: ~/.ssh/id_rsa
+contrail_compute_mode: container
+os_release: ubuntu16.04
+contrail_version: 4.0.1.0-27
+cloud_orchestrator: kubernetes
+vrouter_physical_interface: ens3
+webui_config: {http_listen_port: 8085}
+keystone_config: {ip: 10.87.66.153, admin_password: B24094A6C5D3, admin_user: admin, admin_tenant: admin}
+nested_cluster_private_network: "10.10.10.0/24"
+kubernetes_cluster_name: k8s6
+nested_cluster_network: {domain: default-domain, project: admin, name: k8s-nested-cluster}
+
+# Access token to connect to Kuberenetes API server.
+#kubernetes_access_token
+# Kubernetes cluster is nested within an Openstack cluster.
+nested_mode: true
+kubernetes_api_server: 10.87.117.243
+kubernetes_public_fip_pool: {domain: default-domain, project: admin, network: __public__, name: __fip_pool_public__}
+

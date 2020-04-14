@@ -1,0 +1,20 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - role: create_routers_group
+      when: 
+        - test_configuration is defined
+        - test_configuration.physical_routers is defined
+
+- hosts: vqfx10k
+  gather_facts: no
+  become: true
+  become_user: root
+  roles:
+    - Juniper.junos
+    - configure_fabric_underlay
+  connection: local
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: 'false'
+    ANSIBLE_STDOUT_CALLBACK: debug

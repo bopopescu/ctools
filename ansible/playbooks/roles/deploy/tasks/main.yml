@@ -1,0 +1,111 @@
+---
+- name: set default deployment
+  vars:
+    types:
+      kolla:
+      contrail:
+  set_fact:
+    deployment: "{{ deployment|default({})|combine({'type': types }) }}"
+  when: deployment is undefined or deployment.type is undefined
+
+- name: get openstack version from env, if defined
+  set_fact:
+    sku: "{{ lookup('env', 'SKU') }}"
+  when: lookup('env', 'SKU') != ''
+
+- name: set openstack version
+  set_fact:
+    sku: "{{ deployment.sku }}"
+  when: lookup('env', 'SKU') == '' and deployment.sku is defined
+
+- name: get contrail version from env, if defined
+  set_fact:
+    version: "{{ lookup('env', 'VERSION') | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') != ''
+
+- name: set contrail version
+  set_fact:
+    version: "{{ deployment.version | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') == '' and deployment.version is defined
+
+- name: set orchestrator
+  set_fact:
+    orchestrator: "{{ deployment.orchestrator }}"
+  when: deployment.orchestrator is defined
+
+- name: set docker os version
+  set_fact:
+     os: "{{ deployment.os }}"
+  when: deployment.os is defined
+
+- name: set orchestrator password
+  set_fact:
+    admin_password: "{{ orchestrator_configuration.keystone.password }}"
+  when:
+    - orchestrator_configuration is defined
+    - orchestrator_configuration.keystone is defined
+    - orchestrator_configuration.keystone.password is defined
+
+- name: Deploy using contrail-koll-ansible-deployer docker version
+  include: "{{ item }}"
+  when:
+    - deployment.type.contrail is defined
+    - deployment.type.kolla is defined
+    - deployment.deployer is defined and deployment.deployer == "contrail_kolla_ansible_docker"
+  with_items:
+    - contrail-kolla-ansible-deployer/main.yml
+
+- meta: end_play
+  when: deployment.deployer is defined and deployment.deployer == "contrail_kolla_ansible_docker"
+
+- name: Set kolla vars if using openstack with contrail ansible deployer
+  include: "{{ item }}"
+  when:
+    - deployment.type.kolla is defined
+    - deployment.orchestrator is defined and deployment.orchestrator == 'openstack'
+    - deployment.deployer is undefined or deployment.deployer != "contrail_command"
+  with_items:
+    - contrail-kolla-ansible/main.yml
+
+- name: Deploy contrail using contrail ansible deployer
+  include: "{{ item }}"
+  when:
+    - deployment.type.contrail is defined
+    - deployment.deployer is undefined or deployment.deployer != "contrail_command"
+  with_items:
+    - contrail-ansible-deployer/main.yml
+
+- name: Deploy using Helm charts
+  include: "{{ item }}"
+  when: deployment.type.helm is defined
+  with_items:
+    - openstack-helm/main.yml
+    - contrail-helm/main.yml
+
+- name: Deploy using openshift ansible
+  include: "{{ item }}"
+  when: deployment.type.openshift is defined
+  with_items:
+    - openshift-ansible/main.yml
+
+- name: Deploy Mesos using contrail ansible deployer
+  include: "{{ item }}"
+  when:
+    - deployment.type.marathon is defined
+  with_items:
+    - contrail-ansible-deployer/main.yml
+
+#- name: Deploy using mesos ansible
+#  include: mesos/main.yml
+#  when: deployment.type.marathon is defined
+#  include: openshift-ansible/main.yml
+#  when: deployment.type.openshift is defined
+
+- name: Deploy using contrail command deployer
+  include: "{{ item }}"
+  when:
+    - deployment.deployer is defined
+    - deployment.deployer == 'contrail_command'
+  with_items:
+    - contrail-kolla-ansible/main.yml
+    - command-deployer/main.yml

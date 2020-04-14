@@ -1,0 +1,94 @@
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+
+instances:
+  bms1:
+    provider: bms
+    ip: 10.204.217.139
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms2:
+    provider: bms
+    ip: 10.204.217.140
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms3:
+    provider: bms
+    ip: 10.204.217.144
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms4:
+    provider: bms
+    esxi_host: 10.204.217.147 
+    ip: 10.204.217.204
+    roles:
+      vrouter:
+      vcenter_manager:
+        ESXI_USERNAME: root
+        ESXI_PASSWORD: c0ntrail123
+
+  bms5:
+    provider: bms
+    esxi_host: 10.204.217.148
+    ip: 10.204.217.229
+    roles:
+      vrouter:
+      vcenter_manager:
+        ESXI_USERNAME: root
+        ESXI_PASSWORD: c0ntrail123
+ 
+  bms6:
+    provider: bms
+    esxi_host: 10.204.217.123
+    ip: 10.204.217.181
+    roles:
+      vrouter:
+      vcenter_manager:
+        ESXI_USERNAME: root
+        ESXI_PASSWORD: c0ntrail123
+  
+global_configuration:
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  REGISTRY_PRIVATE_INSECURE: True
+
+contrail_configuration:
+  CLOUD_ORCHESTRATOR: vcenter
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTRAIL_VERSION: null
+  CONTROLLER_NODES: 10.204.217.139,10.204.217.140,10.204.217.144
+  CONTROL_NODES: 10.204.217.139,10.204.217.140,10.204.217.144
+  VROUTER_GATEWAY: 10.204.217.254
+  RABBITMQ_NODE_PORT: 5673
+  VCENTER_SERVER: 10.204.217.203
+  VCENTER_USERNAME: administrator@vsphere.local
+  VCENTER_PASSWORD: Contrail123!
+  VCENTER_DATACENTER: i27_datacenter11
+  VCENTER_DVSWITCH: i27i28_dvs
+  VCENTER_WSDL_PATH: /usr/src/contrail/contrail-web-core/webroot/js/vim.wsdl
+  VCENTER_AUTH_PROTOCOL: https
+
+
+

@@ -1,0 +1,255 @@
+heat_template_version: 2015-04-30
+
+description: Template for Remote Compute Feature
+
+resources:
+  final_test_network_4_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_4_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_4_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_4_project_uuid_val }
+      cidr: 10.30.0.0/24
+      ip_version: 4
+      name: final_test_network_4_project_uuid_val_subnet_1
+
+  final_test_network_3_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_3_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_3_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_3_project_uuid_val }
+      cidr: 10.20.0.0/24
+      ip_version: 4
+      name: final_test_network_3_project_uuid_val_subnet_1
+
+  final_test_network_5_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_5_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_5_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_5_project_uuid_val }
+      cidr: 10.40.0.0/24
+      ip_version: 4
+      name: final_test_network_5_project_uuid_val_subnet_1
+
+  final_test_network_7_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_7_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_7_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_7_project_uuid_val }
+      cidr: 10.60.0.0/24
+      ip_version: 4
+      gateway_ip: null
+      name: final_test_network_7_project_uuid_val_subnet_1
+
+  final_test_network_2_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_2_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_2_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_2_project_uuid_val }
+      cidr: 10.10.0.0/24
+      ip_version: 4
+      name: final_test_network_2_project_uuid_val_subnet_1
+
+  final_test_network_6_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_6_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_6_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_6_project_uuid_val }
+      cidr: 10.50.0.0/24
+      ip_version: 4
+      name: final_test_network_6_project_uuid_val_subnet_1
+
+  final_test_network_8_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_8_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_8_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_8_project_uuid_val }
+      cidr: 10.70.0.0/24
+      ip_version: 4
+      gateway_ip: null
+      name: final_test_network_8_project_uuid_val_subnet_1
+
+  final_test_network_1_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_1_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_1_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_1_project_uuid_val }
+      cidr: 10.0.0.0/24
+      ip_version: 4
+      name: final_test_network_1_project_uuid_val_subnet_1
+
+  final_test_network_9_project_uuid_val:
+    type: OS::ContrailV2::VirtualNetwork
+    properties:
+      name: final_test_network_9_project_uuid_val
+      project: project_uuid_val
+      network_policy_refs: [{ get_resource: policy_all_everything }]
+      network_policy_refs_data:
+        [{
+          network_policy_refs_data_sequence:
+            {
+              network_policy_refs_data_sequence_major: 0,
+              network_policy_refs_data_sequence_minor: 0,
+            },
+        }]
+
+  final_test_network_9_project_uuid_val_subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      tenant_id: project_uuid_val
+      network_id: { get_resource: final_test_network_9_project_uuid_val }
+      cidr: 10.80.0.0/24
+      ip_version: 4
+      gateway_ip: null
+      name: final_test_network_9_project_uuid_val_subnet_1
+
+  policy_all_everything:
+    type: OS::ContrailV2::NetworkPolicy
+    properties:
+      name: "policy_all_everything_project_uuid_val"
+      network_policy_entries:
+        network_policy_entries_policy_rule: [
+          {
+            network_policy_entries_policy_rule_direction: "<>",
+            network_policy_entries_policy_rule_protocol: "any",
+            network_policy_entries_policy_rule_dst_addresses:
+              [{
+                network_policy_entries_policy_rule_dst_addresses_virtual_network: "any",
+              }],
+            network_policy_entries_policy_rule_src_addresses:
+              [{
+                network_policy_entries_policy_rule_src_addresses_virtual_network: "any",
+              }],
+            network_policy_entries_policy_rule_src_ports:
+              [{
+                network_policy_entries_policy_rule_src_ports_start_port: "-1",
+                network_policy_entries_policy_rule_src_ports_end_port: "-1"
+              }],
+            network_policy_entries_policy_rule_dst_ports:
+              [{
+                network_policy_entries_policy_rule_dst_ports_start_port: "-1",
+                network_policy_entries_policy_rule_dst_ports_end_port: "-1"
+              }],
+            network_policy_entries_policy_rule_action_list: { network_policy_entries_policy_rule_action_list_simple_action: "pass" },
+          }
+        ]
+

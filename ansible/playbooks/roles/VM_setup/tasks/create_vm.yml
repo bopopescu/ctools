@@ -1,0 +1,19 @@
+---
+
+- name: creat disk string
+  vars:
+    disk_string:
+  set_fact:
+    disk_string: "{{ 'path=' + image_dest + '/' + disk_file_name + ',' + 'format=' + disk_format}}"
+
+
+
+#create the VM
+- name: create VM
+  shell: "virt-install --name {{vm_name}} \
+        --ram {{vm_ram}} \
+        --disk {{disk_string}} \
+        {{vm_network_arg}} \
+        --vcpus {{vm_vcpus}} \
+        --import --noautoconsole"
+#  with_dict: "{{ vm_info.vm_conf }}"

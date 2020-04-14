@@ -1,0 +1,75 @@
+- name: set default deployment
+  vars:
+    types:
+      kolla:
+      contrail:
+  set_fact:
+    deployment: "{{ deployment|default({})|combine({'type': types }) }}"
+  when: deployment is undefined or deployment.type is undefined
+  
+- name: get openstack version from env, if defined
+  set_fact:
+    sku: "{{ lookup('env', 'SKU') }}"
+  when: lookup('env', 'SKU') != ''
+
+- name: set openstack version
+  set_fact:
+    sku: "{{ deployment.sku }}"
+  when: lookup('env', 'SKU') == '' and deployment.sku is defined
+  
+- name: get contrail version from env, if defined
+  set_fact:
+    version: "{{ lookup('env', 'VERSION') | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') != ''
+
+- name: set contrail version
+  set_fact:
+    version: "{{ deployment.version | replace(sku+'-', '') }}"
+  when: lookup('env', 'VERSION') == '' and deployment.version is defined
+
+- name: set contrailregistry if defined
+  set_fact:
+    contrailregistry: "{{ deployment.type.contrail.registry }}"
+  when: deployment.type.contrail is defined and deployment.type.contrail.registry is defined
+
+- name: Pull docker test image
+  command: >
+    docker pull "{{ contrailregistry }}/contrail-debug:{{ version }}"
+
+- name: Copy Vrouter-agent binary
+  command: >
+    docker cp vrouter_vrouter-agent_1:/usr/bin/contrail-vrouter-agent /var/crashes/
+
+- name: Copy Debug binary
+  command: docker inspect "{{ contrailregistry }}/contrail-debug:{{ version }}" 
+  register: debug_docker_path
+
+- name: st
+  set_fact:
+    msg: "{{ item.GraphDriver.Data.LowerDir }}"
+  with_items: "{{ debug_docker_path.stdout }}"
+  when: item.GraphDriver is defined
+
+- name: copy
+  command: >
+    cp "{{ msg.split(":")[0] }}"/usr/lib/debug/usr/bin/contrail-vrouter-agent.debug /var/crashes/
+
+- name: find core files
+  find:
+    paths: /var/crashes/
+    patterns: "core.contrail-vroute*"
+  register: core_list
+
+- name: print find_results
+  shell: gdb -q -n -ex bt -batch contrail-vrouter-agent "{{item.path}}" > output."{{item.path.split("/")[-1]}}".txt
+  args:
+    chdir: /var/crashes/
+    executable: /bin/bash
+  with_items: "{{core_list.files}}"
+
+- mail:
+    to: "{{ lookup('env','core_email_list') }}"
+    subject: Core generated "{{item.path}}"
+    attach: /var/crashes/output.{{item.path.split("/")[-1]}}.txt
+  with_items: "{{core_list.files}}"
+

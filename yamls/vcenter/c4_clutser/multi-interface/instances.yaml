@@ -1,0 +1,82 @@
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: local
+
+instances:
+  bms1:
+    provider: bms
+    ip: 10.204.216.61
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms2:
+    provider: bms
+    ip: 10.204.216.62
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms3:
+    provider: bms
+    ip: 10.204.216.63
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      vcenter_plugin:
+  bms4:
+    provider: bms
+    esxi_host: 10.204.216.224 
+    ip: 10.204.216.181
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: ens192
+  bms5:
+    provider: bms
+    esxi_host: 10.204.216.225 
+    ip: 10.204.216.182
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: ens192
+  bms6:
+    provider: bms
+    esxi_host: 10.204.216.226 
+    ip: 10.204.216.183
+    roles:
+      vrouter:
+        PHYSICAL_INTERFACE: ens192
+global_configuration:
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  REGISTRY_PRIVATE_INSECURE: True
+
+contrail_configuration:
+  CLOUD_ORCHESTRATOR: vcenter 
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  CONTROLLER_NODES: 10.204.216.61,10.204.216.62,10.204.216.63
+  CONTROL_NODES: 192.168.0.241,192.168.0.242,192.168.0.243
+  CONTRAIL_VERSION: ocata-5.0-105 
+  #CONTRAIL_VERSION: 5.0.0-0.40
+  VROUTER_GATEWAY: 192.168.0.2
+  RABBITMQ_NODE_PORT: 5673
+  VCENTER_SERVER: 10.204.217.246
+  VCENTER_USERNAME: administrator@vsphere.local
+  VCENTER_PASSWORD: Contrail123!
+  VCENTER_DATACENTER: c4_datacenter11
+  VCENTER_DVSWITCH: c4k4_dvs
+  VCENTER_WSDL_PATH: /usr/src/contrail/contrail-web-core/webroot/js/vim.wsdl
+  VCENTER_AUTH_PROTOCOL: https

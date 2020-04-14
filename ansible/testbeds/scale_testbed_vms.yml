@@ -1,0 +1,540 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: ci-repo.englab.juniper.net:5000
+        contrail:
+            branch: master
+            registry: ci-repo.englab.juniper.net:5000
+    sku: ocata
+    os: centos7
+    version: ocata-master-1
+    orchestrator: openstack
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.84.5.100
+    domainsuffix: local
+
+instances:
+  5c1s3-node2-vm1:
+    provider: bms
+    ip: 10.87.70.51
+
+  5c1s3-node2-vm2:
+    provider: bms
+    ip: 10.87.70.52
+
+  5c1s3-node2-vm3:
+    provider: bms
+    ip: 10.87.70.53
+
+  5c1s3-node2-vm4:
+    provider: bms
+    ip: 10.87.70.54
+
+  5c1s3-node3-vm1:
+    provider: bms
+    ip: 10.87.70.55
+
+  5c1s3-node3-vm2:
+    provider: bms
+    ip: 10.87.70.56
+
+  5c1s3-node3-vm3:
+    provider: bms
+    ip: 10.87.70.57
+
+  5c1s3-node3-vm4:
+    provider: bms
+    ip: 10.87.70.58
+
+  5c1s3-node4-vm1:
+    provider: bms
+    ip: 10.87.70.59
+
+  5c1s3-node4-vm2:
+    provider: bms
+    ip: 10.87.70.60
+
+  5c1s3-node4-vm3:
+    provider: bms
+    ip: 10.87.70.61
+
+  5c1s3-node4-vm4:
+    provider: bms
+    ip: 10.87.70.62
+
+  5c1s5-node1-vm1:
+    provider: bms
+    ip: 10.87.70.63
+
+  5c1s5-node1-vm2:
+    provider: bms
+    ip: 10.87.70.64
+
+  5c1s5-node1-vm3:
+    provider: bms
+    ip: 10.87.70.65
+
+  5c1s5-node1-vm4:
+    provider: bms
+    ip: 10.87.70.66
+
+  5c1s5-node2-vm1:
+    provider: bms
+    ip: 10.87.70.67
+
+  5c1s5-node2-vm2:
+    provider: bms
+    ip: 10.87.70.68
+
+  5c1s5-node2-vm3:
+    provider: bms
+    ip: 10.87.70.69
+
+  5c1s5-node2-vm4:
+    provider: bms
+    ip: 10.87.70.70
+
+server_manager:
+  ip: 10.87.66.235
+  username: root
+  password: contrail123
+  image: centos75
+
+vm_info:
+  default:
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    image_source: http://10.84.5.120/cs-shared/images/centos-7.5-copy.qcow2.gz
+  hypervisors:
+    5c1s3-node2:
+      username: root
+      ip: 10.87.70.6
+      password: c0ntrail123
+      vm_config:
+        5c1s3-node2-vm1:
+          name: 5c1s3-node2-vm1
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:02:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node2-vm2:
+          name: 5c1s3-node2-vm2
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:02:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node2-vm3:
+          name: 5c1s3-node2-vm3
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:02:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node2-vm4:
+          name: 5c1s3-node2-vm4
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:02:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+    5c1s3-node3:
+      username: root
+      ip: 10.87.70.7
+      password: c0ntrail123
+      vm_config:
+        5c1s3-node3-vm1:
+          name: 5c1s3-node3-vm1
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:03:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node3-vm2:
+          name: 5c1s3-node3-vm2
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:03:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node3-vm3:
+          name: 5c1s3-node3-vm3
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:03:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node3-vm4:
+          name: 5c1s3-node3-vm4
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node3
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:03:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+    5c1s3-node4:
+      username: root
+      ip: 10.87.70.8
+      password: c0ntrail123
+      vm_config:
+        5c1s3-node4-vm1:
+          name: 5c1s3-node4-vm1
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node4
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:04:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node4-vm2:
+          name: 5c1s3-node4-vm2
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node4
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:04:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node4-vm3:
+          name: 5c1s3-node4-vm3
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node4
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:04:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s3-node4-vm4:
+          name: 5c1s3-node4-vm4
+          ram: 32768
+          vcpus: 16
+          server: 5c1s3-node4
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:01:04:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+    5c1s5-node1:
+      username: root
+      ip: 10.87.70.9
+      password: c0ntrail123
+      vm_config:
+        5c1s5-node1-vm1:
+          name: 5c1s5-node1-vm1
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:01:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s5-node1-vm2:
+          name: 5c1s5-node1-vm2
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:01:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s5-node1-vm3:
+          name: 5c1s5-node1-vm3
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:01:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s5-node1-vm4:
+          name: 5c1s5-node1-vm4
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node1
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:01:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+    5c1s5-node2:
+      username: root
+      ip: 10.87.70.10
+      password: c0ntrail123
+      vm_config:
+        5c1s5-node2-vm1:
+          name: 5c1s5-node2-vm1
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:02:01'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio 
+        5c1s5-node2-vm2:
+          name: 5c1s5-node2-vm2
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:02:02'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s5-node2-vm3:
+          name: 5c1s5-node2-vm3
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:02:03'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+        5c1s5-node2-vm4:
+          name: 5c1s5-node2-vm4
+          ram: 32768
+          vcpus: 16
+          server: 5c1s5-node2
+          network:
+            interfaces:
+              intf1:
+                bridge: br0
+                mac: '00:43:34:05:02:04'
+                model: virtio
+              intf2:
+                bridge: br1
+                model: virtio
+
+control_data:
+  5c1s3-node2-vm1:
+      ip: 10.87.70.51
+      ctrldata_ip: 192.168.10.51
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node2-vm2:
+      ip: 10.87.70.52
+      ctrldata_ip: 192.168.10.52
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node2-vm3:
+      ip: 10.87.70.53
+      ctrldata_ip: 192.168.10.53
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node2-vm4:
+      ip: 10.87.70.54
+      ctrldata_ip: 192.168.10.54
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node3-vm1:
+      ip: 10.87.70.55
+      ctrldata_ip: 192.168.10.55
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node3-vm2:
+      ip: 10.87.70.56
+      ctrldata_ip: 192.168.10.56
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node3-vm3:
+      ip: 10.87.70.57
+      ctrldata_ip: 192.168.10.57
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node3-vm4:
+      ip: 10.87.70.58
+      ctrldata_ip: 192.168.10.58
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node4-vm1:
+      ip: 10.87.70.59
+      ctrldata_ip: 192.168.10.59
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node4-vm2:
+      ip: 10.87.70.60
+      ctrldata_ip: 192.168.10.60
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node4-vm3:
+      ip: 10.87.70.61
+      ctrldata_ip: 192.168.10.61
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s3-node4-vm4:
+      ip: 10.87.70.62
+      ctrldata_ip: 192.168.10.62
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node1-vm1:
+      ip: 10.87.70.63
+      ctrldata_ip: 192.168.10.63
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node1-vm2:
+      ip: 10.87.70.64
+      ctrldata_ip: 192.168.10.64
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node1-vm3:
+      ip: 10.87.70.65
+      ctrldata_ip: 192.168.10.65
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node1-vm4:
+      ip: 10.87.70.66
+      ctrldata_ip: 192.168.10.66
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node2-vm1:
+      ip: 10.87.70.67
+      ctrldata_ip: 192.168.10.67
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node2-vm2:
+      ip: 10.87.70.68
+      ctrldata_ip: 192.168.10.68
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node2-vm3:
+      ip: 10.87.70.69
+      ctrldata_ip: 192.168.10.69
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1
+  5c1s5-node2-vm4:
+      ip: 10.87.70.70
+      ctrldata_ip: 192.168.10.70
+      prefix: 24
+      gw: 192.168.10.254
+      device: eth1

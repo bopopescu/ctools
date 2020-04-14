@@ -1,0 +1,113 @@
+deployment:
+    type:
+      kolla:
+      contrail:
+        branch: master
+        registry: 10.204.217.152:5000
+    sku: queens
+    os: centos7
+    version: queens-master-289
+    orchestrator: openstack
+
+provider_config:
+  bms:
+    ssh_pwd: c0ntrail123
+    ssh_user: root
+    ntpserver: 10.204.217.158
+    domainsuffix: englab.juniper.net
+
+instances:
+  nodec19:
+    provider: bms
+    ip: 10.204.217.4
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+  nodei16:
+    provider: bms
+    ip: 10.204.217.128
+    roles:
+      openstack_compute:
+        network_interface: eno1
+      vrouter:
+        PHYSICAL_INTERFACE: eno1
+        VROUTER_GATEWAY: 10.204.217.254
+  nodei18:
+    provider: bms
+    ip: 10.204.217.130
+    roles:
+      openstack_compute:
+        network_interface: eno1
+      vrouter:
+        PHYSICAL_INTERFACE: eno1
+        VROUTER_GATEWAY: 10.204.217.254
+
+global_configuration:
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+
+contrail_configuration:
+  CLOUD_ORCHESTRATOR: openstack
+  CONTROLLER_NODES: 10.204.217.4
+  CONFIG_API_VIP: 10.204.217.4
+  CONTROL_DATA_NET_LIST: 10.204.217.0/24
+  CONTAINER_REGISTRY: 10.204.217.152:5000
+  REGISTRY_PRIVATE_INSECURE: True
+  CONTRAIL_VERSION: queens-master-289
+  RABBITMQ_NODE_PORT: 5673
+  KEYSTONE_AUTH_HOST: 10.204.217.4
+  KEYSTONE_AUTH_URL_VERSION: /v3
+  VROUTER_GATEWAY: 10.204.217.254
+  JVM_EXTRA_OPTS: "-Xms1g -Xmx2g"
+  CONFIG_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  DATABASE_NODEMGR__DEFAULTS__minimum_diskGB: "2"
+  LOG_LEVEL: SYS_DEBUG
+
+kolla_config:
+  kolla_globals:
+    kolla_internal_vip_address: 10.204.217.4
+    contrail_api_interface_address: 10.204.217.4
+    enable_haproxy: "no"
+    enable_ironic: "no"
+    enable_swift: "no"
+    enable_heat: "yes"
+    #network_interface: "enp2s0"
+    contrail_docker_registry: 10.204.217.152:5000
+    openstack_release: "queens"
+
+orchestrator_configuration:
+  keystone:
+    version: v3
+    username: admin
+    password: contrail123
+
+test_configuration:
+    cfgm0_host_string: root@10.204.217.4
+    cfgm0_host_pwd: c0ntrail123
+    cluster_id: clusterc19c20c21i16i18 
+    image_web_server: 10.84.5.120
+    use_project_scoped_token: True
+    public_host: 10.84.5.120
+    ext_routers:
+        blr-mx2: 10.204.216.245
+    router_asn: 64512
+    public_rt: 11314
+    public_subnet: 10.204.219.48/29
+    public_virtual_network: public
+    fip_pool_name: publicpool
+    k8s_nested:
+      clusters:
+        - name: sp
+          master: spm
+          slave1: sps1
+          slave2: sps2
+          network:
+            name: spnet
+            prefix: 1.1.1.0/24
+            fabric_snat: True
+          fip_pool: "{'domain':'default-domain', 'project':'admin', 'network':'public', 'name':'publicpool'}"

@@ -1,0 +1,12 @@
+pg_version: latest
+pg_registry: opencontrailnightly
+pg_port: 9093
+config_port: 8082
+analytics_port: 8181
+admin_password: contrail123
+admin_tenant: admin
+admin_user: admin
+auth_host: '127.0.0.1'
+auth_port: '35357'
+auth_protocol: 'http'
+auth_version: 'v3'

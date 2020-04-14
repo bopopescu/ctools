@@ -1,0 +1,471 @@
+heat_template_version: 2015-04-30 
+description: Template for Remote Compute Feature
+
+resources:
+  floatingIpPool_final_script_test_project_uuid_val:
+    type: OS::ContrailV2::FloatingIpPool
+    properties:
+      name: floatingIpPool_final_script_test_project_uuid_val
+      virtual_network: fip_uuid_val
+  allow_all_secgroup:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - protocol: icmp
+          remote_ip_prefix: 0.0.0.0/0
+  compute_1_pop1_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_3_project_uuid_val
+      name: compute_1_pop1_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.20.0.5
+  compute_1_pop1_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_8_project_uuid_val
+      name: compute_1_pop1_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.70.0.5
+  compute_1_pop1:
+    type: OS::Nova::Server
+    properties:
+      name: compute_1_pop1
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_1_pop1_port_0}
+        - port: { get_resource:  compute_1_pop1_port_1}
+  compute_1_pop1_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_1_pop1_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.20.0.5
+      project_refs: [ project_uuid_val ]
+  openstack_node_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: openstack_node_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.4
+      allowed_address_pairs:
+      - ip_address: 10.60.0.100
+  openstack_node_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: openstack_node_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.4
+      allowed_address_pairs:
+      - ip_address: 10.0.0.100
+  openstack_node:
+    type: OS::Nova::Server
+    properties:
+      name: openstack_node
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  openstack_node_port_0}
+        - port: { get_resource:  openstack_node_port_1}
+  openstack_node_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : openstack_node_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.4
+      project_refs: [ project_uuid_val ]
+  openstack_node_floating_ip_vip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : openstack_node_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.100
+      project_refs: [ project_uuid_val ]
+  control_1_only_pop1_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: control_1_only_pop1_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.9
+  control_1_only_pop1_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: control_1_only_pop1_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.9
+  control_1_only_pop1:
+    type: OS::Nova::Server
+    properties:
+      name: control_1_only_pop1
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  control_1_only_pop1_port_0}
+        - port: { get_resource:  control_1_only_pop1_port_1}
+  control_1_only_pop1_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : control_1_only_pop1_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.9
+      project_refs: [ project_uuid_val ]
+  compute_2_pop1_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_3_project_uuid_val
+      name: compute_2_pop1_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.20.0.6
+  compute_2_pop1_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_8_project_uuid_val
+      name: compute_2_pop1_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.70.0.6
+  compute_2_pop1:
+    type: OS::Nova::Server
+    properties:
+      name: compute_2_pop1
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_2_pop1_port_0}
+        - port: { get_resource:  compute_2_pop1_port_1}
+  compute_2_pop1_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_2_pop1_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.20.0.6
+      project_refs: [ project_uuid_val ]
+  control_2_only_pop1_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: control_2_only_pop1_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.10
+  control_2_only_pop1_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: control_2_only_pop1_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.10
+  control_2_only_pop1:
+    type: OS::Nova::Server
+    properties:
+      name: control_2_only_pop1
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  control_2_only_pop1_port_0}
+        - port: { get_resource:  control_2_only_pop1_port_1}
+  control_2_only_pop1_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : control_2_only_pop1_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.10
+      project_refs: [ project_uuid_val ]
+  compute_2_default_pop_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: compute_2_default_pop_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.8
+  compute_2_default_pop_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: compute_2_default_pop_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.8
+  compute_2_default_pop:
+    type: OS::Nova::Server
+    properties:
+      name: compute_2_default_pop
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_2_default_pop_port_0}
+        - port: { get_resource:  compute_2_default_pop_port_1}
+  compute_2_default_pop_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_2_default_pop_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.8
+      project_refs: [ project_uuid_val ]
+  control_1_only_pop2_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: control_1_only_pop2_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.11
+  control_1_only_pop2_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: control_1_only_pop2_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.11
+  control_1_only_pop2:
+    type: OS::Nova::Server
+    properties:
+      name: control_1_only_pop2
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  control_1_only_pop2_port_0}
+        - port: { get_resource:  control_1_only_pop2_port_1}
+  control_1_only_pop2_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : control_1_only_pop2_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.11
+      project_refs: [ project_uuid_val ]
+  compute_2_pop2_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_4_project_uuid_val
+      name: compute_2_pop2_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.30.0.6
+  compute_2_pop2_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_9_project_uuid_val
+      name: compute_2_pop2_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.80.0.6
+  compute_2_pop2:
+    type: OS::Nova::Server
+    properties:
+      name: compute_2_pop2
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_2_pop2_port_0}
+        - port: { get_resource:  compute_2_pop2_port_1}
+  compute_2_pop2_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_2_pop2_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.30.0.6
+      project_refs: [ project_uuid_val ]
+  compute_3_default_pop_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: compute_3_default_pop_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.6
+  compute_3_default_pop_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: compute_3_default_pop_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.6
+  compute_3_default_pop:
+    type: OS::Nova::Server
+    properties:
+      name: compute_3_default_pop
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_3_default_pop_port_0}
+        - port: { get_resource:  compute_3_default_pop_port_1}
+  compute_3_default_pop_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_3_default_pop_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.6
+      project_refs: [ project_uuid_val ]
+  compute_1_default_pop_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: compute_1_default_pop_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.7
+  compute_1_default_pop_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: compute_1_default_pop_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.7
+  compute_1_default_pop:
+    type: OS::Nova::Server
+    properties:
+      name: compute_1_default_pop
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_1_default_pop_port_0}
+        - port: { get_resource:  compute_1_default_pop_port_1}
+  compute_1_default_pop_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_1_default_pop_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.7
+      project_refs: [ project_uuid_val ]
+  all_contrail_roles_default_pop_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: all_contrail_roles_default_pop_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.5
+  all_contrail_roles_default_pop_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: all_contrail_roles_default_pop_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.5
+  all_contrail_roles_default_pop:
+    type: OS::Nova::Server
+    properties:
+      name: all_contrail_roles_default_pop
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  all_contrail_roles_default_pop_port_0}
+        - port: { get_resource:  all_contrail_roles_default_pop_port_1}
+  all_contrail_roles_default_pop_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : all_contrail_roles_default_pop_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.5
+      project_refs: [ project_uuid_val ]
+  control_2_only_pop2_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_7_project_uuid_val
+      name: control_2_only_pop2_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.60.0.12
+  control_2_only_pop2_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_1_project_uuid_val
+      name: control_2_only_pop2_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.0.0.12
+  control_2_only_pop2:
+    type: OS::Nova::Server
+    properties:
+      name: control_2_only_pop2
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  control_2_only_pop2_port_0}
+        - port: { get_resource:  control_2_only_pop2_port_1}
+  control_2_only_pop2_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : control_2_only_pop2_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.0.0.12
+      project_refs: [ project_uuid_val ]
+  compute_1_pop2_port_0:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_4_project_uuid_val
+      name: compute_1_pop2_port_0
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.30.0.5
+  compute_1_pop2_port_1:
+    type: OS::Neutron::Port
+    properties:
+      network: final_test_network_9_project_uuid_val
+      name: compute_1_pop2_port_1
+      security_groups:
+        - { get_resource: allow_all_secgroup }
+      fixed_ips:
+      - ip_address: 10.80.0.5
+  compute_1_pop2:
+    type: OS::Nova::Server
+    properties:
+      name: compute_1_pop2
+      flavor: m1.xxlarge
+      image: centos-7.4
+      networks:
+        - port: { get_resource:  compute_1_pop2_port_0}
+        - port: { get_resource:  compute_1_pop2_port_1}
+  compute_1_pop2_floating_ip:
+    type: OS::ContrailV2::FloatingIp
+    properties:
+      virtual_machine_interface_refs: [{ get_resource : compute_1_pop2_port_0}]
+      floating_ip_pool: { get_resource: floatingIpPool_final_script_test_project_uuid_val }
+      floating_ip_fixed_ip_address: 10.30.0.5
+      project_refs: [ project_uuid_val ]
+

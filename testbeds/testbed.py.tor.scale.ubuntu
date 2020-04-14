@@ -1,0 +1,236 @@
+from fabric.api import env
+
+os_username = 'admin'
+os_password = 'contrail123'
+os_tenant_name = 'demo'
+
+host1 = 'root@10.204.217.118'
+host2 = 'root@10.204.217.119'
+host3 = 'root@10.204.217.120'
+host4 = 'root@10.204.217.121'
+host5 = 'root@10.204.217.122'
+host6 = 'root@10.204.217.131'
+
+ext_routers = [('walsh', '7.7.7.77')]
+router_asn = 64512
+public_vn_rtgt = 10003
+public_vn_subnet = "10.204.219.72/28"
+host_build = "root@10.204.217.118"
+
+env.roledefs = {
+    'all': [host1, host2, host3, host4, host5, host6],
+    'cfgm': [host1, host2, host3],
+    'openstack': [host1, host2, host3],
+    'webui': [host2],
+    'control': [host1, host3],
+    'compute': [host4, host5, host6],
+    'tsn': [host4, host5],
+    'toragent': [host4, host5],
+    'collector': [host1, host3],
+    'database': [host1, host2, host3],
+    'build': [host_build],
+}
+
+env.hostnames = {
+    'all': ['nodei6', 'nodei7', 'nodei8', 'nodei9', 'nodei10', 'nodei19']
+}
+
+# OPTIONAL vrouter limit parameter
+# ==================================
+env.vrouter_module_params = {
+     host4:{'mpls_labels':'131072', 'nexthops':'131072', 'vrfs':'65536', 'macs':'262144'},
+     host5:{'mpls_labels':'131072', 'nexthops':'131072', 'vrfs':'65536', 'macs':'262144'},
+     host6:{'mpls_labels':'131072', 'nexthops':'131072', 'vrfs':'65536', 'macs':'262144'}
+}
+
+#OPTIONAL BONDING CONFIGURATION
+#==============================
+#Inferface Bonding
+bond= {
+    host4 : { 'name': 'bond0', 'member': ['p6p1','p6p2'], 'mode': '802.3ad', 'xmit_hash_policy': 'layer3+4' },
+    host5 : { 'name': 'bond0', 'member': ['p6p1','p6p2'], 'mode': '802.3ad', 'xmit_hash_policy': 'layer3+4' },
+    host6 : { 'name': 'bond0', 'member': ['p6p1','p6p2'], 'mode': '802.3ad', 'xmit_hash_policy': 'layer3+4' },
+}
+
+control_data= {
+
+    host1 : { 'ip': '192.168.22.1/24', 'gw' : '192.168.22.254', 'device':'p6p2' },
+    host2 : { 'ip': '192.168.22.2/24', 'gw' : '192.168.22.254', 'device':'p6p2' },
+    host3 : { 'ip': '192.168.22.3/24', 'gw' : '192.168.22.254', 'device':'p6p2' },
+    host4 : { 'ip': '192.168.22.4/24', 'gw' : '192.168.22.254', 'device':'bond0' },
+    host5 : { 'ip': '192.168.22.5/24', 'gw' : '192.168.22.254', 'device':'bond0' },
+    host6 : { 'ip': '192.168.22.6/24', 'gw' : '192.168.22.254', 'device':'bond0' },
+}
+
+static_route  = {
+    host1 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' }],
+    host2 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' }],
+    host3 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'p6p2' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'p6p2' }],
+    host4 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' }],
+    host5 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' }],
+    host6 : [{ 'ip': '52.52.52.52', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '34.34.34.34', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '33.33.33.33', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '192.168.11.0', 'netmask' : '255.255.255.0', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '32.32.32.32', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' },
+             { 'ip': '7.7.7.77', 'netmask' : '255.255.255.255', 'gw':'192.168.22.254', 'intf': 'bond0' }],
+}
+
+env.tor_agent = {host4:
+                     [{
+                      'tor_ip':'192.168.11.1',
+                      'tor_id':'1',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4321',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.4',
+                      'tor_tsn_name':'nodei9',
+                      'tor_name':'bng-contrail-qfx51-2',
+                      'tor_tunnel_ip':'34.34.34.34',
+                      'tor_http_server_port': '5678',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.5',
+                      'standby_tor_agent_tor_id':'5',
+                      'ca_cert_file':'/root/cacert.pem',
+                      },
+                      {
+                      'tor_ip':'192.168.11.2',
+                      'tor_id':'3',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4323',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.4',
+                      'tor_tsn_name':'nodei9',
+                      'tor_name':'bng-contrail-qfx51-3',
+                      'tor_tunnel_ip':'33.33.33.33',
+                      'tor_http_server_port': '5676',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.5',
+                      'standby_tor_agent_tor_id':'7',
+                      'ca_cert_file':'/root/cacert.pem',
+                      },
+                      {
+                      'tor_ip':'192.168.11.3',
+                      'tor_id':'4',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4324',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.4',
+                      'tor_tsn_name':'nodei9',
+                      'tor_name':'bng-contrail-qfx51-4',
+                      'tor_tunnel_ip':'32.32.32.32',
+                      'tor_http_server_port': '5675',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.5',
+                      'standby_tor_agent_tor_id':'8',
+                      'ca_cert_file':'/root/cacert.pem',
+                      }
+                      ],
+                 host5:
+                     [{
+                      'tor_ip':'192.168.11.1',
+                      'tor_id':'5',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4321',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.5',
+                      'tor_tsn_name':'nodei10',
+                      'tor_name':'bng-contrail-qfx51-2',
+                      'tor_tunnel_ip':'34.34.34.34',
+                      'tor_http_server_port': '5678',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.4',
+                      'standby_tor_agent_tor_id':'1',
+                      'ca_cert_file':'/root/cacert.pem',
+                      },
+                      {
+                      'tor_ip':'192.168.11.2',
+                      'tor_id':'7',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4323',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.5',
+                      'tor_tsn_name':'nodei10',
+                      'tor_name':'bng-contrail-qfx51-3',
+                      'tor_tunnel_ip':'33.33.33.33',
+                      'tor_http_server_port': '5676',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.4',
+                      'standby_tor_agent_tor_id':'3',
+                      'ca_cert_file':'/root/cacert.pem',
+                      },
+                      {
+                      'tor_ip':'192.168.11.3',
+                      'tor_id':'8',
+                      'tor_type':'ovs',
+                      'tor_ovs_port':'4324',
+                      'tor_ovs_protocol':'pssl',
+                      'tor_tsn_ip':'192.168.22.5',
+                      'tor_tsn_name':'nodei10',
+                      'tor_name':'bng-contrail-qfx51-4',
+                      'tor_tunnel_ip':'32.32.32.32',
+                      'tor_http_server_port': '5675',
+                      'tor_vendor_name':'Juniper',
+                      'standby_tor_agent_ip':'192.168.22.4',
+                      'standby_tor_agent_tor_id':'4',
+                      'ca_cert_file':'/root/cacert.pem',
+                      }
+                      ]
+                }
+
+env.password = 'c0ntrail123'
+env.passwords = {
+    host1: 'c0ntrail123',
+    host2: 'c0ntrail123',
+    host3: 'c0ntrail123',
+    host4: 'c0ntrail123',
+    host5: 'c0ntrail123',
+    host6: 'c0ntrail123',
+
+    host_build: 'c0ntrail123',
+}
+
+env.ostypes = {
+    host1:'ubuntu',
+    host2:'ubuntu',
+    host3:'ubuntu',
+    host4:'ubuntu',
+    host5:'ubuntu',
+    host6:'ubuntu',
+}
+
+# VIP
+env.ha = {
+    'internal_vip' : '192.168.22.210',
+    'external_vip' : '10.204.217.210'
+}
+
+env.mail_from='chhandak@juniper.net'
+env.mail_to='chhandak@juniper.net'
+env.encap_priority =  "'MPLSoUDP','MPLSoGRE','VXLAN'"
+env.test_repo_dir='/root/contrail-test'

@@ -1,0 +1,23 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - add_host:
+        hostname: "{{ item.key }}"
+        ansible_ssh_host: "{{ item.value.ip }}"
+        ansible_ssh_user: "{{ item.value.ansible_user | default('root') }}"
+        ansible_ssh_pass: "{{ item.value.ansible_ssh_pass | default('c0ntrail123') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        group: "static_config_nodes"
+      when: "{{ static_configs is defined and item.key in static_configs }}"
+      with_dict: "{{ instances }}"
+
+- hosts: static_config_nodes
+  gather_facts: no
+  become: true
+  become_user: root
+  tasks:
+    - name: apply static configs
+      shell: "{{ item }}"
+      with_items: "{{ static_configs[inventory_hostname] }}"
+
+

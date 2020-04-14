@@ -1,0 +1,14 @@
+[contrail-controllers]
+10.204.217.4
+
+[contrail-analyticsdb]
+10.204.217.4
+
+[contrail-analytics]
+10.204.217.4
+
+[contrail-kubernetes]
+10.204.217.4
+
+[contrail-compute]
+10.204.217.128

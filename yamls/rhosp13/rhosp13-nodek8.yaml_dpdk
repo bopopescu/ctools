@@ -1,0 +1,113 @@
+deployment:
+    deployer: rhosp
+provider_config:
+  bms:                                                                          
+    ssh_pwd: contrail123                                                        
+    ssh_user: heat-admin 
+    ntpserver: 10.204.217.158                                                   
+    domainsuffix: tenant.localdomain 
+instances:                                                                      
+  overcloud-contrailcontroller-0:                                                                       
+    provider: bms                                                               
+    ip: 10.1.0.22
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-contrailcontroller-1:
+    provider: bms                                                               
+    ip: 10.1.0.13
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-contrailcontroller-2:
+    provider: bms                                                               
+    ip: 10.1.0.21
+    roles:                                                                      
+      config_database:                                                          
+      config:                                                                   
+      control:                                                                  
+      analytics_database:                                                       
+      analytics:                                                                
+      webui:                                                                    
+  overcloud-controller-0:                                                                      
+    provider: bms                                                               
+    ip: 10.1.0.17
+    roles:                                                                      
+      openstack:                                                        
+  overcloud-contraildpdk-0: 
+    provider: bms                                                               
+    ip: 10.0.0.19                                                
+    roles:                                                                      
+      openstack_compute:                                                        
+      vrouter:                                                                  
+       PHYSICAL_INTERFACE: enp4s0f1
+       AGENT_MODE: dpdk
+  overcloud-contraildpdk-1:                                                      
+    provider: bms                                                               
+    ip: 10.0.0.18                                                               
+    roles:                                                                      
+      openstack_compute:                                                        
+      vrouter:                                                                  
+       PHYSICAL_INTERFACE: enp4s0f1
+       AGENT_MODE: dpdk
+contrail_configuration:                                                         
+  CLOUD_ORCHESTRATOR: openstack                                                 
+  OPENSTACK_NODES: 10.1.0.17,10.1.0.24,10.1.0.15
+  CONTROLLER_NODES: 10.1.0.22,10.1.0.13,10.1.0.21
+  CONTROL_NODES: 10.0.0.21,10.0.0.17,10.0.0.14
+  VROUTER_GATEWAY: 10.0.0.1
+  RABBITMQ_NODE_PORT: 5673
+  KEYSTONE_AUTH_HOST: 10.2.0.16
+  KEYSTONE_AUTH_ADMIN_PASSWORD: 62s7fCZr86C3MrWKsHbEBy3wy
+  KEYSTONE_AUTH_URL_VERSION: /v3
+
+orchestrator_configuration:                                                     
+  keystone:                                                                     
+    version: v3                                                                 
+    password: 62s7fCZr86C3MrWKsHbEBy3wy
+    region: regionOne
+  internal_vip: 10.1.0.19
+  external_vip: 10.2.0.16
+  contrail_api_interface_address: 192.168.24.9
+  enable_haproxy: "yes"                                                         
+  enable_heat: "no"                                                             
+  enable_ironic: "no"                                                           
+  enable_swift: "no"                                                            
+  #network_interface: enp6s0f0
+  
+test_configuration:
+  cfgm0_host_string: heat-admin@192.168.24.9
+  cfgm0_host_pwd: c0ntrail123
+  stack_user: admin
+  stack_password: 62s7fCZr86C3MrWKsHbEBy3wy
+  stack_tenant: admin
+  image_web_server: 10.204.217.158                                              
+  use_project_scoped_token: True
+  vrouter_mode_dpdk: True
+
+  web_server:
+      server: 10.204.216.50
+      username: bhushana
+      password: c0ntrail!23
+      report_path: /home/bhushana/Documents/technical/sanity/fb-sanity/FB-master-rhosp13-queens-ha-sanity
+      log_path: /home/bhushana/Documents/technical/logs
+      web_root: Docs/logs
+  mail_server:
+      server: 10.47.226.20
+      port: 25
+      to: dl-contrail-sw-in@juniper.net
+      sender: contrailbuild@juniper.net
+server_manager:
+  ip: 10.204.217.158
+  username: root
+  password: c0ntrail123
+  image: redhat-7.6
+  client: /cs-shared/server-manager/client/server-manager      

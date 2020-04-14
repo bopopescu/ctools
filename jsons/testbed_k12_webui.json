@@ -1,0 +1,59 @@
+{
+    "cluster" : [
+        {
+            "id": "webui_sanity_cluster",
+            "parameters" : {
+                "domain": "englab.juniper.net",
+                "subnet_mask": "255.255.255.0",
+                "gateway": "10.204.216.254",
+                "provision": {
+                    "contrail_4": {
+                        "controller_config": {
+                            "external_routers_list": {
+                                "blr-mx2": "10.204.216.245"
+                            },
+                            "encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE",
+                            "bgp_asn": "64520"
+                        }
+                    },
+                    "openstack":{
+                        "keystone": {
+                            "admin_password": "contrail123",
+                            "ip": "10.204.216.232"
+                        },
+                        "openstack_manage_amqp": true
+                    }
+                }
+            }
+        }
+    ],
+    "server": [
+        {
+            "cluster_id": "webui_sanity_cluster",
+            "domain": "englab.juniper.net",
+            "id": "nodek12",
+            "network": {
+                "interfaces": [
+                    {
+                        "default_gateway": "10.204.216.254",
+                        "ip_address": "10.204.216.232/24",
+                        "mac_address": "0c:c4:7a:32:0a:1c",
+                        "name": "em1"
+                    }
+                ],
+                "management_interface": "em1",
+                "provisioning": "kickstart"
+            },
+            "parameters": {
+            },
+            "password": "c0ntrail123",
+            "roles": [
+                "contrail-compute",
+                "contrail-analytics",
+                "contrail-controller",
+                "openstack",
+                "contrail-analyticsdb"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+- name: Delete any existing VMs
+  shell: "{{ item }}"
+  with_items:
+    - vagrant global-status
+    - for i in `vagrant global-status | grep vagrant | grep libvirt | awk '{ print $1 }'` ; do vagrant destroy --force $i ; done
+  args:
+      chdir: /root/vagrant/
+  ignore_errors: yes

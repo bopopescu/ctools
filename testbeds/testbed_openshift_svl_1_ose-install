@@ -1,0 +1,32 @@
+[OSEv3:children]
+masters
+nodes
+etcd
+
+[OSEv3:vars]
+ansible_ssh_user=root
+ansible_become=yes
+debug_level=2
+#deployment_type=openshift-enterprise
+deployment_type=origin
+openshift_release=v3.6
+openshift_install_examples=true
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+osm_cluster_network_cidr=10.32.0.0/12
+openshift_portal_net=10.96.0.0/12
+openshift_use_dnsmasq=true
+os_sdn_network_plugin_name='cni'
+openshift_disable_check=docker_storage
+openshift_master_ingress_ip_network_cidr=0.0.0.0/32
+openshift_master_external_ip_network_cidrs=['0.0.0.0/0']
+openshift_dns_ip=10.96.0.1
+
+[masters]
+10.87.121.34 openshift_hostname=5b7s18
+
+[etcd]
+10.87.121.34 openshift_hostname=5b7s18
+
+[nodes]
+10.87.121.35 openshift_hostname=5b7s19
+10.87.121.36 openshift_hostname=5b7s20

@@ -1,0 +1,18 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+ENV["VAGRANT_DEFAULT_PROVIDER"] = "libvirt"
+Vagrant.configure("2") do |config|
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+    config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+    config.vm.provision "shell", path: "enable_root_login.sh"
+    config.vm.provider :libvirt do |libvirt|
+        libvirt.driver = "kvm"
+        libvirt.host = "localhost"
+        libvirt.uri = "qemu:///system"
+    end
+
+#START VMS#
+
+#END VMS#
+
+end

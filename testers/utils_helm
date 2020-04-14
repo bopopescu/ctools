@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+#!/usr/bin/awk -f
+
+
+function check_contrail_image() {
+
+  curl http://${CONTRAIL_REGISTRY:-opencontrailnightly}/v2/contrail-node-init/tags/list | grep ${CONTRAIL_TAG:-latest}
+  ret=`echo $?`
+  if [ $ret -eq 1 ]
+  then
+     echo "Contrail Image missing in docker repo:: ${CONTRAIL_REGISTRY:-opencontrailnightly},${CONTRAIL_TAG:-latest}"
+     exit 1
+  fi     
+
+}
+function create_values_yaml() {
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $MASTER_NODE_IP " (	
+tee /tmp/contrail-env-images.yaml << EOF
+global:
+   contrail_env:
+     CONTROLLER_NODES: ${CONTROLLER_NODES}
+     CONTROL_NODES: ${CONTROL_NODES:-CONTROLLER_NODES}
+     VROUTER_GATEWAY: ${VROUTER_GATEWAY}
+     BGP_PORT: ${BGP_PORT}
+     AAA_MODE: rbac
+   contrail_env_vrouter_kernel:
+    AGENT_MODE: nic
+   images:
+     tags:
+       kafka: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-external-kafka:${CONTRAIL_TAG:-latest}"
+       cassandra: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-external-cassandra:${CONTRAIL_TAG:-latest}"
+       redis: "redis:4.0.2"
+       zookeeper: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-external-zookeeper:${CONTRAIL_TAG:-latest}"
+       contrail_control: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-control-control:${CONTRAIL_TAG:-latest}"
+       control_dns: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-control-dns:${CONTRAIL_TAG:-latest}"
+       control_named: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-control-named:${CONTRAIL_TAG:-latest}"
+       config_api: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-config-api:${CONTRAIL_TAG:-latest}"
+       config_devicemgr: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-config-devicemgr:${CONTRAIL_TAG:-latest}"
+       config_schema_transformer: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-config-schema:${CONTRAIL_TAG:-latest}"
+       config_svcmonitor: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-config-svcmonitor:${CONTRAIL_TAG:-latest}"
+       webui_middleware: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-webui-job:${CONTRAIL_TAG:-latest}"
+       webui: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-controller-webui-web:${CONTRAIL_TAG:-latest}"
+       analytics_api: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-api:${CONTRAIL_TAG:-latest}"
+       contrail_collector: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-collector:${CONTRAIL_TAG:-latest}"
+       analytics_alarm_gen: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-alarm-gen:${CONTRAIL_TAG:-latest}"
+       analytics_query_engine: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-query-engine:${CONTRAIL_TAG:-latest}"
+       analytics_snmp_collector: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-snmp-collector:${CONTRAIL_TAG:-latest}"
+       contrail_topology: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-analytics-topology:${CONTRAIL_TAG:-latest}"
+       build_driver_init: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-vrouter-kernel-build-init:${CONTRAIL_TAG:-latest}"
+       vrouter_agent: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-vrouter-agent:${CONTRAIL_TAG:-latest}"
+       vrouter_init_kernel: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-vrouter-kernel-init:${CONTRAIL_TAG:-latest}"
+       vrouter_dpdk: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-vrouter-agent-dpdk:${CONTRAIL_TAG:-latest}"
+       vrouter_init_dpdk: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-vrouter-kernel-init-dpdk:${CONTRAIL_TAG:-latest}"
+       nodemgr: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-nodemgr:${CONTRAIL_TAG:-latest}"
+       contrail_status: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-status:${CONTRAIL_TAG:-latest}"
+       node_init: "${CONTRAIL_REGISTRY:-opencontrailnightly}/contrail-node-init:${CONTRAIL_TAG:-latest}"
+       dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.2.1
+EOF
+) "
+
+}
+
+function reimage_using_SM_helm() {
+    if [ $SKIP_REIMAGE -ne 0 ]
+    then
+        return 0
+    fi
+
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+        set -e
+        echo "reimage the target setup"
+        server-manager-client reimage -F --cluster_id $CLUSTER_NAME ${DISTRO}
+        if [ $? == 0 ]
+        then
+            echo "Issue of Reimage command to reimage target nodes is sucessful!!!"
+        else
+            echo "Issue of Reimage command to reimage target nodes failed, aborting the process"
+            exit 1
+        fi
+
+        echo "reimage in progress please wait ..."
+        sleep 10
+
+        #check if reimage is completed.
+        /root/sm_files/check_reimage_cliff.sh $CLUSTER_NAME
+        if [ $? == 0 ]
+        then
+            echo "reimaged the target $CLUSTER_NAME successfully"
+            sleep 150
+        else
+            echo "reimage of target $CLUSTER_NAME failed!!!"
+            exit 1
+        fi
+
+    ) "
+
+}
+
+function update_ssh_key() {
+
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP " (
+    server-manager show server --cluster_id $CLUSTER_NAME | grep id | cut -d: -f2 | cut -f1 -d, | xargs -n1 /root/sm_files/update_host_key.sh $ANSIBLE_NODE_IP
+    ) "
+
+}
+
+function helm_copy_ansible() {
+   sshpass -p c0ntrail123 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ANSIBLE_NODE_IP "rm -rf /root/jenkins/helm_multinode/$MASTER_NODE;mkdir -p /root/jenkins/helm_multinode/$MASTER_NODE"	
+   sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $SM_SERVER_IP "(
+   server-manager show server --cluster_id $CLUSTER_NAME | grep id | cut -d: -f2 | cut -f1 -d,
+   )" > $TOOLS_WS/ansible/inventory/hosts
+
+   sed -i "s/\"//g" $TOOLS_WS/ansible/inventory/hosts
+   sed -i "s/$/ ansible_ssh_user=root ansible_ssh_pass=c0ntrail123/" $TOOLS_WS/ansible/inventory/hosts
+   sshpass -p c0ntrail123 scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $TOOLS_WS/ansible root@$ANSIBLE_NODE_IP:/root/jenkins/helm_multinode/$MASTER_NODE/
+   sshpass -p c0ntrail123 scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $TOOLS_WS/yamls root@$ANSIBLE_NODE_IP:/root/jenkins/helm_multinode/$MASTER_NODE/
+}
+
+function helm_preconfig(){
+   if [ $BRANCH == "master" ]
+   then 	  
+       BRANCH1="master"
+   else
+       BRANCH1="$BRANCH" # Will add R prefix later
+   fi
+
+   sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $ANSIBLE_NODE_IP " (
+   cd /root/jenkins/helm_multinode/$MASTER_NODE/ansible
+   cp ../yamls/$INSTANCE_YAML inventory/group_vars/all.yml
+   sed -i 's/version: latest/version: $VERSION/' inventory/group_vars/all.yml
+   sed -i 's/k8s_git_version: R5.0/k8s_git_version: $BRANCH1/' inventory/group_vars/all.yml
+   ) "
+}
+ 
+function helm_provision(){
+
+  if [ $SKIP_SETUP_INIT -eq 0 ]
+  then	  
+    sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $ANSIBLE_NODE_IP " (	
+  cd /root/jenkins/helm_multinode/$MASTER_NODE/ansible
+  ansible-playbook playbooks/roles/deploy/tasks/openstack-helm/multinode_setup_init.yml -i inventory/ -v
+  )"
+  fi
+
+  if [ $SKIP_K8S_BRINGUP -eq 0 ]
+   then
+     sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $ANSIBLE_NODE_IP " (
+   cd /root/jenkins/helm_multinode/$MASTER_NODE/ansible
+   ansible-playbook playbooks/roles/deploy/tasks/openstack-helm/multinode_setup_k8s.yml -i inventory/ -v --limit $MASTER_NODE
+    )"
+   fi
+
+   if [ $SKIP_CONTRAIL_HELM_BRINGUP -eq 0 ]
+   then
+     sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $ANSIBLE_NODE_IP " (
+   cd /root/jenkins/helm_multinode/$MASTER_NODE/ansible
+   ansible-playbook playbooks/roles/deploy/tasks/contrail-helm/multinode_setup.1.yml -i inventory/ -v --limit $MASTER_NODE
+   ) "
+   fi
+
+
+}
+
+
+function vrouter_version(){
+   sshpass -p "c0ntrail123" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l root $MASTER_NODE_IP "(
+    kubectl get pods -n contrail | grep vrouter-agent | cut -f1 -d\ | tail -n 1 | tr -d '\n' | xargs -0 -I pod kubectl exec -it pod contrail-version -n contrail
+   )"
+}
+
+function run_tempest {
+    echo $SKIP_TEMPEST
+    if [ $SKIP_TEMPEST -ne 0 ]
+    then
+        return 0
+    fi
+    echo $BRANCH
+    TEMPEST_WS="/root/"
+    sshpass -p c0ntrail123 scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $TOOLS_WS root@$MASTER_NODE_IP:${TEMPEST_WS}
+    exec_cmds -s root@${MASTER_NODE_IP} -p c0ntrail123 -c "
+      cd $TEMPEST_WS
+      rm -rf tempest
+      apt-get -y install git
+      git clone -b R5.0 $TEMPEST_REPO
+      wget -O /usr/local/bin/testrunner.sh https://raw.githubusercontent.com/Juniper/contrail-test/master/testrunner.sh
+      docker pull ${ContrailRegistry}/contrail-test-test:${VERSION}
+      sed -i 's/docker run --/docker run --network=host --/g' /usr/local/bin/testrunner.sh
+      chmod +x /usr/local/bin/testrunner.sh
+      sed -i 's/report_path:.*/report_path: \/var\/www\/html\/sanity\/fb-sanity\/FB-'"${BRANCH}"'-ocata-ubuntu16-helm-tempest/g' ${TEMPEST_WS}/contrail-tools/yamls/${INSTANCE_YAML}
+    "
+    sshpass -p c0ntrail123 scp ${SSHOPT} $TOOLS_WS/testers/tempest/tempest_run.sh  root@${MASTER_NODE_IP}:${TEMPEST_WS}/tempest/
+    #sshpass -p $TEST_HOST_PASSWORD scp ${SSHOPT} $TOOLS_WS/contrail-fabric-utils/testbed_env  ${TEST_HOST_STRING}:tempest/
+    tempest_cmd="bash -x /usr/local/bin/testrunner.sh run -z ${TEMPEST_WS}/tempest -P ${TEMPEST_WS}/contrail-tools/yamls/${INSTANCE_YAML} ${ContrailRegistry}/contrail-test-test:${VERSION}"
+    exec_cmds -s root@${MASTER_NODE_IP} -p c0ntrail123 -c "
+        export CT_JENKINS_TRIGGERED=1
+        ${tempest_cmd}
+    "
+    retval=$?
+    # Fetch results.xml
+    mkdir -p $TOOLS_WS/results
+    sshpass -p c0ntrail123 scp ${SSHOPT} root@${MASTER_NODE_IP}:${TEMPEST_WS}/tempest/result*.xml $TOOLS_WS/results
+    sshpass -p c0ntrail123 scp ${SSHOPT} root@${MASTER_NODE_IP}:${TEMPEST_WS}/tempest/build_id.txt $TOOLS_WS/results
+    return $retval
+}

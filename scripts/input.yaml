@@ -1,0 +1,342 @@
+test_var:
+    contrail_branch: R5.0
+    contrail_registry: ci-repo.englab.juniper.net:5000
+    orchestrator: openstack
+    kolla_branch: contrail/ocata
+    kolla_registry: ci-repo.englab.juniper.net:5000
+    sku: ocata
+    version: ocata-5.0-101
+    os: centos7
+    server_manager: 10.84.5.100
+    image_dest: /mnt/disk1/images/
+    disk_format: qcow2
+    vagrant_images: http://10.84.5.120/cs-shared/images/madhava/
+    vagrant_plugin: vagrant_2.0.4_x86_64.deb
+    vagrant_box: libvirt.box
+    vagrant_box_name: "centos/7"
+    start_ip: 20.0.0.0
+    multi_interface: False
+    keystone_auth_host: 20.255.255.250
+    vrouter_gw: 20.255.255.254
+    internal_vip: 20.255.255.250
+    external_vip: 20.255.255.250
+    contrail_api_interface_addr: 20.0.0.1
+machine_info:
+    bms1:
+        name: b3s1
+        image: centos-7.5
+        ip: 10.84.23.1
+        bond_ip: 20.0.0.1
+        bond_ip_prefix: 8
+        bond_interface_name: bond0
+        interface1: enp4s0f0
+        interface2: enp4s0f1
+        number_of_vms: 0
+    bms2:
+        name: b3s2
+        image: centos-7.5
+        ip: 10.84.23.2
+        bond_ip: 20.0.0.2
+        bond_ip_prefix: 8
+        bond_interface_name: bond0
+        interface1: enp4s0f0
+        interface2: enp4s0f1
+        number_of_vms: 0
+    bms3:
+        name: b3s4
+        image: centos-7.5
+        ip: 10.84.23.4
+        bond_ip: 20.0.0.3
+        bond_ip_prefix: 8
+        bond_interface_name: bond0
+        interface1: enp4s0f0
+        interface2: enp4s0f1
+        number_of_vms: 0   
+    bms4:
+        name: b3s5
+        image: ubuntu-16.04.2
+        ip: 10.84.23.5
+        #bond_ip: 20.0.0.4
+        #bond_ip_netmask: 255.0.0.0
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2 
+        number_of_vms: 60 
+    bms5:
+        name: b3s6
+        image: ubuntu-16.04.2
+        ip: 10.84.23.6
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms6:
+        name: b3s7
+        image: ubuntu-16.04.2
+        ip: 10.84.23.7
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms7:
+        name: b3s8
+        image: ubuntu-16.04.2
+        ip: 10.84.23.8
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms8:
+        name: b3s9
+        image: ubuntu-16.04.2
+        ip: 10.84.23.9
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms9:
+        name: b3s10
+        image: ubuntu-16.04.2
+        ip: 10.84.23.10
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms10:
+        name: b3s11
+        image: ubuntu-16.04.2
+        ip: 10.84.23.11
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms11:
+        name: b3s12
+        image: ubuntu-16.04.2
+        ip: 10.84.23.12
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms12:
+        name: b3s13
+        image: ubuntu-16.04.2
+        ip: 10.84.23.13
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms13:
+        name: b3s14
+        image: ubuntu-16.04.2
+        ip: 10.84.23.14
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms14:
+        name: b3s15
+        image: ubuntu-16.04.2
+        ip: 10.84.23.15
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms15:
+        name: b3s16
+        image: ubuntu-16.04.2
+        ip: 10.84.23.16
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms16:
+        name: b3s17
+        image: ubuntu-16.04.2
+        ip: 10.84.23.17
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms17:
+        name: b3s18
+        image: ubuntu-16.04.2
+        ip: 10.84.23.18
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms18:
+        name: b3s19
+        image: ubuntu-16.04.2
+        ip: 10.84.23.19
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms19:
+        name: b3s20
+        image: ubuntu-16.04.2
+        ip: 10.84.23.20
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 60 
+    bms20:
+        name: b5s2
+        image: ubuntu-16.04.2
+        ip: 10.84.54.6
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms21:
+        name: b5s3
+        image: ubuntu-16.04.2
+        ip: 10.84.54.7
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms22:
+        name: b5s4
+        image: ubuntu-16.04.2
+        ip: 10.84.54.8
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms23:
+        name: b5s5
+        image: ubuntu-16.04.2
+        ip: 10.84.54.9
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms24:
+        name: b5s6
+        image: ubuntu-16.04.2
+        ip: 10.84.54.10
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms25:
+        name: b5s7
+        image: ubuntu-16.04.2
+        ip: 10.84.54.11
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms26:
+        name: b5s8
+        image: ubuntu-16.04.2
+        ip: 10.84.54.12
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms27:
+        name: b5s9
+        image: ubuntu-16.04.2
+        ip: 10.84.54.13
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms28:
+        name: b5s10
+        image: ubuntu-16.04.2
+        ip: 10.84.54.14
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms29:
+        name: b5s11
+        image: ubuntu-16.04.2
+        ip: 10.84.54.15
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms30:
+        name: b5s12
+        image: ubuntu-16.04.2
+        ip: 10.84.54.16
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms31:
+        name: b5s13
+        image: ubuntu-16.04.2
+        ip: 10.84.54.17
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms32:
+        name: b5s14
+        image: ubuntu-16.04.2
+        ip: 10.84.54.18
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms33:
+        name: b5s15
+        image: ubuntu-16.04.2
+        ip: 10.84.54.19
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms34:
+        name: b5s16
+        image: ubuntu-16.04.2
+        ip: 10.84.54.20
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+    bms35:
+        name: b5s27
+        image: ubuntu-16.04.2
+        ip: 10.84.55.2
+        bond_interface_name: bond0
+        interface1: p6p1
+        interface2: p6p2
+        number_of_vms: 90 
+
+        
+role_def:
+  b3s1:
+    roles :
+      openstack:
+      webui: 
+      config:
+      control:
+      analytics:  
+      config_database:
+      analytics_database: 
+  b3s2:
+    roles :
+      openstack:
+      webui:
+      config:
+      control:
+      analytics:
+      config_database:
+      analytics_database: 
+  b3s4:
+    roles :
+      openstack:
+      webui:
+      config:
+      control:
+      analytics:
+      config_database:
+      analytics_database:  

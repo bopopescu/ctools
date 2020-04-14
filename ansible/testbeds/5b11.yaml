@@ -1,0 +1,377 @@
+deployment:
+  type:
+    contrail:
+      branch: master
+      registry: 10.160.12.173/contrail-nightly
+    kolla:
+      branch: contrail/queens
+      registry: 10.84.5.85:5010
+  version: __VERSION__
+  sku: queens
+  os: centos
+  deployer: contrail_command
+  orchestrator: openstack
+
+provider_config:
+  bms:
+      domainsuffix: local
+      ntpserver: 10.84.5.100
+      ssh_pwd: c0ntrail123
+      ssh_user: root
+
+instances:
+  5b12s10-node1:
+      ip: 10.87.69.7
+      provider: bms
+      roles:
+          contrail_command:
+          appformix:
+  5b12s10-node2:
+      ip: 10.87.69.8
+      provider: bms
+      roles:
+          analytics:
+          analytics_snmp:
+          analytics_alarm:
+          analytics_database:
+          config:
+          config_database:
+          control:
+          webui:
+  5b12s10-node3:
+      ip: 10.87.69.10
+      provider: bms
+      roles:
+          analytics:
+          analytics_snmp:
+          analytics_alarm:
+          analytics_database:
+          config:
+          config_database:
+          control:
+          webui:
+  5b12s10-node4:
+      ip: 10.87.69.11
+      provider: bms
+      roles:
+          analytics:
+          analytics_database:
+          analytics_snmp:
+          analytics_alarm:
+          config:
+          config_database:
+          control:
+          webui:
+  5b11s14:
+      ip: 10.87.69.1
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+  5b11s17:
+      ip: 10.87.69.4
+      provider: bms
+      roles:
+          vrouter:
+          openstack_compute:
+  5b9s13-node3:
+      ip: 10.87.67.43
+      provider: bms
+      roles:
+          vrouter:
+              TSN_EVPN_MODE: true
+  5b9s13-node4:
+      ip: 10.87.67.44
+      provider: bms
+      roles:
+          vrouter:
+              TSN_EVPN_MODE: true
+          openstack:
+
+contrail_configuration:
+  AAA_MODE: rbac
+  LOG_LEVEL: SYS_DEBUG
+  ENCAP_PRIORITY: VXLAN,MPLSoGRE,MPLSoUDP
+  CONTROLLER_NODES: 10.87.69.8,10.87.69.10,10.87.69.11
+  CONTROL_NODES: 172.16.130.108,172.16.130.110,172.16.130.111
+  TSN_NODES: 172.16.130.105,172.16.130.104
+  VROUTER_GATEWAY: 172.16.130.254
+
+orchestrator_configuration:
+  keystone:
+      password: c0ntrail123
+      version: v3
+  enable_ironic: yes
+  enable_swift: yes
+  enable_haproxy: no
+  enable_keepalived: no
+
+server_manager:
+  ip: 10.84.24.64
+  username: stack
+  password: c0ntrail123
+  image: centos-7.6
+  client: /cs-shared/server-manager/client/server-manager
+  cluster_id: evpn-cluster
+
+test_configuration:
+  bms:
+      bms1:
+          interfaces:
+          -   host_mac: 90:e2:ba:cd:92:04
+              tor: 5b11-qfx2
+              tor_port: xe-0/0/41
+          -   host_mac: 90:e2:ba:ca:e3:0c
+              tor: 5b11-qfx2
+              tor_port: xe-0/0/25
+          -   host_mac: 90:e2:ba:ca:e3:0d
+              tor: 5b11-qfx3
+              tor_port: xe-0/0/25
+          mgmt_ip: 10.87.69.2
+          password: c0ntrail123
+          username: root
+#      bms1_2:
+#          interfaces:
+#          -   host_mac: 90:e2:ba:cd:92:05
+#              tor: 5b11-qfx2
+#              tor_port: xe-0/0/42
+#          mgmt_ip: 10.87.69.2
+#          password: c0ntrail123
+#          username: root
+      bms2:
+          interfaces:
+#          -   host_mac: ac:1f:6b:8d:0c:88
+#              tor: 5b11-qfx2
+#              tor_port: xe-0/0/20
+#          -   host_mac: ac:1f:6b:8d:0c:89
+#              tor: 5b11-qfx3
+#              tor_port: xe-0/0/18
+          -   host_mac: ac:1f:6b:8d:0c:8a
+              tor: 5b11-qfx10
+              tor_port: xe-0/0/47
+          mgmt_ip: 10.87.69.6
+          password: c0ntrail123
+          username: root
+      bms3:
+          interfaces:
+          -   host_mac: 90:e2:ba:3a:aa:c8
+              tor: 5b11-qfx2
+              tor_port: xe-0/0/36
+          -   host_mac: 90:e2:ba:3a:aa:c9
+              tor: 5b11-qfx2
+              tor_port: xe-0/0/38
+          mgmt_ip: 10.87.69.3
+          password: c0ntrail123
+          username: root
+      bms4:
+          interfaces:
+          -   host_mac: 00:25:90:c4:e8:e9
+              tor: 5b11-qfx9
+              tor_port: ge-0/0/11
+          mgmt_ip: 10.87.69.64
+          password: c0ntrail123
+          username: root
+      bms5:
+          interfaces:
+          -   host_mac: 90:e2:ba:3d:98:60
+              tor: 5b11-qfx4
+              tor_port: xe-0/0/2_2
+          -   host_mac: 90:e2:ba:3d:98:61
+              tor: 5b11-qfx5
+              tor_port: xe-0/0/2_2
+          mgmt_ip: 10.87.69.64
+          password: c0ntrail123
+          username: root
+  fabric:
+        - namespaces:
+            asn:
+                -   max: 64512
+                    min: 64512
+            management:
+                -   cidr: 10.87.69.121/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.122/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.123/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.124/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.120/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.119/32
+                    gateway: 10.87.69.254
+                -   cidr: 10.87.69.118/32
+                    gateway: 10.87.69.254
+            pnf_service_chain:
+                - 192.168.255.224/27
+          credentials:
+            -   device_family: qfx
+                password: Contrail123!
+                username: root
+                vendor: Juniper
+            -   device_family: srx
+                password: Contrail123!
+                username: root
+                vendor: Juniper
+
+  image_web_server: 10.84.5.120
+  use_project_scoped_token: true
+  public_host: 10.160.5.178
+  web_server:
+      log_path: /var/www/html/Docs/logs
+      password: stack@123
+      username: stack
+      report_path: /var/www/html/sanity/master-queens-centos-fabric-regression
+      web_root: /Docs/logs
+      server: zephyrine.englab.juniper.net
+  mail_server:
+      port: '4000'
+      sender: contrail-build@juniper.net
+      server: 10.84.24.64
+      to: dl-contrail-sw@juniper.net
+  public_subnets:
+      - 10.87.78.160/28
+#      - 10.87.115.128/25
+#      - 10.87.83.0/26
+  physical_routers:
+      5b11-qfx2:
+          asn: 64512
+          mgmt_ip: 10.87.69.124
+          control_ip: 172.16.131.2
+          mode: qfx5100
+          name: 5b11-qfx2
+          role: leaf
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 2.2.2.2
+          type: tor
+          vendor: juniper
+      5b11-qfx3:
+          asn: 64512
+          mgmt_ip: 10.87.69.123
+          control_ip: 172.16.131.3
+          mode: qfx5100
+          name: 5b11-qfx3
+          role: leaf
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 3.3.3.3
+          type: tor
+          vendor: juniper
+      5b11-qfx4:
+          asn: 64512
+          control_ip: 172.16.131.4
+          mgmt_ip: 10.87.69.122
+          mode: qfx10k
+          name: 5b11-qfx4
+          role: spine
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 4.4.4.4
+          type: tor
+          vendor: juniper
+          rb_roles:
+            - crb_mcast_gw
+            - pnf_service_chain
+      5b11-qfx5:
+          asn: 64512
+          control_ip: 172.16.131.5
+          mgmt_ip: 10.87.69.121
+          mode: qfx10k
+          name: 5b11-qfx5
+          role: spine
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 5.5.5.5
+          type: tor
+          vendor: juniper
+          rb_roles:
+            - crb_mcast_gw
+            - dc_gw
+            - pnf_service_chain
+      5b11-qfx9:
+          asn: 64512
+          control_ip: 172.16.131.9
+          mgmt_ip: 10.87.69.120
+          mode: qfx5110
+          name: 5b11-qfx9
+          role: leaf
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 9.9.9.9
+          type: tor
+          vendor: juniper
+          rb_roles:
+            - erb_ucast_gw
+      5b11-qfx10:
+          asn: 64512
+          control_ip: 172.16.131.10
+          mgmt_ip: 10.87.69.120
+          mode: qfx5110
+          name: 5b11-qfx10
+          role: leaf
+          ssh_password: Contrail123!
+          ssh_username: root
+          tunnel_ip: 10.10.10.10
+          type: tor
+          vendor: juniper
+          rb_roles:
+            - erb_ucast_gw
+      5b12-srx5400-1:
+          vendor: juniper
+          name  : 5b12-srx5400-1
+          mgmt_ip  : 10.87.69.118
+          role: pnf
+          left_qfx: 5b11-qfx4
+          right_qfx: 5b11-qfx5
+          left_qfx_intf: xe-0/0/2_1
+          right_qfx_intf: xe-0/0/6_2
+          local_left_intf: xe-1/0/0
+          local_right_intf: xe-1/0/1
+
+static_routes:
+  5b12s10-node2:
+  - gw: 172.16.130.254
+    ip: 2.2.2.2
+  - gw: 172.16.130.254
+    ip: 3.3.3.3
+  - gw: 172.16.130.254
+    ip: 4.4.4.4
+  - gw: 172.16.130.254
+    ip: 5.5.5.5
+  - gw: 172.16.130.254
+    ip: 9.9.9.9
+  - gw: 172.16.130.254
+    ip: 10.10.10.10
+  - gw: 172.16.130.254
+    ip: 6.6.6.6
+  5b12s10-node3:
+  - gw: 172.16.130.254
+    ip: 2.2.2.2
+  - gw: 172.16.130.254
+    ip: 3.3.3.3
+  - gw: 172.16.130.254
+    ip: 4.4.4.4
+  - gw: 172.16.130.254
+    ip: 5.5.5.5
+  - gw: 172.16.130.254
+    ip: 9.9.9.9
+  - gw: 172.16.130.254
+    ip: 10.10.10.10
+  - gw: 172.16.130.254
+    ip: 6.6.6.6
+  5b12s10-node4:
+  - gw: 172.16.130.254
+    ip: 2.2.2.2
+  - gw: 172.16.130.254
+    ip: 3.3.3.3
+  - gw: 172.16.130.254
+    ip: 4.4.4.4
+  - gw: 172.16.130.254
+    ip: 5.5.5.5
+  - gw: 172.16.130.254
+    ip: 9.9.9.9
+  - gw: 172.16.130.254
+    ip: 10.10.10.10
+  - gw: 172.16.130.254
+    ip: 6.6.6.6

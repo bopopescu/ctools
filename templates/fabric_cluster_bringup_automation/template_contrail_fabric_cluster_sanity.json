@@ -1,0 +1,143 @@
+{
+	"params":{
+		"servers":{
+			"server1":{
+				"name": "server1_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+				"management_ip": "10.87.118.140",
+				"management_interface": "eth0",
+				"server_uuid": "ce240137-8663-4999-85e4-02a4e533a787",
+				"control_data_interface": {
+					"control_data_interface" : "eth1",
+					"control_data_ip" : "10.10.0.4"
+				},
+                                "default_gateway" : "",
+				"roles": ["openstack"]
+			},
+			"server2":{
+                                "name": "server2_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.139",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a878",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.5"
+                                },
+                                "default_gateway" : "",
+                                "roles": ["openstack"]
+                        },
+                        "server3":{
+                                "name": "server3_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.143",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a979",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.6"
+                                },
+                                "default_gateway" : "",
+                                "roles": ["openstack"]
+                        },
+                        "server4":{
+                                "name": "server4_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.134",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a171",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.7"
+                                },
+                                "default_gateway" : "",
+                                "roles": ["contrail-control"]
+                        },
+                        "server5":{
+                                "name": "server5_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.138",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a272",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.8"
+                                },
+                                "default_gateway" : "",
+                                "roles": ["contrail-control"]
+                        },
+                        "server6":{
+                                "name": "server6_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.135",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a373",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.9"
+                                },
+                                "default_gateway" : "",
+                                "roles": ["contrail-control"]
+                        },
+                        "server7":{
+                                "name": "server7_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.137",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a474",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.10"
+                                },
+                                "default_gateway" : "10.10.0.1",
+                                "roles": ["compute"]
+                        },
+                        "server8":{
+                                "name": "server8_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.142",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a575",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.11"
+                                },
+                                "default_gateway" : "10.10.0.1",
+                                "roles": ["compute"]
+                        },
+                        "server9":{
+                                "name": "server9_8aedb984-fb0d-43d0-9cff-78e8d2037c50",
+                                "management_ip": "10.87.118.141",
+                                "management_interface": "eth0",
+                                "server_uuid": "ce240137-8663-4999-85e4-02a4e533a676",
+                                "control_data_interface": {
+                                        "control_data_interface" : "eth1",
+                                        "control_data_ip" : "10.10.0.12"
+                                },
+                                "default_gateway" : "10.10.0.1",
+                                "roles": ["compute"]
+                        }
+		},
+		"go_server_details": {
+			"server_ip": "10.87.118.133",
+			"server_port": "9091"
+		},
+		"contrail_cluster_details": {
+			"cluster_uuid": "4ad37316-182b-49fc-8322-075b0e8a0219",
+			"cluster_name" : "contrail_test_cluster",
+			"provision_type" : "ansible",
+			"ntp_server" : "10.84.5.100",
+			"encap_priority": "VXLAN,MPLSoUDP,MPLSoGRE", 
+			"registry_private_insecure" : "true",
+			"container_registry" : "10.84.5.81:5000",
+			"contrail_version" : "ocata-5.0-94",
+			"high_availability" : "true",
+			"orchestrator" : "openstack",
+			"default_gateway" : "10.10.0.1"
+		},
+		"openstack_cluster_details": {
+			"cluster_uuid" : "b750d619-88bd-4ee6-b8ce-6f01cdd4d0f2",
+			"cluster_name" : "openstack_test_cluster",
+                        "kolla_globals" : {
+                                        "enable_haproxy" : "yes",
+                                        "enable_ironic" : "yes",
+                                        "enable_swift" : "yes",
+                                        "keepalived_virtual_router_id" : "60"
+                         },
+                        "openstack_internal_vip": "10.10.0.132",
+			"openstack_external_vip": "10.87.118.132"
+ 		}
+	}
+}

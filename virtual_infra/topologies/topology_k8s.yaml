@@ -1,0 +1,46 @@
+networks:
+    management:
+        cidr: 10.0.0.0/24
+    ctrl1:
+        cidr: 10.10.0.0/24
+        gateway: null
+        forwarding_mode: l2
+        flood_unknown_unicast: True
+
+allowed_address_pairs:
+    internal_vip: 10.10.0.100
+    external_vip: 10.0.0.100
+
+instances:
+  - name: k8s_master
+    type: k8s_master
+    roles:
+        k8s_master:
+    ports:
+        - network: management
+        - network: ctrl1
+  - name: controller
+    type: controller
+    roles:
+        config_database:
+        config:
+        control:
+        analytics:
+        analytics_database:
+        webui:
+        analytics_alarm:
+        analytics_snmp:
+        kubemanager:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3
+  - name: compute
+    type: compute
+    roles:
+        vrouter:
+        k8s_node:
+    ports:
+        - network: management
+        - network: ctrl1
+    count: 3
