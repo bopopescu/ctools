@@ -22,9 +22,9 @@ DFLT_CLUSTERS = [{
         'prefix': '1.1.1.0/24',
         'fabric_snat': True,
     },
-    'master': 'k8m',
-    'slave1': 'k8s1',
-    'slave2': 'k8s2',
+    'main': 'k8m',
+    'subordinate1': 'k8s1',
+    'subordinate2': 'k8s2',
 }]
 BGP_ADDR_FAMILIES = ['inet-vpn']
 BGP_RI = ['default-domain', 'default-project', 'ip-fabric', '__default__']
@@ -337,8 +337,8 @@ def setup_cluster_stack (cfg, info, tc, cred):
     '''
     this routine creates the following resources per cluster
     1. k8 cluster VN
-    2. master-VM:1, slave-VM:2
-    3. assigns FIP to master-VM
+    2. main-VM:1, subordinate-VM:2
+    3. assigns FIP to main-VM
     '''
     juju_deployment = False
     heat = get_heat_handle(cred, project=cfg['name'])
@@ -365,7 +365,7 @@ def setup_cluster_stack (cfg, info, tc, cred):
         if net.get('name'):
             params['net_name'] = net['name']
             params['ipam_name'] = net['name'] + 'ipam'
-            outs['master_ip']['value']['get_attr'][2] = net['name']
+            outs['main_ip']['value']['get_attr'][2] = net['name']
             if juju_deployment:
                 outs['juju_client_ip']['value']['get_attr'][2] = net['name']
         if net.has_key('fabric_snat'):
@@ -380,13 +380,13 @@ def setup_cluster_stack (cfg, info, tc, cred):
             params['juju_client_intf'] = cfg['juju_client'] + 'intf'
         if cfg.get('controller'):
             params['controller_name'] = cfg['controller']
-    if cfg.get('master'):
-        params['master_name'] = cfg['master']
-        params['master_intf'] = cfg['master'] + 'intf'
-    if cfg.get('slave1'):
-        params['slave1_name'] = cfg['slave1']
-    if cfg.get('slave2'):
-        params['slave2_name'] = cfg['slave2']
+    if cfg.get('main'):
+        params['main_name'] = cfg['main']
+        params['main_intf'] = cfg['main'] + 'intf'
+    if cfg.get('subordinate1'):
+        params['subordinate1_name'] = cfg['subordinate1']
+    if cfg.get('subordinate2'):
+        params['subordinate2_name'] = cfg['subordinate2']
 
     stack_name = cfg['name'] + 'r'
     print "Creating cluster resources with stack " + stack_name
@@ -424,12 +424,12 @@ def generate_and_copy_files (cluster, info, desc, cred):
     args['bms_pwd'] = provider['ssh_pwd']
     args['bms_usr'] = provider['ssh_user']
     args['ntp'] = provider['ntpserver']
-    args['master_ip'] = cls['master_ip']
-    args['slave1_ip'] = cls['slave1_ip']
-    args['slave2_ip'] = cls['slave2_ip']
-    args['master_name'] = cluster['master']
-    args['slave1_name'] = cluster['slave1']
-    args['slave2_name'] = cluster['slave2']
+    args['main_ip'] = cls['main_ip']
+    args['subordinate1_ip'] = cls['subordinate1_ip']
+    args['subordinate2_ip'] = cls['subordinate2_ip']
+    args['main_name'] = cluster['main']
+    args['subordinate1_name'] = cluster['subordinate1']
+    args['subordinate2_name'] = cluster['subordinate2']
     outfile = cluster['name'] + '_instances.yaml'
     print "Generating " + outfile
     with open(outfile, 'w') as fd:
@@ -466,7 +466,7 @@ def generate_and_copy_files (cluster, info, desc, cred):
                     cfg['CONTAINER_REGISTRY'],
                     'contrail-kubernetes-cni-init',
                     cfg['CONTRAIL_VERSION'])
-    args['master_ip'] = cls['master_ip']
+    args['main_ip'] = cls['main_ip']
     args['auth_host'] = cfg['KEYSTONE_AUTH_HOST']
     args['auth_tenant'] = cred['tenant']
     args['auth_user'] = cred['user']
@@ -495,12 +495,12 @@ def generate_and_copy_files (cluster, info, desc, cred):
     with open(outfile, 'w') as fd:
         fd.write(templates.contrail.substitute(args))
 
-    copy_files_to_master_vm(provider, cls,
+    copy_files_to_main_vm(provider, cls,
         ((cluster['name'] + '_instances.yaml', 'instances.yaml'),
          (cluster['name'] + '_contrail.yaml', 'contrail.yaml')))
 
-def copy_files_to_master_vm (provider, cls, files):
-    host = provider['ssh_user'] + '@' + cls['master_ssh']
+def copy_files_to_main_vm (provider, cls, files):
+    host = provider['ssh_user'] + '@' + cls['main_ssh']
     print 'trying to connect to ' + host
     retries = 10
     delay = 60
@@ -516,7 +516,7 @@ def copy_files_to_master_vm (provider, cls, files):
             print 'delay %d, retries %d' % (delay, retries)
             time.sleep(delay)
         else:
-            print 'files copied to master vm'
+            print 'files copied to main vm'
             break
 
 def copy_bundle_to_juju_client(tb, cluster, info, file = 'bundle_nested.yaml'):
@@ -537,7 +537,7 @@ def copy_bundle_to_juju_client(tb, cluster, info, file = 'bundle_nested.yaml'):
             print 'delay %d, retries %d' % (delay, retries)
             time.sleep(delay)
         else:
-            print 'files copied to master vm'
+            print 'files copied to main vm'
             break
 
 def prov_k8s_contrail_in_vm (cluster, info, tb):
@@ -547,11 +547,11 @@ def prov_k8s_contrail_in_vm (cluster, info, tb):
     repo = 'http://github.com/Juniper/contrail-ansible-deployer'
     provider = tb['provider_config']['bms']
     cls = info['clusters'][cluster['name']]
-    with Connection(host=provider['ssh_user'] + '@' + cls['master_ssh'],
+    with Connection(host=provider['ssh_user'] + '@' + cls['main_ssh'],
                     connect_kwargs={'password':provider['ssh_pwd']}) as C:
         C.run('yum install -y python-pip')
         C.run('git clone -b %s --single-branch %s' % (
-             os.getenv('BRANCH', 'master'), repo))
+             os.getenv('BRANCH', 'main'), repo))
         C.run('cp instances.yaml ~/contrail-ansible-deployer/config/')
         with C.cd('contrail-ansible-deployer'):
             C.run('ansible-playbook -e orchestrator=kubernetes -i inventory/ playbooks/configure_instances.yml')
@@ -574,32 +574,32 @@ def prov_k8s_contrail_from_juju_client(cluster, info, tb):
         C.run('sudo snap install juju --classic')
         C.run('juju add-cloud ')
         C.run('juju bootstrap mymanual manual-controller')
-        C.run('juju add-machine ssh:root@'+cls['master_ip'])
-        C.run('juju add-machine ssh:root@'+cls['slave1'])
-        C.run('juju add-machine ssh:root@'+cls['slave2'])
+        C.run('juju add-machine ssh:root@'+cls['main_ip'])
+        C.run('juju add-machine ssh:root@'+cls['subordinate1'])
+        C.run('juju add-machine ssh:root@'+cls['subordinate2'])
         C.run('juju deploy bundle_nested.yaml --map-machines=existing')
 
 def generate_test_input (tb, clusters, info):
-    tb['deployment']['slave_orchestrator'] = 'kubernetes'
+    tb['deployment']['subordinate_orchestrator'] = 'kubernetes'
     for cls in clusters:
         cls_info = info['clusters'][cls['name']]
-        cls['master_ip'] = str(cls_info['master_ip'])
-        cls['slave1_ip'] = str(cls_info['slave1_ip'])
-        cls['slave2_ip'] = str(cls_info['slave2_ip'])
-        tb['instances'].update({cls['master']:{
+        cls['main_ip'] = str(cls_info['main_ip'])
+        cls['subordinate1_ip'] = str(cls_info['subordinate1_ip'])
+        cls['subordinate2_ip'] = str(cls_info['subordinate2_ip'])
+        tb['instances'].update({cls['main']:{
                                    'provider': 'bms',
-                                   'ip': str(cls_info['master_ssh']),
+                                   'ip': str(cls_info['main_ssh']),
                                    'roles': {
-                                      'k8s_master': None,
+                                      'k8s_main': None,
                                       'kubemanager': None
                                    }}})
     k8s_nested = tb['test_configuration']['k8s_nested'] or {}
     if not k8s_nested.get('clusters'):
         name = info['clusters'].keys()[0]
         cls_info = info['clusters'][name]
-        clusters[0]['master_ip'] = str(cls_info['master_ip'])
-        clusters[0]['slave1_ip'] = str(cls_info['slave1_ip'])
-        clusters[0]['slave2_ip'] = str(cls_info['slave2_ip'])
+        clusters[0]['main_ip'] = str(cls_info['main_ip'])
+        clusters[0]['subordinate1_ip'] = str(cls_info['subordinate1_ip'])
+        clusters[0]['subordinate2_ip'] = str(cls_info['subordinate2_ip'])
         tb['test_configuration']['k8s_nested'] = {'clusters': clusters}
     yaml.dump(tb, open('contrail_test_input.yaml', 'w'),
               default_flow_style=False)

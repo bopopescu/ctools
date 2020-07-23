@@ -66,7 +66,7 @@ env.other_orchestrators={
                         }
  }    
 
-#env.slave_orchestrator = 'vcenter'
+#env.subordinate_orchestrator = 'vcenter'
 control_data = {
     host1 : { 'ip': '192.168.250.4/24', 'gw' : '192.168.250.254', 'device':'em1' },
     host2 : { 'ip': '192.168.250.5/24', 'gw' : '192.168.250.254', 'device':'em1' },

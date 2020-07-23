@@ -376,7 +376,7 @@ def parse_cli(args):
     parser.add_argument('-i', '--image', default=os.getenv('OSIMAGE'),
                         help='OS to use for contrail services (eg. centos-7.5)')
     parser.add_argument('-v', '--version', default=os.getenv('VERSION'),
-                        help='contrail version eg: ocata-master-244')
+                        help='contrail version eg: ocata-main-244')
     parser.add_argument('-a', '--appformix_version', default=os.getenv('APPFORMIX_VERSION'),
                         help='appformix version eg: 2.18.1')
     parser.add_argument('-s', '--sku', default=os.getenv('SKU'),

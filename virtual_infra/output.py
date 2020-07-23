@@ -417,4 +417,4 @@ if __name__ == '__main__':
     instance_info = read_yaml(pargs.instance_info)
     write_all_yml(pargs.topology, pargs.configs, instance_info,
                   pargs.filename, 'latest', 'ocata',
-                  'master', '/var/tmp/msenthil/test')
+                  'main', '/var/tmp/msenthil/test')

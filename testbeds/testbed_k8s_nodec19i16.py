@@ -72,8 +72,8 @@ env.log_scenario='Kubernetes Single Yaml Sanity'
 env.orchestrator='kubernetes'
 env.kubernetes = {
    'mode' : 'baremetal',
-   'master': host1,
-   'slaves': [host2]
+   'main': host1,
+   'subordinates': [host2]
 }
 
 #env.cluster_id='clusterc19i16i18'

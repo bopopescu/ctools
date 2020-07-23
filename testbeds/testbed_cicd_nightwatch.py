@@ -153,7 +153,7 @@ env.roledefs = {
     'collector': [host4, host8, host12],
     'database': [host4, host8, host12],
     'compute': [host13, host14, host15, host16, host17, host18, host19],
-    'storage-master': [host1, host5, host9],
+    'storage-main': [host1, host5, host9],
     'storage-compute': [host13, host14, host15, host16, host17, host18, host19],
     'build': [host_build],
 }

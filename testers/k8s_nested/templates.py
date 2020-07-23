@@ -69,7 +69,7 @@ metadata:
   name: kube-manager-config
   namespace: kube-system
 data:
-  KUBERNETES_API_SERVER: $master_ip
+  KUBERNETES_API_SERVER: $main_ip
   KUBERNETES_API_SECURE_PORT: "6443"
   K8S_TOKEN_FILE: "/tmp/serviceaccount/token"
 # Containers section
@@ -239,19 +239,19 @@ provider_config:
    ntpserver: $ntp
 
 instances:
- $master_name:
+ $main_name:
    provider: bms
-   ip: $master_ip
+   ip: $main_ip
    roles:
-     k8s_master:
- $slave1_name:
+     k8s_main:
+ $subordinate1_name:
    provider: bms
-   ip: $slave1_ip
+   ip: $subordinate1_ip
    roles:
      k8s_node:
- $slave2_name:
+ $subordinate2_name:
    provider: bms
-   ip: $slave2_ip
+   ip: $subordinate2_ip
    roles:
      k8s_node:
 ''')

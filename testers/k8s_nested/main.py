@@ -22,7 +22,7 @@ def setup_centos ():
     print 'Installing platform [centos] packages'
     buildid = os.getenv('BUILDID')
     branch = os.getenv('BRANCH')
-    release = branch if branch == 'master' else branch[1:]
+    release = branch if branch == 'main' else branch[1:]
     content = templates.yum_repo.substitute(
                 os='centos',
                 buildid=buildid,

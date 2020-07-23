@@ -262,6 +262,6 @@ env.orchestrator='kubernetes'
 
 env.kubernetes = {
 'mode' : 'baremetal',
-'master': host1,
-'slaves': [host4,host5,host6,host7,host8,host9,host10,host11,host12,host13,host14,host15,host17,host18,host19,host20,host21,host22,host23,host24,host25,host26,host27,host28,host29,host30,host31,host32,host33,host34,host35,host36,host37,host38,host39,host40,host41,host42,host43,host44,host48,host49,host50,host51,host52,host53,host54,host55,host56,host57,host58,host59,host60,host61,host67,host68,host69,host70,host71,host72,host73,host74,host75,host76,host77,host78,host79,host80,host81,host82,host83,host84,host85,host86,host87,host90,host91,host92,host93,host94,host95,host96,host97,host98,host99,host100,host101,host104,host105,host106,host107,host108,host109,host110 ]
+'main': host1,
+'subordinates': [host4,host5,host6,host7,host8,host9,host10,host11,host12,host13,host14,host15,host17,host18,host19,host20,host21,host22,host23,host24,host25,host26,host27,host28,host29,host30,host31,host32,host33,host34,host35,host36,host37,host38,host39,host40,host41,host42,host43,host44,host48,host49,host50,host51,host52,host53,host54,host55,host56,host57,host58,host59,host60,host61,host67,host68,host69,host70,host71,host72,host73,host74,host75,host76,host77,host78,host79,host80,host81,host82,host83,host84,host85,host86,host87,host90,host91,host92,host93,host94,host95,host96,host97,host98,host99,host100,host101,host104,host105,host106,host107,host108,host109,host110 ]
 }

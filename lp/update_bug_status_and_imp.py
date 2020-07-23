@@ -44,10 +44,10 @@ getBranch = { 'Juniper Openstack r1.06':'R1.06',
               'Juniper Openstack r3.0':'R3.0',
               'Juniper Openstack r3.1':'R3.1',
               'Juniper Openstack r3.0.2.x':'R3.0.2.x',
-              'Juniper Openstack trunk':'master',
-              'Juniper Openstack':'master',
-              'OpenContrail':'master',
-              'OpenContrail trunk':'master'
+              'Juniper Openstack trunk':'main',
+              'Juniper Openstack':'main',
+              'OpenContrail':'main',
+              'OpenContrail trunk':'main'
             }
 
 getSeries = { 'R1.06':'juniperopenstack/r1.06',
@@ -65,7 +65,7 @@ getSeries = { 'R1.06':'juniperopenstack/r1.06',
               'R3.0':'juniperopenstack/r3.0',
               'R3.1':'juniperopenstack/r3.1',
               'R3.0.2.x':'juniperopenstack/r3.0.2.x',
-              'master':'juniperopenstack/trunk'
+              'main':'juniperopenstack/trunk'
             }
 
 gerrit_args = ['bug_list=']
@@ -93,7 +93,7 @@ for details in file:
 
     print ( "Updating status and importance " + "...")
     for task in lpconn.bugs[bug_number].bug_tasks:
-        if getBranch[task.bug_target_display_name] == "master":
+        if getBranch[task.bug_target_display_name] == "main":
             assigned_eng = None
             status = None
             if task.assignee:

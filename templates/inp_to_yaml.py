@@ -2343,7 +2343,7 @@ def create_yaml_file_for_5_0_provisioning():
 	    version = provision_5_0_dict[clus]["deployment_config"]["version"]
 	    final_prov_yaml_string = final_prov_yaml_string + "  version: %s\n" %version
 	else:
-	    final_prov_yaml_string = final_prov_yaml_string + "  version: master-20180131150536\n"
+	    final_prov_yaml_string = final_prov_yaml_string + "  version: main-20180131150536\n"
 	if "orchestrator" in provision_5_0_dict[clus]["deployment_config"]:
 	    orchestrator = provision_5_0_dict[clus]["deployment_config"]["orchestrator"]
 	    final_prov_yaml_string = final_prov_yaml_string + "  orchestrator: %s\n" %orchestrator
@@ -2352,8 +2352,8 @@ def create_yaml_file_for_5_0_provisioning():
         if "deployer" in provision_5_0_dict[clus]["deployment_config"]:
             deployer = provision_5_0_dict[clus]["deployment_config"]["deployer"]
             final_prov_yaml_string = final_prov_yaml_string + "  deployer: %s\n" %deployer
-	if "slave_orchestrator"  in provision_5_0_dict[clus]["deployment_config"]:
-	    slave_orchestrator = provision_5_0_dict[clus]["deployment_config"]["slave_orchestrator"]
+	if "subordinate_orchestrator"  in provision_5_0_dict[clus]["deployment_config"]:
+	    subordinate_orchestrator = provision_5_0_dict[clus]["deployment_config"]["subordinate_orchestrator"]
     # Put Provider config in the yaml file.
     # This part of the yaml file will be constant until we change the provider from bms to any thing else
     final_prov_yaml_string = final_prov_yaml_string + "\nprovider_config:\n"

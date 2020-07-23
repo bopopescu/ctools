@@ -84,8 +84,8 @@ env.orchestrator='kubernetes'
 
 env.kubernetes = {
 'mode' : 'baremetal',
-'master': host1,
-'slaves': [host2, host3, host4, host5]
+'main': host1,
+'subordinates': [host2, host3, host4, host5]
 }
 
 control_data = {

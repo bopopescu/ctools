@@ -2,9 +2,9 @@ from fabric.api import env
 
 #Management ip addresses of hosts in the cluster
 host1 = 'root@10.87.66.153'
-k8s_master = 'root@10.87.117.243'
-k8s_slave1 = 'root@10.87.117.245'
-k8s_slave2 = 'root@10.87.117.246'
+k8s_main = 'root@10.87.117.243'
+k8s_subordinate1 = 'root@10.87.117.245'
+k8s_subordinate2 = 'root@10.87.117.246'
 
 
 #External routers if any
@@ -45,8 +45,8 @@ env.hostnames = {
 
 env.kubernetes = {
 'mode' : 'nested',
-'master': k8s_master,
-'slaves': [k8s_slave1, k8s_slave2]
+'main': k8s_main,
+'subordinates': [k8s_subordinate1, k8s_subordinate2]
 }
 
 #Openstack admin password
@@ -57,9 +57,9 @@ env.openstack_admin_password = 'B24094A6C5D3'
 # instead populate env.key_filename in testbed.py with public key.
 env.passwords = {
     host1: 'c0ntrail123',
-    k8s_master: 'c0ntrail123',
-    k8s_slave1: 'c0ntrail123',
-    k8s_slave2: 'c0ntrail123',
+    k8s_main: 'c0ntrail123',
+    k8s_subordinate1: 'c0ntrail123',
+    k8s_subordinate2: 'c0ntrail123',
     host_build: 'c0ntrail123',
 }
 
@@ -70,9 +70,9 @@ env.passwords = {
 #For reimage purpose
 env.ostypes = {
     host1: 'ubuntu',
-    k8s_master: 'ubuntu',
-    k8s_slave1: 'ubuntu',
-    k8s_slave2: 'ubuntu',
+    k8s_main: 'ubuntu',
+    k8s_subordinate1: 'ubuntu',
+    k8s_subordinate2: 'ubuntu',
 }
 
 env.orchestrator='openstack'

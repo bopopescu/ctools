@@ -53,7 +53,7 @@ class Smgr_lib :
 
       src_file_list = []
       src_file_list.append(testbed_config['%s,smgr_upgrade_script'%smgr_host_type])
-      src_file_list.append(test_conf['smgr_master_pkg'])
+      src_file_list.append(test_conf['smgr_main_pkg'])
       src_file_list.append(test_conf['smgr_client_pkg'])
 
       cmd = "rm -rf /tmp/smgr_files/"
@@ -74,7 +74,7 @@ class Smgr_lib :
           test_obj.argument['err_msg'] += msg
           sys.exit()
 
-      d,f = os.path.split(test_conf['smgr_master_pkg'])
+      d,f = os.path.split(test_conf['smgr_main_pkg'])
       server_pkg = "/tmp/smgr_files/" + f
       d,f = os.path.split(test_conf['smgr_client_pkg'])
       client_pkg = "/tmp/smgr_files/" + f
@@ -95,7 +95,7 @@ class Smgr_lib :
       #cmd = "service cobblerd restart"
       #output = gen_lib.send_cmd(test_obj,handle,cmd,prompt,60)
 
-      cmd = "service puppetmaster restart"
+      cmd = "service puppetmain restart"
       execute_smgr_cli(test_obj,handle,prompt,cmd,60)
 
       #cmd = "sed -i 's|partman-auto/disk string /dev/sd?|partman-auto/disk string /dev/sda|' /var/www/html/kickstarts/contrail-ubuntu.seed"

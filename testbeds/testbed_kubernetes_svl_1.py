@@ -34,8 +34,8 @@ env.roledefs = {
 
 env.kubernetes = {
 'mode' : 'baremetal',
-'master': host1,
-'slaves': [host2, host3]
+'main': host1,
+'subordinates': [host2, host3]
 }
 
 #Hostnames

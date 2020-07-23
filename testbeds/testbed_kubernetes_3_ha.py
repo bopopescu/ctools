@@ -67,6 +67,6 @@ env.orchestrator='kubernetes'
 
 env.kubernetes = {
 'mode' : 'baremetal',
-'master': host1,
-'slaves': [host4, host5]
+'main': host1,
+'subordinates': [host4, host5]
 }

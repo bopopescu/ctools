@@ -54,13 +54,13 @@ FLAVORS = {'controller_flavor': (32768, 300, 10),
            'compute_flavor': (16384, 100, 8),
            'csn_flavor': (4096, 20, 2),
            'command_flavor': (4096, 20, 2),
-           'k8s_master_flavor': (4096, 20, 2),
+           'k8s_main_flavor': (4096, 20, 2),
            'vqfx_flavor': (4096, 16, 2),
            'bms_flavor': (1024, 10, 1),
            'vmx-fpc_flavor': (16384, 40, 7),
            'vmx-re_flavor': (4096, 40, 1),
            'appformix_flavor': (16384, 100, 8),
-           'helm-kube-master_flavor': (48000, 300, 30)
+           'helm-kube-main_flavor': (48000, 300, 30)
           }
 FLAVOR_PROPERTIES = {'vmx-re_flavor': {"hw:cpu_policy": "dedicated",
                          "aggregate_instance_extra_specs:global-grouppinned": "true"}}

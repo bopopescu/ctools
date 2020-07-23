@@ -381,16 +381,16 @@ except (KeyError, IndexError):
 # }
 
 
-def return_specific_values ( master_list, this_filter_name ): 
+def return_specific_values ( main_list, this_filter_name ): 
     indices_to_pick = MAX_PER_FILTER__MAP[ this_filter_name ] 
     # print "indices_to_pick = ["+repr (indices_to_pick)+"] " 
-    master_list_length = len (master_list) 
-    # print "master_list_length = ["+repr (master_list_length)+"] " 
-    index_list = (lambda indices_to_pick, master_list_length: [i*master_list_length//indices_to_pick + master_list_length//(2*indices_to_pick) for i in range(indices_to_pick)])( indices_to_pick, master_list_length ) 
+    main_list_length = len (main_list) 
+    # print "main_list_length = ["+repr (main_list_length)+"] " 
+    index_list = (lambda indices_to_pick, main_list_length: [i*main_list_length//indices_to_pick + main_list_length//(2*indices_to_pick) for i in range(indices_to_pick)])( indices_to_pick, main_list_length ) 
 
     selected_item_list = [] 
     for this_index in index_list: 
-        selected_item_list.append ( copy.deepcopy (master_list[ this_index ]) )
+        selected_item_list.append ( copy.deepcopy (main_list[ this_index ]) )
     #import pdb;pdb.set_trace() 
     print "selected_item_list = ["+repr (selected_item_list)+"] " 
     print "selected_item_list = ["+json.dumps ( selected_item_list, sort_keys=True, indent=4 )+"] " 
@@ -441,7 +441,7 @@ for filter_name in filter_list:
 
     # print "filtered_list_final = ["+repr (filtered_list_final)+"] " 
     selected_item_list = return_specific_values ( 
-        master_list = filtered_list_final, 
+        main_list = filtered_list_final, 
         this_filter_name = filter_name, 
     ) 
 

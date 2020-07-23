@@ -2,9 +2,9 @@ from fabric.api import env
 
 #Management ip addresses of hosts in the cluster
 host1 = 'root@10.87.66.153'
-k8s_master = 'root@1.1.1.3'
-k8s_slave1 = 'root@1.1.1.4'
-k8s_slave2 = 'root@1.1.1.5'
+k8s_main = 'root@1.1.1.3'
+k8s_subordinate1 = 'root@1.1.1.4'
+k8s_subordinate2 = 'root@1.1.1.5'
 
 
 #External routers if any
@@ -23,7 +23,7 @@ host_build = 'root@10.87.65.144'
 
 #Role definition of the hosts.
 env.roledefs = {
-    'all': [host1, k8s_master, k8s_slave1, k8s_slave2],
+    'all': [host1, k8s_main, k8s_subordinate1, k8s_subordinate2],
     'cfgm': [host1],
     'control': [host1],
     'compute': [host1],
@@ -32,7 +32,7 @@ env.roledefs = {
     'webui': [host1],
     'database': [host1],
     'build': [host_build],
-    'contrail-kubernetes': [k8s_master]
+    'contrail-kubernetes': [k8s_main]
 }
 
 #Hostnames
@@ -46,8 +46,8 @@ env.hostnames = {
 
 env.kubernetes = {
 'mode' : 'nested',
-'master': k8s_master,
-'slaves': [k8s_slave1, k8s_slave2]
+'main': k8s_main,
+'subordinates': [k8s_subordinate1, k8s_subordinate2]
 }
 
 #Openstack admin password
@@ -58,9 +58,9 @@ env.openstack_admin_password = '4955DF70A1B1'
 # instead populate env.key_filename in testbed.py with public key.
 env.passwords = {
     host1: 'c0ntrail123',
-    k8s_master: 'c0ntrail123',
-    k8s_slave1: 'c0ntrail123',
-    k8s_slave2: 'c0ntrail123',
+    k8s_main: 'c0ntrail123',
+    k8s_subordinate1: 'c0ntrail123',
+    k8s_subordinate2: 'c0ntrail123',
     host_build: 'c0ntrail123',
 }
 
@@ -71,9 +71,9 @@ env.passwords = {
 #For reimage purpose
 env.ostypes = {
     host1: 'ubuntu',
-    k8s_master: 'ubuntu',
-    k8s_slave1: 'ubuntu',
-    k8s_slave2: 'ubuntu',
+    k8s_main: 'ubuntu',
+    k8s_subordinate1: 'ubuntu',
+    k8s_subordinate2: 'ubuntu',
 }
 
 env.orchestrator='openstack'
